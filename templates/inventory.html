@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2 style="margin: 0 0 8px 0">库存预警看板</h2>
+  <p class="muted" style="margin: 0 0 16px 0; font-size: 14px">
+    建议补货数量 = 预警值 − 当前库存（不足时补足至预警线；已达标则为 0）。
+  </p>
+
+  <div class="card-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr))">
+    <div class="card">
+      <div class="label">原材料总数</div>
+      <div class="value" style="color: #111827">{{ stats.total }}</div>
+    </div>
+    <div class="card">
+      <div class="label">低库存数量</div>
+      <div class="value" style="color: #dc2626">{{ stats.low }}</div>
+    </div>
+    <div class="card">
+      <div class="label">正常库存数量</div>
+      <div class="value" style="color: #15803d">{{ stats.normal }}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    {% if rows %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>原材料名称</th>
+            <th>当前库存</th>
+            <th>单位</th>
+            <th>预警值</th>
+            <th>库存状态</th>
+            <th>建议补货数量</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr
+              {% if row.low_stock %}
+                style="background: #fef2f2; border-left: 4px solid #dc2626"
+              {% endif %}
+            >
+              <td><strong>{{ row.ingredient.name }}</strong></td>
+              <td
+                {% if row.low_stock %}
+                  style="color: #dc2626; font-weight: 700"
+                {% else %}
+                  style="color: #15803d; font-weight: 600"
+                {% endif %}
+              >
+                {{ row.ingredient.stock }}
+              </td>
+              <td>{{ row.ingredient.unit }}</td>
+              <td>{{ row.ingredient.warning_level }}</td>
+              <td>
+                {% if row.low_stock %}
+                  <span style="color: #dc2626; font-weight: 700">低库存</span>
+                {% else %}
+                  <span style="color: #15803d; font-weight: 600">正常</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.low_stock %}
+                  <span style="color: #b91c1c; font-weight: 700">{{ row.suggest_qty }}</span>
+                {% else %}
+                  <span style="color: #15803d; font-weight: 600">0</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted" style="margin: 0">暂无原材料</p>
+    {% endif %}
+  </div>
+{% endblock %}

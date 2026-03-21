@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2 style="margin: 0 0 12px 0">登录</h2>
+  <div class="form-card">
+    <form method="post">
+      {% csrf_token %}
+      <div style="margin-bottom: 10px">
+        <div class="muted" style="font-size: 14px; margin-bottom: 6px">用户名</div>
+        {{ form.username }}
+      </div>
+      <div style="margin-bottom: 10px">
+        <div class="muted" style="font-size: 14px; margin-bottom: 6px">密码</div>
+        {{ form.password }}
+      </div>
+      <button class="btn" type="submit" style="width: 100%; text-align: center">登录</button>
+      {% if form.errors %}
+        <div class="error">用户名或密码错误</div>
+      {% endif %}
+    </form>
+  </div>
+{% endblock %}
+

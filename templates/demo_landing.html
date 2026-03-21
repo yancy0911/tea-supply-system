@@ -1,0 +1,734 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>让你的奶茶店不再断货、不再压货、不再被客户欠钱</title>
+    <style>
+      :root {
+        --bg: #f1f5f9;
+        --text: #0f172a;
+        --muted: #64748b;
+        --accent: #ea580c;
+        --accent-hi: #f97316;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --slate: #1e293b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.65;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 0 20px 72px;
+      }
+      /* Hero */
+      .hero {
+        background: linear-gradient(165deg, #0f172a 0%, #1e293b 55%, #334155 100%);
+        color: #fff;
+        padding: 48px 20px 56px;
+        text-align: center;
+      }
+      .hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(24px, 4.5vw, 34px);
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+      }
+      .hero .lead {
+        margin: 0 auto 20px;
+        max-width: 560px;
+        font-size: 16px;
+        opacity: 0.88;
+        font-weight: 500;
+      }
+      .hero-cta {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+      }
+      .btn-hero-primary,
+      .btn-hero-secondary {
+        display: inline-block;
+        padding: 14px 28px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: filter 0.15s, transform 0.15s;
+      }
+      .btn-hero-primary {
+        background: linear-gradient(90deg, var(--accent-hi), var(--accent));
+        color: #fff !important;
+        box-shadow: 0 6px 20px rgba(234, 88, 12, 0.45);
+      }
+      .btn-hero-secondary {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff !important;
+        border: 2px solid rgba(255, 255, 255, 0.45);
+      }
+      .btn-hero-primary:hover,
+      .btn-hero-secondary:hover {
+        filter: brightness(1.07);
+        transform: translateY(-1px);
+      }
+      .hero-hint {
+        width: 100%;
+        margin-top: 14px;
+        font-size: 13px;
+        opacity: 0.82;
+        font-weight: 600;
+      }
+      .value-pills {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .value-pills span {
+        padding: 8px 14px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      /* Module */
+      .mod {
+        margin-top: 40px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+      }
+      .mod-head {
+        padding: 22px 24px 18px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+      }
+      .mod-num {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        background: linear-gradient(135deg, var(--accent-hi), var(--accent));
+        color: #fff;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 900;
+        margin-right: 10px;
+        vertical-align: middle;
+      }
+      .mod-head h2 {
+        margin: 0;
+        display: inline;
+        font-size: 18px;
+        font-weight: 900;
+        vertical-align: middle;
+      }
+      .mod-head p {
+        margin: 10px 0 0 38px;
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+      .mod-body {
+        padding: 22px 24px 26px;
+        display: grid;
+        gap: 20px;
+      }
+      @media (min-width: 820px) {
+        .mod-body.split {
+          grid-template-columns: 1fr 1fr;
+          align-items: start;
+        }
+      }
+      .mod-copy strong {
+        color: var(--text);
+      }
+      .mod-copy ul {
+        margin: 12px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .mod-copy li {
+        margin-bottom: 6px;
+      }
+      .boss-get {
+        margin-top: 16px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 900;
+        color: #0f172a;
+      }
+      .mock {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #f8fafc;
+        overflow: hidden;
+      }
+      .mock-bar {
+        height: 9px;
+        background: #334155;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        gap: 4px;
+      }
+      .mock-bar i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #64748b;
+      }
+      .mock-bar i:first-child {
+        background: #f87171;
+      }
+      .mock-bar i:nth-child(2) {
+        background: #fbbf24;
+      }
+      .mock-bar i:nth-child(3) {
+        background: #4ade80;
+      }
+      .mock-inner {
+        padding: 16px;
+        font-size: 13px;
+      }
+      .mock-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .mock-row:last-child {
+        border-bottom: none;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .tag-r {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .tag-y {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .tag-g {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .tag-blue {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .link-demo {
+        display: inline-block;
+        margin-top: 12px;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .link-demo:hover {
+        text-decoration: underline;
+      }
+      .mod-actions {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--border);
+      }
+      .mod-body > .mod-actions-full {
+        grid-column: 1 / -1;
+        margin-top: 0;
+        padding-top: 18px;
+        text-align: center;
+        border-top: 1px dashed var(--border);
+      }
+      .btn-mod {
+        display: inline-block;
+        padding: 12px 24px;
+        background: linear-gradient(90deg, var(--accent-hi), var(--accent));
+        color: #fff !important;
+        font-weight: 800;
+        font-size: 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        box-shadow: 0 3px 12px rgba(234, 88, 12, 0.35);
+      }
+      .btn-mod:hover {
+        filter: brightness(1.05);
+      }
+      .urgency-block {
+        margin-top: 40px;
+        padding: 22px 24px;
+        background: linear-gradient(135deg, #fffbeb 0%, #fff7ed 100%);
+        border: 1px solid #fde68a;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(180, 83, 9, 0.08);
+      }
+      .urgency-block h3 {
+        margin: 0 0 12px;
+        font-size: 17px;
+        font-weight: 900;
+        color: #92400e;
+        line-height: 1.4;
+      }
+      .urgency-block ul {
+        margin: 0 0 14px;
+        padding-left: 22px;
+        color: #78350f;
+        font-size: 14px;
+      }
+      .urgency-block li {
+        margin-bottom: 6px;
+      }
+      .urgency-block .hook {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 900;
+        color: #c2410c;
+      }
+      .credit-hook {
+        margin: 0 0 12px;
+        padding: 12px 14px;
+        background: #fef2f2;
+        border-left: 4px solid #dc2626;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 800;
+        color: #991b1b;
+        line-height: 1.5;
+      }
+      .fit-section {
+        margin-top: 40px;
+        padding: 24px 24px 26px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
+      }
+      .fit-section h3 {
+        margin: 0 0 16px;
+        font-size: 18px;
+        font-weight: 900;
+        text-align: center;
+      }
+      .fit-section ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 15px;
+        line-height: 1.9;
+      }
+      .fit-section li {
+        padding: 6px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .fit-section li:last-child {
+        border-bottom: none;
+      }
+      .price-anchor {
+        margin-top: 28px;
+        padding: 16px 20px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: #475569;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px dashed #cbd5e1;
+      }
+      /* Tiers */
+      .tier-grid {
+        display: grid;
+        gap: 10px;
+      }
+      @media (min-width: 600px) {
+        .tier-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .tier {
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .tier h4 {
+        margin: 0 0 8px;
+        font-size: 14px;
+        font-weight: 900;
+      }
+      .tier.c {
+        background: #f8fafc;
+      }
+      .tier.b {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+      }
+      .tier.a {
+        background: #fffbeb;
+        border-color: #fde68a;
+      }
+      /* Credit mock */
+      .credit-card {
+        background: #fff;
+        border: 1px solid #fecaca;
+        border-radius: 12px;
+        padding: 18px;
+        max-width: 400px;
+      }
+      .credit-card .big {
+        font-size: 26px;
+        font-weight: 900;
+        color: #b91c1c;
+        margin: 6px 0 14px;
+      }
+      .credit-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 13px;
+        border-top: 1px dashed #e2e8f0;
+      }
+      .credit-row:first-of-type {
+        border-top: none;
+      }
+      .btn-collect {
+        width: 100%;
+        margin-top: 14px;
+        padding: 11px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #dc2626, #b91c1c);
+        color: #fff;
+        font-weight: 800;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .btn-collect:hover {
+        filter: brightness(1.05);
+      }
+      .hint {
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
+      }
+      #cta {
+        scroll-margin-top: 20px;
+      }
+      /* CTA */
+      .cta {
+        margin-top: 44px;
+        text-align: center;
+        padding: 36px 24px;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border-radius: 16px;
+        color: #fff;
+      }
+      .cta p {
+        margin: 0 0 18px;
+        font-size: 15px;
+        opacity: 0.92;
+      }
+      .cta .btn-hero-primary,
+      .cta .btn-hero-secondary {
+        text-decoration: none;
+      }
+      .cta .cta-hint {
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .cta small {
+        display: block;
+        margin-top: 14px;
+        font-size: 12px;
+        opacity: 0.65;
+      }
+      footer {
+        margin-top: 32px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      footer a {
+        color: #475569;
+        margin: 0 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="wrap" style="padding-bottom: 0">
+        <h1>让你的奶茶店不再断货、不再压货、不再被客户欠钱</h1>
+        <p class="lead">自动算库存、自动提醒进货、自动控制赊账风险</p>
+        <div class="hero-cta">
+          <a class="btn-hero-primary" href="#cta">立即预约演示（免费）</a>
+          <a class="btn-hero-secondary" href="#cta">微信联系开通</a>
+          <p class="hero-hint">3分钟看懂系统能帮你省多少钱</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <!-- 模块1 -->
+      <section class="mod" aria-labelledby="m1">
+        <div class="mod-head">
+          <span class="mod-num">1</span>
+          <h2 id="m1">商城系统</h2>
+          <p>
+            <strong>客户自己下单，不再靠你一单一单接电话。</strong>手机上看价、加购、填收货信息就生成订单——你只管备货和对账，少耗在重复沟通上。
+          </p>
+        </div>
+        <div class="mod-body split">
+          <div class="mod-copy">
+            <p class="boss-get">👉 老板能得到什么</p>
+            <ul>
+              <li><strong>减少人工沟通</strong>：少接电话、少微信反复确认，时间留给拓客和管店。</li>
+              <li><strong>避免漏单错单</strong>：订单系统留痕，减少「口头下单」搞错规格、数量的损失。</li>
+              <li><strong>订单自动记录</strong>：对账、追责、复盘都有据可查，心里更有底。</li>
+            </ul>
+          </div>
+          <div class="mock">
+            <div class="mock-bar"><i></i><i></i><i></i></div>
+            <div class="mock-inner">
+              <div style="font-weight: 800; margin-bottom: 10px; color: #334155">批发商城 · 浏览与下单</div>
+              <div class="mock-row"><span>黑糖珍珠 5kg</span><span style="color: #ea580c; font-weight: 800">¥ 218</span></div>
+              <div class="mock-row"><span>奶精植脂末 25kg</span><span style="color: #ea580c; font-weight: 800">¥ 356</span></div>
+              <div class="mock-row"><span>购物车</span><span>3 件 · 去结算 →</span></div>
+              <div style="margin-top: 10px; font-size: 12px; color: #64748b">示意：实际页面以系统为准</div>
+            </div>
+          </div>
+          <div class="mod-actions mod-actions-full">
+            <a class="btn-mod" href="#cta">预约演示 / 联系开通</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 模块2 -->
+      <section class="mod" aria-labelledby="m2">
+        <div class="mod-head">
+          <span class="mod-num">2</span>
+          <h2 id="m2">系统自动告诉你：什么时候必须进货</h2>
+          <p>
+            不用凭感觉猜「还能卖几天」。系统按动销和库存算<strong>可卖天数</strong>，<strong>红黄绿</strong>一眼分清谁该先补；再给出<strong>补货建议量</strong>，让你<strong>少断货、少囤货</strong>。
+          </p>
+        </div>
+        <div class="mod-body split">
+          <div class="mod-copy">
+            <p class="boss-get">👉 老板能得到什么</p>
+            <ul>
+              <li><strong>避免断货（少赚钱）</strong>：紧俏品提前亮红灯，减少「卖爆却断货」的冤枉钱。</li>
+              <li><strong>避免压货（占资金）</strong>：少进滞销品，现金不被库存死死占住。</li>
+              <li><strong>自动算补多少，不用拍脑袋</strong>：按规则出建议量，进货决策更稳、更省心。</li>
+            </ul>
+          </div>
+          <div class="mock">
+            <div class="mock-bar"><i></i><i></i><i></i></div>
+            <div class="mock-inner">
+              <div style="font-weight: 800; margin-bottom: 10px; color: #9a3412">补货预警 · 决策看板</div>
+              <div class="mock-row"><span>SKU-A 糖浆</span><span class="tag tag-r">红色 · 优先</span></div>
+              <div class="mock-row"><span>SKU-B 茶叶</span><span class="tag tag-y">黄色 · 关注</span></div>
+              <div class="mock-row"><span>SKU-C 杯盖</span><span class="tag tag-g">绿色 · 安全</span></div>
+              <div class="mock-row"><span>建议采购（示意）</span><span style="font-weight: 800">按 60 天需求 − 现库</span></div>
+            </div>
+          </div>
+          <div class="mod-actions mod-actions-full">
+            <a class="btn-mod" href="#cta">预约演示 / 联系开通</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="urgency-block" role="note">
+        <h3>⚠️ 很多奶茶店的问题不是不赚钱，而是：</h3>
+        <ul>
+          <li>经常断货（少赚）</li>
+          <li>压货太多（占资金）</li>
+          <li>客户欠钱（直接亏）</li>
+        </ul>
+        <p class="hook">👉 这个系统就是专门解决这3件事</p>
+      </div>
+
+      <!-- 模块3 -->
+      <section class="mod" aria-labelledby="m3">
+        <div class="mod-head">
+          <span class="mod-num">3</span>
+          <h2 id="m3">客户管理</h2>
+          <p>
+            <strong>谁是大客户、谁是现款户、谁能上网下单</strong>，系统里分清楚：<strong>C / B / A / VIP 分级</strong>搭<strong>专属价</strong>和<strong>账号审核</strong>——好客户给好政策，风险客户先管住。
+          </p>
+        </div>
+        <div class="mod-body">
+          <div class="mod-copy">
+            <p class="boss-get">👉 老板能得到什么</p>
+            <ul>
+              <li><strong>多赚钱</strong>：头部客户用等级和专属价锁住，少流失、少被比价。</li>
+              <li><strong>少踩坑</strong>：新客先审核再开通采购，减少乱下单、乱要账。</li>
+              <li><strong>少扯皮</strong>：价格与权限有据可查，和客户沟通更硬气。</li>
+            </ul>
+          </div>
+          <div class="tier-grid">
+            <div class="tier c">
+              <h4>等级 C</h4>
+              <div style="color: #64748b; font-size: 12px">基础批发价 · 现款或短账期</div>
+            </div>
+            <div class="tier b">
+              <h4>等级 B / A</h4>
+              <div style="color: #64748b; font-size: 12px">更高额度 · 可谈专属价</div>
+            </div>
+            <div class="tier a">
+              <h4>VIP</h4>
+              <div style="color: #64748b; font-size: 12px">深度绑定 · 策略级合作</div>
+            </div>
+          </div>
+          <div class="mod-actions mod-actions-full">
+            <a class="btn-mod" href="#cta">预约演示 / 联系开通</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 模块4 -->
+      <section class="mod" aria-labelledby="m4">
+        <div class="mod-head">
+          <span class="mod-num">4</span>
+          <h2 id="m4">客户欠款风险控制</h2>
+          <p>
+            <strong>系统自动判断</strong>：<strong>哪些客户可以继续供货</strong>、<strong>哪些必须现金</strong>、<strong>哪些需要暂停供货</strong>——欠款、额度、风险等级一屏看清；还可一键<strong>催款提醒</strong>（正式环境可对接短信/财务流程）。
+          </p>
+        </div>
+        <div class="mod-body split">
+          <div class="mod-copy">
+            <p class="credit-hook">很多批发商一年亏的钱，不在库存，而在客户欠款。</p>
+            <p class="boss-get">👉 老板能得到什么</p>
+            <ul>
+              <li><strong>防止客户欠钱不还</strong>：超额、高风险先卡赊销，少被拖款拖垮现金流。</li>
+              <li><strong>控制赊账风险</strong>：规则前置，不靠老板天天盯账本、凭记忆。</li>
+              <li><strong>提高资金安全</strong>：该现款现款、该停供停供，钱袋子更稳。</li>
+            </ul>
+            <p style="margin: 12px 0 0; font-size: 13px; color: #94a3b8">右侧为界面示意，非实时数据。</p>
+          </div>
+          <div class="credit-card">
+            <div style="font-size: 12px; color: #64748b; font-weight: 700">客户示例 · 赊账风控卡片</div>
+            <div class="big">欠款金额 ¥ 12,800</div>
+            <div class="credit-row">
+              <span>风险等级</span>
+              <span class="tag tag-y">中高风险</span>
+            </div>
+            <div class="credit-row">
+              <span>是否继续供货</span>
+              <span style="font-weight: 800; color: #b45309">暂停赊销新单</span>
+            </div>
+            <div class="credit-row">
+              <span>信用额度使用</span>
+              <span>128% · 已超额</span>
+            </div>
+            <button type="button" class="btn-collect" title="演示按钮">催款提醒</button>
+            <p class="hint">演示页按钮仅作展示；正式环境可对接通知或工单。</p>
+          </div>
+          <div class="mod-actions mod-actions-full">
+            <a class="btn-mod" href="#cta">预约演示 / 联系开通</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="price-anchor">👉 系统已帮助门店减少库存损失 + 降低坏账风险（具体效果因店而异，预约演示时可结合您的情况说明）</div>
+
+      <div class="fit-section">
+        <h3>【适合谁使用】</h3>
+        <ul>
+          <li>✔ 奶茶店原料批发商</li>
+          <li>✔ 有赊账客户的老板</li>
+          <li>✔ 经常断货或压货的门店</li>
+        </ul>
+      </div>
+
+      <section
+        id="cta"
+        style="
+          background: #0f172a;
+          color: #fff;
+          padding: 60px 20px;
+          text-align: center;
+          border-radius: 16px;
+          margin-top: 60px;
+        "
+      >
+        <h2 style="font-size: 28px; margin: 0 0 10px; font-weight: 900">现在就开始，不要再靠感觉进货</h2>
+        <p style="opacity: 0.88; margin: 0 0 30px; font-size: 16px">3分钟看懂你库存问题 + 客户欠款风险</p>
+
+        <div style="margin-bottom: 20px">
+          <img
+            src="{% static 'wechat_qr.png' %}"
+            alt="微信二维码 · 扫码加好友"
+            width="220"
+            height="220"
+            style="width: 220px; max-width: 90vw; height: auto; border-radius: 12px; background: #fff; padding: 8px"
+          />
+        </div>
+
+        <p style="margin: 0 0 10px; font-size: 15px; font-weight: 700">👉 扫码加微信，直接帮你分析你的店</p>
+        <p style="margin: 0 0 5px; opacity: 0.9">📞 电话：929-634-3634</p>
+        <p style="margin: 0 0 20px; opacity: 0.9">📧 邮箱：yancy0911pxy@gmail.com</p>
+
+        <div style="margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px">
+          <a
+            href="tel:9296343634"
+            style="
+              display: inline-block;
+              margin: 4px;
+              padding: 12px 20px;
+              background: #f97316;
+              color: #fff !important;
+              border-radius: 8px;
+              text-decoration: none;
+              font-weight: 800;
+            "
+            >📞 直接电话沟通</a>
+          <a
+            href="mailto:yancy0911pxy@gmail.com"
+            style="
+              display: inline-block;
+              margin: 4px;
+              padding: 12px 20px;
+              background: #334155;
+              color: #fff !important;
+              border-radius: 8px;
+              text-decoration: none;
+              font-weight: 800;
+            "
+            >📧 邮件联系</a>
+        </div>
+      </section>
+
+      <footer>
+        <a href="/">系统首页</a>
+        <a href="/shop/">商城</a>
+        <a href="/demo/">刷新本页</a>
+      </footer>
+    </div>
+  </body>
+</html>

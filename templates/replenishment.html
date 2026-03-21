@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <style>
+    .rep-page h2 {
+      margin: 0 0 4px 0;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+    .rep-banner-top {
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+    }
+    .rep-banner-top.danger {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12);
+    }
+    .rep-banner-top.warn {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    .rep-banner-top.safe {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .rep-page .rep-lead {
+      margin: 0 0 18px;
+      line-height: 1.55;
+      font-size: 13px;
+      color: #64748b;
+      max-width: 920px;
+    }
+    .rep-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) {
+      .rep-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .rep-stat {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 18px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+    .rep-stat .k {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .rep-stat .v {
+      font-size: 28px;
+      font-weight: 800;
+      margin-top: 6px;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+    .rep-stat.total .v {
+      color: #0f172a;
+    }
+    .rep-stat.danger .v {
+      color: #b91c1c;
+    }
+    .rep-stat.warn .v {
+      color: #b45309;
+    }
+    .rep-stat.action .v {
+      color: #c2410c;
+    }
+    .rep-table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      overflow-x: auto;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+    .rep-table {
+      width: 100%;
+      min-width: 1080px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .rep-table thead th {
+      text-align: left;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      border-bottom: 2px solid #cbd5e1;
+      white-space: nowrap;
+    }
+    .rep-table thead th.num {
+      text-align: right;
+    }
+    .rep-table tbody td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    .rep-table tbody td.num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .rep-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    /* 红色：整行浅红 + 左侧粗红条 */
+    .rep-table tbody tr.row-red {
+      background: #fef2f2;
+      box-shadow: inset 6px 0 0 #dc2626;
+    }
+    .rep-table tbody tr.row-red td {
+      border-bottom-color: #fecaca;
+    }
+    /* 黄色：整行浅黄 + 左侧粗黄条 */
+    .rep-table tbody tr.row-yellow {
+      background: #fffbeb;
+      box-shadow: inset 6px 0 0 #f59e0b;
+    }
+    .rep-table tbody tr.row-yellow td {
+      border-bottom-color: #fde68a;
+    }
+    /* 绿色：保持简洁白底 + 细绿条 */
+    .rep-table tbody tr.row-green {
+      background: #fff;
+      box-shadow: inset 4px 0 0 #22c55e;
+    }
+    .rep-table tbody tr.row-observe {
+      background: #fafafa;
+      box-shadow: inset 4px 0 0 #94a3b8;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 13px;
+      white-space: nowrap;
+      border: 2px solid transparent;
+    }
+    .badge-red {
+      background: #fee2e2;
+      color: #7f1d1d;
+      border-color: #f87171;
+      box-shadow: 0 1px 0 rgba(185, 28, 28, 0.15);
+    }
+    .badge-yellow {
+      background: #fef3c7;
+      color: #78350f;
+      border-color: #fbbf24;
+    }
+    .badge-green {
+      background: #dcfce7;
+      color: #14532d;
+      border-color: #86efac;
+    }
+    .badge-observe {
+      background: #e2e8f0;
+      color: #475569;
+      border-color: #cbd5e1;
+    }
+    .action-cell {
+      font-weight: 900;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .action-cell.a-red {
+      color: #991b1b;
+    }
+    .action-cell.a-yellow {
+      color: #b45309;
+    }
+    .action-cell.a-green {
+      color: #15803d;
+    }
+    .action-cell.a-observe {
+      color: #64748b;
+    }
+    .muted {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+    .dc-critical {
+      color: #b91c1c;
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .dc-warn {
+      color: #ea580c;
+      font-weight: 800;
+    }
+    .dc-ok {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .name-cell strong {
+      font-size: 14px;
+    }
+    .rep-table tr.row-red .name-cell strong {
+      font-size: 15px;
+      color: #7f1d1d;
+    }
+    .rep-table tr.row-yellow .name-cell strong {
+      font-size: 14px;
+      color: #78350f;
+    }
+  </style>
+
+  <div class="rep-page">
+    <h2>补货预警中心</h2>
+
+    <div class="rep-banner-top {{ rep_banner.kind }}">{{ rep_banner.text }}</div>
+
+    <p class="rep-lead">
+      <strong>先看顶部提示与红/黄行</strong>：红色＝优先处理；黄色＝尽快关注。<br />
+      <strong>库存</strong>：无原材料关联看「可售库存」；有关联则看「原材料库存」。<strong>销量</strong>：订单明细（已排除「待确认」「已取消」）。<strong>建议采购量</strong>：60 天预估需求 − 当前库存。
+    </p>
+
+    <div class="rep-summary">
+      <div class="rep-stat total">
+        <div class="k">商品总数</div>
+        <div class="v">{{ stats.total }}</div>
+      </div>
+      <div class="rep-stat danger">
+        <div class="k">红色预警</div>
+        <div class="v">{{ stats.red }}</div>
+      </div>
+      <div class="rep-stat warn">
+        <div class="k">黄色关注</div>
+        <div class="v">{{ stats.yellow }}</div>
+      </div>
+      <div class="rep-stat action">
+        <div class="k">建议立即补货</div>
+        <div class="v">{{ stats.immediate }}</div>
+      </div>
+    </div>
+
+    <div class="rep-table-wrap">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>风险状态</th>
+            <th>建议动作</th>
+            <th>商品</th>
+            <th>SKU</th>
+            <th class="num">当前库存</th>
+            <th class="num">近7天销量</th>
+            <th class="num">近30天销量</th>
+            <th class="num">日均销量</th>
+            <th class="num">预计可卖天数</th>
+            <th class="num">建议采购量</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr
+              class="{% if r.risk_level == 'red' %}row-red{% elif r.risk_level == 'yellow' %}row-yellow{% elif r.risk_level == 'green' %}row-green{% else %}row-observe{% endif %}"
+            >
+              <td>
+                {% if r.risk_level == "red" %}
+                  <span class="badge badge-red">🔴 红色 · 优先处理</span>
+                {% elif r.risk_level == "yellow" %}
+                  <span class="badge badge-yellow">🟡 黄色 · 需关注</span>
+                {% elif r.risk_level == "green" %}
+                  <span class="badge badge-green">🟢 库存安全</span>
+                {% else %}
+                  <span class="badge badge-observe">⚪ 观察中</span>
+                {% endif %}
+              </td>
+              <td class="action-cell {% if r.risk_level == 'red' %}a-red{% elif r.risk_level == 'yellow' %}a-yellow{% elif r.risk_level == 'green' %}a-green{% else %}a-observe{% endif %}">
+                {{ r.suggest_action }}
+              </td>
+              <td class="name-cell"><strong>{{ r.product.name }}</strong></td>
+              <td class="muted">{{ r.product.sku }}</td>
+              <td class="num">{{ r.stock|floatformat:2 }}</td>
+              <td class="num">{{ r.sold_7d|floatformat:2 }}</td>
+              <td class="num">
+                {% if r.sales_ref_note %}
+                  <span class="muted">{{ r.sales_ref_note }}</span>
+                {% else %}
+                  {{ r.sold_30d|floatformat:2 }}
+                {% endif %}
+              </td>
+              <td class="num">
+                {% if r.sales_ref_note %}
+                  <span class="muted">—</span>
+                {% else %}
+                  {{ r.daily_avg|floatformat:4 }}
+                {% endif %}
+              </td>
+              <td class="num">
+                {% if r.sales_ref_note %}
+                  <span class="muted">—</span>
+                {% elif r.days_cover is not None %}
+                  {% if r.days_cover_ui == "critical" %}
+                    <span class="dc-critical">⚠️ {{ r.days_cover|floatformat:1 }} 天</span>
+                  {% elif r.days_cover_ui == "warn" %}
+                    <span class="dc-warn">{{ r.days_cover|floatformat:1 }} 天</span>
+                  {% else %}
+                    <span class="dc-ok">{{ r.days_cover|floatformat:1 }} 天</span>
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td class="num" style="font-weight: 800">
+                {% if r.sales_ref_note %}
+                  <span class="muted">—</span>
+                {% else %}
+                  {{ r.suggest_60|floatformat:0 }}
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" class="muted" style="text-align: center; padding: 32px">暂无商品</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>订单已提交 #{{ order.id }}</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+        background: #f4f6f8;
+        min-height: 100vh;
+      }
+      .hero {
+        background: linear-gradient(135deg, #059669, #10b981);
+        color: #fff;
+        padding: 28px 20px;
+        text-align: center;
+      }
+      .hero h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: -24px auto 40px;
+        padding: 0 16px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+      .status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: #fef3c7;
+        color: #92400e;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 12px;
+      }
+      th,
+      td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #f1f5f9;
+        text-align: left;
+      }
+      th {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      .actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .actions a {
+        display: inline-block;
+        padding: 10px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .primary {
+        background: #ff5000;
+        color: #fff;
+      }
+      .secondary {
+        background: #e5e7eb;
+        color: #111;
+      }
+      dl {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+      dt {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      dd {
+        margin: 0 0 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hero">
+      <h1>订单提交成功</h1>
+      <p style="margin: 0; opacity: 0.95">订单号 #{{ order.id }} · 我们会尽快确认并发货</p>
+    </div>
+    <div class="wrap">
+      <div class="card">
+        <p>
+          <span class="status">{{ order.get_workflow_status_display }}</span>
+          <span style="margin-left: 10px; color: #6b7280; font-size: 13px">结算：{{ order.get_status_display }}</span>
+        </p>
+        <dl>
+          <dt>收货人</dt>
+          <dd>{{ order.contact_name|default:"—" }} · {{ order.delivery_phone|default:"—" }}</dd>
+          <dt>门店 / 公司</dt>
+          <dd>{{ order.store_name|default:"—" }}</dd>
+          <dt>配送地址</dt>
+          <dd>{{ order.delivery_address|default:"—" }}</dd>
+          {% if order.order_note %}
+            <dt>备注</dt>
+            <dd>{{ order.order_note }}</dd>
+          {% endif %}
+        </dl>
+
+        <h3 style="margin: 16px 0 8px; font-size: 15px">商品明细</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>商品</th>
+              <th>方式</th>
+              <th>数量</th>
+              <th>单价</th>
+              <th>小计</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in order.items.all %}
+              <tr>
+                <td>{{ item.product.name }}</td>
+                <td>{% if item.sale_type == "case" %}整箱{% else %}单品{% endif %}</td>
+                <td>{{ item.quantity }}</td>
+                <td>¥{{ item.unit_price|floatformat:2 }}</td>
+                <td>¥{{ item.total_revenue|floatformat:2 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <p style="text-align: right; font-size: 18px; font-weight: 800; color: #ff5000; margin: 12px 0 0">合计：¥{{ order.total_revenue|floatformat:2 }}</p>
+
+        <div class="actions">
+          <a class="primary" href="{% url 'shop-home' %}">继续采购</a>
+          <a class="secondary" href="{% url 'shop-logout' %}">退出登录</a>
+        </div>
+      </div>
+    </div>
+    <script>
+      try {
+        localStorage.removeItem("tea_shop_cart_v1");
+      } catch (e) {}
+    </script>
+  </body>
+</html>

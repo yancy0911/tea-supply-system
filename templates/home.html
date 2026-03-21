@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>奶茶点单系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #ffcc33, #ffb300);
+            padding: 18px 20px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #222;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: #fff;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .category {
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #fff7db;
+            color: #a86a00;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .content h2 {
+            margin: 0 0 18px;
+            font-size: 22px;
+        }
+
+        .status-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .status-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            font-weight: 600;
+        }
+
+        .success-message {
+            margin: 0 0 20px;
+            background: #d4edda;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: #155724;
+            font-weight: 700;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+
+        .tip {
+            margin: 0 0 20px;
+            background: #fff;
+            border-left: 4px solid #ffcc33;
+            padding: 14px 16px;
+            border-radius: 12px;
+            color: #555;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .drink-image {
+            width: 100%;
+            height: 170px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ffe7ba, #ffd08a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 52px;
+        }
+
+        .drink-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .drink-desc {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            min-height: 44px;
+        }
+
+        .bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        .price {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ff5a00;
+        }
+
+        .buy-btn {
+            border: none;
+            background: #ffcc33;
+            color: #222;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .buy-btn:hover {
+            background: #ffb300;
+            transform: translateY(-1px);
+        }
+
+        .footer-space {
+            height: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">🧋 奶茶点单系统</div>
+
+    <div class="page">
+        <aside class="sidebar">
+            <h3>商品分类</h3>
+            <div class="category">招牌奶茶</div>
+            <div class="category">热门推荐</div>
+            <div class="category">今日主推</div>
+        </aside>
+
+        <main class="content">
+            <h2>精选饮品</h2>
+
+            <div class="status-bar">
+                <div class="status-box">🛒 今日已点：{{ count }} 杯</div>
+            </div>
+
+            {% if message %}
+            <div class="success-message">
+                ✅ {{ message }}
+            </div>
+            {% endif %}
+
+            <div class="tip">
+                点击“立即下单”后，系统会自动创建订单，并按配方自动扣减库存。
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="drink-image">🥤</div>
+                    <div class="drink-title">奶茶1号</div>
+                    <div class="drink-desc">
+                        经典奶香口味，顺滑好喝，适合大多数顾客。
+                    </div>
+                    <div class="bottom-row">
+                        <div class="price">¥18</div>
+                        <form method="post" style="margin:0;">
+                            {% csrf_token %}
+                            <button class="buy-btn" name="drink" value="奶茶1号" type="submit">
+                                立即下单
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="drink-image">🧋</div>
+                    <div class="drink-title">奶茶2号</div>
+                    <div class="drink-desc">
+                        奶味更浓，口感更厚实，适合喜欢重奶香的顾客。
+                    </div>
+                    <div class="bottom-row">
+                        <div class="price">¥22</div>
+                        <form method="post" style="margin:0;">
+                            {% csrf_token %}
+                            <button class="buy-btn" name="drink" value="奶茶2号" type="submit">
+                                立即下单
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-space"></div>
+        </main>
+    </div>
+</body>
+</html>

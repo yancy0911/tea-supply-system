@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {# 安全嵌入商品 JSON，避免名称中的 </script> 等破坏内联脚本 #}
+  {{ products_data|json_script:"wholesale-products-data" }}
+  <script>
+    const PRODUCTS = (function () {
+      var el = document.getElementById("wholesale-products-data");
+      if (!el || !el.textContent) return [];
+      try {
+        var parsed = JSON.parse(el.textContent);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        console.error("wholesale PRODUCTS JSON 解析失败", e);
+        return [];
+      }
+    })();
+    const TIER_DISCOUNTS = {{ tier_discounts_json|safe }};
+    const EXCLUSIVE_PRICES = {{ exclusive_prices_json|safe }};
+  </script>
+
+  <h2 style="margin: 0 0 12px 0">批发录单（商品目录）</h2>
+  <div class="card" style="max-width: 900px">
+    <p class="muted" style="margin-top: 0">
+      今日订单总数：<strong>{{ today_order_count }}</strong>
+    </p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div
+          style="
+            margin-bottom: 10px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            {% if message.tags == 'success' %}
+              background: #dcfce7;
+              color: #166534;
+            {% else %}
+              background: #fee2e2;
+              color: #991b1b;
+            {% endif %}
+          "
+        >
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" id="wholesale-form">
+      {% csrf_token %}
+      <input type="hidden" name="lines_json" id="lines_json" value="[]" />
+
+      <div style="margin-bottom: 12px">
+        <label for="customer" class="muted" style="display: block; margin-bottom: 6px">1. 客户</label>
+        {% if customer_rows %}
+          <select id="customer" name="customer" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+            <option value="">请选择客户</option>
+            {% for row in customer_rows %}
+              <option
+                value="{{ row.customer.id }}"
+                data-level="{{ row.customer.customer_level }}"
+                data-allow-credit="{% if row.customer.allow_credit %}1{% else %}0{% endif %}"
+                data-credit-limit="{{ row.customer.credit_limit }}"
+                data-unsettled="{{ row.unsettled_amount }}"
+                data-cycle="{{ row.customer.payment_cycle }}"
+              >
+                {{ row.customer.name }}（{{ row.customer.phone }}）
+              </option>
+            {% endfor %}
+          </select>
+          <div
+            id="customer-credit-panel"
+            class="muted"
+            style="display: none; margin-top: 10px; padding: 12px; border-radius: 10px; background: #f9fafb; border: 1px solid #e5e7eb; font-size: 14px; line-height: 1.7"
+          >
+            <div><strong>客户等级：</strong><span id="cc-level">-</span></div>
+            <div><strong>是否允许欠款：</strong><span id="cc-allow">-</span></div>
+            <div><strong>信用额度：</strong><span id="cc-limit">-</span></div>
+            <div><strong>当前未结金额：</strong><span id="cc-unsettled">-</span></div>
+            <div><strong>结算周期：</strong><span id="cc-cycle">-</span></div>
+          </div>
+        {% else %}
+          <div style="padding: 10px 12px; border-radius: 10px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa;">
+            暂无客户，请先去后台添加客户
+          </div>
+        {% endif %}
+      </div>
+
+      <div style="border-top: 1px solid #eef2f7; padding-top: 14px; margin-top: 8px">
+        <p class="muted" style="margin: 0 0 10px 0; font-weight: 600">2. 添加明细</p>
+        <div style="display: grid; gap: 10px">
+          <div>
+            <label class="muted" style="display: block; margin-bottom: 6px">分类</label>
+            <select id="cat_sel" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+              <option value="">全部分类</option>
+              {% for c in categories %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="muted" style="display: block; margin-bottom: 6px">商品</label>
+            <select id="prod_sel" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+              <option value="">请选择商品</option>
+              {% for p in products %}
+                <option value="{{ p.id }}" data-category-id="{{ p.category_id }}">{{ p.name }}（{{ p.sku }}）</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div id="prod_meta" class="muted" style="font-size: 13px; line-height: 1.6; display: none"></div>
+          <div>
+            <span class="muted" style="display: block; margin-bottom: 6px">销售方式</span>
+            <label style="margin-right: 16px"><input type="radio" name="sale_type" value="single" checked /> 单品</label>
+            <label><input type="radio" name="sale_type" value="case" /> 整箱</label>
+          </div>
+          <div>
+            <label class="muted" style="display: block; margin-bottom: 6px">数量</label>
+            <input id="line_qty" type="number" step="0.01" min="0.01" value="1" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db" />
+          </div>
+          <div style="font-size: 14px; line-height: 1.6">
+            <div class="muted" style="margin-bottom: 4px">
+              基础单品价：<strong id="line_price_single">-</strong>
+              &nbsp;&nbsp;基础整箱价：<strong id="line_price_case">-</strong>
+            </div>
+            <div style="margin-bottom: 4px">
+              <span class="muted">当前成交价：</span><strong id="line_unit_price">-</strong>
+              &nbsp;|&nbsp;
+              <span class="muted">折扣来源：</span><strong id="line_price_source">-</strong>
+            </div>
+            <div>
+              <span class="muted">本行金额：</span><strong id="line_line_amt">-</strong>
+            </div>
+          </div>
+          <div>
+            <button type="button" class="btn secondary" id="btn_add_line" style="padding: 10px 14px">加入订单明细</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #eef2f7; padding-top: 14px; margin-top: 16px">
+        <p class="muted" style="margin: 0 0 10px 0; font-weight: 600">3. 订单明细</p>
+        <table class="table" id="cart_table" style="margin: 0">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>商品名</th>
+              <th>方式</th>
+              <th>成交单价</th>
+              <th>折扣来源</th>
+              <th>数量</th>
+              <th>金额</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cart_body"></tbody>
+        </table>
+        <p style="margin: 12px 0 0 0; font-size: 16px">
+          <strong>订单总金额：</strong><span id="order_total" style="color: #111827; font-weight: 800">0</span>
+        </p>
+      </div>
+
+      <div style="margin-top: 18px">
+        <button type="submit" class="btn" id="btn_submit">提交订单</button>
+      </div>
+    </form>
+  </div>
+
+  {% if customer_rows %}
+    <script>
+      (function () {
+        var sel = document.getElementById("customer");
+        var panel = document.getElementById("customer-credit-panel");
+        if (!sel || !panel) return;
+
+        function fmt(n) {
+          var x = parseFloat(n);
+          if (isNaN(x)) return "-";
+          return x;
+        }
+
+        function refresh() {
+          var opt = sel.options[sel.selectedIndex];
+          if (!opt || !opt.value) {
+            panel.style.display = "none";
+            return;
+          }
+          panel.style.display = "block";
+          document.getElementById("cc-level").textContent = opt.getAttribute("data-level") || "-";
+          document.getElementById("cc-allow").textContent =
+            opt.getAttribute("data-allow-credit") === "1" ? "是" : "否";
+          document.getElementById("cc-limit").textContent = fmt(opt.getAttribute("data-credit-limit"));
+          document.getElementById("cc-unsettled").textContent = fmt(opt.getAttribute("data-unsettled"));
+          document.getElementById("cc-cycle").textContent = opt.getAttribute("data-cycle") || "-";
+        }
+
+        sel.addEventListener("change", refresh);
+        sel.addEventListener("change", function () {
+          if (typeof window.teaRefreshOrderPrice === "function") window.teaRefreshOrderPrice();
+        });
+        refresh();
+      })();
+    </script>
+  {% endif %}
+
+  <script>
+    (function () {
+      if (typeof PRODUCTS === "undefined" || !Array.isArray(PRODUCTS)) {
+        console.error("PRODUCTS 未加载");
+        return;
+      }
+
+      var lines = [];
+      var catSel = document.getElementById("cat_sel");
+      var productSelect = document.getElementById("prod_sel");
+      var prodMeta = document.getElementById("prod_meta");
+      var cartBody = document.getElementById("cart_body");
+      var linesInput = document.getElementById("lines_json");
+      var orderTotalEl = document.getElementById("order_total");
+      var singlePrice = document.getElementById("line_price_single");
+      var casePrice = document.getElementById("line_price_case");
+      var currentPrice = document.getElementById("line_unit_price");
+      var priceSourceEl = document.getElementById("line_price_source");
+      var lineTotal = document.getElementById("line_line_amt");
+      var quantityInput = document.getElementById("line_qty");
+      var customerSelect = document.getElementById("customer");
+
+      function getSelectedProduct(productId) {
+        if (productId === "" || productId === null || productId === undefined) return null;
+        return PRODUCTS.find(function (p) {
+          return p.id == productId;
+        });
+      }
+
+      function fmtMoney(n) {
+        var x = parseFloat(n);
+        if (isNaN(x)) return "-";
+        return x.toFixed(2);
+      }
+
+      function getSaleTypeValue() {
+        var r = document.querySelector('input[name="sale_type"]:checked');
+        return r ? r.value : "single";
+      }
+
+      function getTierDiscountRate(level) {
+        if (level == null || level === "") level = "C";
+        var d = TIER_DISCOUNTS[level];
+        return d != null && !isNaN(parseFloat(d)) ? parseFloat(d) : 1;
+      }
+
+      /**
+       * 折扣规则（与后端 resolve_selling_unit_price 一致）：
+       * 1 专属价优先 → 成交价 = 专属单品/整箱价
+       * 2 否则 VIP → 基础价 × 0.9；C/B/A → 原价
+       * 3 未选客户 → 基础价
+       */
+      function computeLinePricing() {
+        var p = getSelectedProduct(productSelect.value);
+        if (!p) return null;
+
+        var ps = parseFloat(p.price_single);
+        var pc = parseFloat(p.price_case);
+        if (isNaN(ps)) ps = 0;
+        if (isNaN(pc)) pc = 0;
+        var isCase = getSaleTypeValue() === "case";
+        var base = isCase ? pc : ps;
+
+        if (!customerSelect || !customerSelect.value) {
+          return {
+            unit: base,
+            priceSource: "无客户",
+            baseSingle: ps,
+            baseCase: pc,
+            p: p,
+            isCase: isCase,
+          };
+        }
+
+        var cid = customerSelect.value;
+        var ex = EXCLUSIVE_PRICES[cid] && EXCLUSIVE_PRICES[cid][String(p.id)];
+        if (ex) {
+          var u = isCase ? parseFloat(ex.price_case) : parseFloat(ex.price_single);
+          if (isNaN(u)) u = 0;
+          return {
+            unit: u,
+            priceSource: "专属价",
+            baseSingle: ps,
+            baseCase: pc,
+            p: p,
+            isCase: isCase,
+          };
+        }
+
+        var opt = customerSelect.options[customerSelect.selectedIndex];
+        var level = opt ? opt.getAttribute("data-level") || "C" : "C";
+        var d = getTierDiscountRate(level);
+        var unit = base * d;
+        if (isNaN(unit)) unit = 0;
+        var priceSource =
+          d >= 1
+            ? "无折扣"
+            : level === "VIP"
+              ? "VIP（×" + d + "）"
+              : "等级折扣·" + level + "（×" + d + "）";
+        return {
+          unit: unit,
+          priceSource: priceSource,
+          baseSingle: ps,
+          baseCase: pc,
+          p: p,
+          isCase: isCase,
+        };
+      }
+
+      function updatePrice() {
+        var p = getSelectedProduct(productSelect.value);
+        if (!p) {
+          singlePrice.textContent = "-";
+          casePrice.textContent = "-";
+          currentPrice.textContent = "-";
+          priceSourceEl.textContent = "-";
+          lineTotal.textContent = "-";
+          prodMeta.style.display = "none";
+          return;
+        }
+
+        var ps = parseFloat(p.price_single);
+        var pc = parseFloat(p.price_case);
+        if (isNaN(ps)) ps = 0;
+        if (isNaN(pc)) pc = 0;
+        singlePrice.textContent = fmtMoney(ps);
+        casePrice.textContent = fmtMoney(pc);
+
+        var qty = parseFloat(quantityInput.value);
+        if (isNaN(qty) || qty <= 0) qty = 0;
+
+        var res = computeLinePricing();
+        if (!res) return;
+
+        currentPrice.textContent = fmtMoney(res.unit);
+        priceSourceEl.textContent = res.priceSource;
+        lineTotal.textContent = qty > 0 ? fmtMoney(res.unit * qty) : "-";
+
+        prodMeta.style.display = "block";
+        var warn = "";
+        if (!res.isCase && !res.p.can_split_sale) {
+          warn =
+            '<br/><span style="color:#b45309;font-weight:600">提示：该商品不可拆卖，加入明细时请选「整箱」。</span>';
+        }
+        prodMeta.innerHTML =
+          "<strong>SKU：</strong>" +
+          (res.p.sku || "") +
+          "<br/><strong>规格：</strong>" +
+          (res.p.unit_label || "—") +
+          (res.p.case_label ? " / " + res.p.case_label : "") +
+          warn;
+      }
+
+      window.teaRefreshOrderPrice = updatePrice;
+
+      function productInCategory(p, selectedCategory) {
+        if (selectedCategory === "" || selectedCategory === null || selectedCategory === undefined) {
+          return true;
+        }
+        var pid = p.category_id != null ? p.category_id : p.categoryId;
+        return String(pid) === String(selectedCategory);
+      }
+
+      /** 用 PRODUCTS 重建下拉（分类为空时显示全部） */
+      function renderProductOptionsFromProducts() {
+        var selectedCategory = catSel.value;
+        var list = PRODUCTS.filter(function (p) {
+          return productInCategory(p, selectedCategory);
+        });
+        productSelect.innerHTML = "";
+        var ph = document.createElement("option");
+        ph.value = "";
+        ph.textContent = "请选择商品";
+        productSelect.appendChild(ph);
+        for (var i = 0; i < list.length; i++) {
+          var p = list[i];
+          var o = document.createElement("option");
+          o.value = p.id;
+          o.textContent = (p.name || "") + "（" + (p.sku || "") + "）";
+          if (p.category_id != null) {
+            o.setAttribute("data-category-id", p.category_id);
+          }
+          productSelect.appendChild(o);
+        }
+        prodMeta.style.display = "none";
+        updatePrice();
+      }
+
+      /** PRODUCTS 未加载时：用首次进入页面时备份的 option 按分类重建（避免 innerHTML 变空） */
+      var serverProductOptionsBackup = null;
+      function initServerProductOptionsBackup() {
+        if (serverProductOptionsBackup !== null) return;
+        serverProductOptionsBackup = [];
+        var opts = productSelect.querySelectorAll("option[value]");
+        for (var i = 0; i < opts.length; i++) {
+          var opt = opts[i];
+          serverProductOptionsBackup.push({
+            value: opt.value,
+            text: opt.textContent,
+            categoryId: opt.getAttribute("data-category-id"),
+          });
+        }
+      }
+
+      function filterServerRenderedOptionsByCategory() {
+        initServerProductOptionsBackup();
+        var selectedCategory = catSel.value;
+        productSelect.innerHTML = "";
+        var ph = document.createElement("option");
+        ph.value = "";
+        ph.textContent = "请选择商品";
+        productSelect.appendChild(ph);
+        for (var i = 0; i < serverProductOptionsBackup.length; i++) {
+          var row = serverProductOptionsBackup[i];
+          if (selectedCategory !== "" && selectedCategory != null) {
+            if (String(row.categoryId) !== String(selectedCategory)) continue;
+          }
+          var o = document.createElement("option");
+          o.value = row.value;
+          o.textContent = row.text;
+          if (row.categoryId != null && row.categoryId !== "") {
+            o.setAttribute("data-category-id", row.categoryId);
+          }
+          productSelect.appendChild(o);
+        }
+        prodMeta.style.display = "none";
+        updatePrice();
+      }
+
+      function onCategoryChange() {
+        if (PRODUCTS.length > 0) {
+          renderProductOptionsFromProducts();
+        } else {
+          filterServerRenderedOptionsByCategory();
+        }
+      }
+
+      function recomputeOrderTotal() {
+        var t = 0;
+        for (var i = 0; i < lines.length; i++) {
+          t += lines[i].amount;
+        }
+        orderTotalEl.textContent = t.toFixed(2);
+        linesInput.value = JSON.stringify(
+          lines.map(function (x) {
+            return { product_id: x.product_id, sale_type: x.sale_type, quantity: x.quantity };
+          })
+        );
+      }
+
+      function renderCart() {
+        cartBody.innerHTML = "";
+        for (var i = 0; i < lines.length; i++) {
+          var row = lines[i];
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" +
+            row.sku +
+            "</td><td>" +
+            row.name +
+            "</td><td>" +
+            (row.sale_type === "case" ? "整箱" : "单品") +
+            "</td><td>" +
+            row.unit_price.toFixed(2) +
+            "</td><td>" +
+            (row.pricing_note || "") +
+            "</td><td>" +
+            row.quantity +
+            "</td><td>" +
+            row.amount.toFixed(2) +
+            '</td><td><button type="button" class="btn secondary" data-idx="' +
+            i +
+            '" style="padding:4px 8px;font-size:12px">删除</button></td>';
+          cartBody.appendChild(tr);
+        }
+        cartBody.querySelectorAll("button[data-idx]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var idx = parseInt(btn.getAttribute("data-idx"), 10);
+            lines.splice(idx, 1);
+            renderCart();
+            recomputeOrderTotal();
+          });
+        });
+        recomputeOrderTotal();
+      }
+
+      catSel.addEventListener("change", onCategoryChange);
+      productSelect.addEventListener("change", updatePrice);
+      quantityInput.addEventListener("input", updatePrice);
+      quantityInput.addEventListener("change", updatePrice);
+      document.querySelectorAll('input[name="sale_type"]').forEach(function (r) {
+        r.addEventListener("change", updatePrice);
+      });
+      if (customerSelect) {
+        customerSelect.addEventListener("change", updatePrice);
+      }
+
+      document.getElementById("btn_add_line").addEventListener("click", function () {
+        if (!customerSelect || !customerSelect.value) {
+          alert("请先选择客户");
+          return;
+        }
+        var p = getSelectedProduct(productSelect.value);
+        if (!p) {
+          alert("请选择商品");
+          return;
+        }
+        var st = getSaleTypeValue();
+        if (st === "single" && !p.can_split_sale) {
+          alert("该商品不可拆卖，请选择整箱");
+          return;
+        }
+        var q = parseFloat(quantityInput.value);
+        if (isNaN(q) || q < p.minimum_order_qty) {
+          alert("数量不能低于起订量 " + p.minimum_order_qty);
+          return;
+        }
+        var res = computeLinePricing();
+        if (!res) {
+          alert("无法计算价格");
+          return;
+        }
+        var up = res.unit;
+        lines.push({
+          product_id: p.id,
+          sale_type: st,
+          quantity: q,
+          sku: p.sku,
+          name: p.name,
+          unit_price: up,
+          pricing_note: res.priceSource,
+          amount: q * up,
+        });
+        renderCart();
+      });
+
+      // 有 PRODUCTS 时由数据渲染（与后端列表一致）；无则保留后端已渲染的 option，避免被空数组清空
+      if (PRODUCTS.length > 0) {
+        renderProductOptionsFromProducts();
+      }
+
+      document.getElementById("wholesale-form").addEventListener("submit", function (e) {
+        if (lines.length === 0) {
+          e.preventDefault();
+          alert("请至少添加一条订单明细");
+          return false;
+        }
+        recomputeOrderTotal();
+      });
+    })();
+  </script>
+{% endblock %}

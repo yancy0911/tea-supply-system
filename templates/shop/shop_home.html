@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>奶茶原料批发商城</title>
+    {{ shop_products|json_script:"shop-products-data" }}
+    <style>
+      :root {
+        --bg: #f4f6f8;
+        --card: #fff;
+        --accent: #ff5000;
+        --accent2: #ff6700;
+        --text: #111;
+        --muted: #6b7280;
+        --border: #e8eaed;
+        --sidebar: 220px;
+        --cartw: 340px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+      .shop-top {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: #fff;
+        padding: 12px 0;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .shop-top-inner {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .shop-logo {
+        font-weight: 900;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+      .shop-logo span {
+        color: #fb923c;
+      }
+      .shop-search {
+        flex: 1;
+        min-width: 200px;
+        max-width: 480px;
+      }
+      .shop-search input {
+        width: 100%;
+        padding: 10px 14px 10px 40px;
+        border-radius: 20px;
+        border: none;
+        background: rgba(255, 255, 255, 0.95);
+        font-size: 14px;
+      }
+      .shop-search-wrap {
+        position: relative;
+      }
+      .shop-search-wrap::before {
+        content: "⌕";
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 16px;
+      }
+      .shop-cart-mini {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        padding: 8px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+        text-decoration: none;
+        color: #fff;
+        font-size: 14px;
+      }
+      .shop-cart-mini strong {
+        background: var(--accent);
+        border-radius: 10px;
+        padding: 2px 8px;
+        font-size: 12px;
+      }
+      .shop-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+      .shop-user form {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .shop-user input[type="text"] {
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        width: 140px;
+      }
+      .shop-user input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .shop-user .btn-go {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .shop-user a {
+        color: #fdba74;
+        text-decoration: none;
+      }
+      .shop-layout {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: var(--sidebar) minmax(0, 1fr) var(--cartw);
+        gap: 16px;
+        align-items: start;
+      }
+      @media (max-width: 1100px) {
+        .shop-layout {
+          grid-template-columns: 1fr;
+        }
+        :root {
+          --cartw: 100%;
+        }
+      }
+      .shop-sidebar {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 12px 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        position: sticky;
+        top: 72px;
+      }
+      .shop-sidebar h3 {
+        margin: 0 16px 10px;
+        font-size: 14px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .cat-item {
+        display: block;
+        padding: 10px 16px;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 14px;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+        background: none;
+        width: 100%;
+        text-align: left;
+        border-right: none;
+        border-top: none;
+        border-bottom: none;
+      }
+      .cat-item:hover,
+      .cat-item.active {
+        background: #fff7ed;
+        border-left-color: var(--accent);
+        color: var(--accent2);
+        font-weight: 600;
+      }
+      .shop-main h2 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        color: var(--muted);
+      }
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+      }
+      .p-card {
+        background: var(--card);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        transition: box-shadow 0.2s, transform 0.15s;
+        display: flex;
+        flex-direction: column;
+      }
+      .p-card:hover {
+        box-shadow: 0 8px 24px rgba(255, 80, 0, 0.12);
+        transform: translateY(-2px);
+      }
+      .p-img {
+        height: 140px;
+        background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 13px;
+      }
+      a.p-img {
+        overflow: hidden;
+      }
+      .p-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .p-body {
+        padding: 12px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .p-name {
+        font-weight: 700;
+        font-size: 14px;
+        line-height: 1.35;
+        min-height: 2.7em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .p-name a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .p-name a:hover {
+        color: var(--accent);
+      }
+      .p-cat {
+        font-size: 11px;
+        color: #c2410c;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      .p-sku {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .p-spec {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .p-price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .p-price-col {
+        flex: 1;
+        min-width: 88px;
+      }
+      .p-price {
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 16px;
+      }
+      .p-price small {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .p-base {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 500;
+        margin-right: 4px;
+      }
+      .p-price-discount {
+        color: var(--accent);
+        font-weight: 900;
+        font-size: 16px;
+      }
+      .p-quote {
+        color: #b45309;
+        font-weight: 700;
+        font-size: 14px;
+        background: #fffbeb;
+        padding: 2px 8px;
+        border-radius: 6px;
+      }
+      .p-note {
+        font-size: 11px;
+        color: #059669;
+        background: #ecfdf5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .p-note.vip {
+        color: #7c3aed;
+        background: #f5f3ff;
+      }
+      .p-note.ex {
+        color: #c2410c;
+        background: #fff7ed;
+      }
+      .p-mode {
+        display: flex;
+        gap: 8px;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .p-qty-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .p-qty-row button {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border);
+        background: #f8fafc;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+      }
+      .p-qty-row input {
+        width: 48px;
+        text-align: center;
+        padding: 4px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+      .p-add {
+        margin-top: 10px;
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        background: linear-gradient(90deg, var(--accent2), var(--accent));
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .p-add:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .shop-cart-panel {
+        background: var(--card);
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        position: sticky;
+        top: 72px;
+        max-height: calc(100vh - 88px);
+        display: flex;
+        flex-direction: column;
+      }
+      .shop-cart-panel h3 {
+        margin: 0;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .cart-scroll {
+        overflow: auto;
+        flex: 1;
+        padding: 8px;
+        min-height: 120px;
+      }
+      .cart-line {
+        padding: 10px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 13px;
+      }
+      .cart-line .nm {
+        font-weight: 600;
+        margin-bottom: 4px;
+        line-height: 1.35;
+      }
+      .cart-meta {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .cart-line-tools {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .cart-line-tools button.qty-btn {
+        width: 26px;
+        height: 26px;
+        border: 1px solid var(--border);
+        background: #f8fafc;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+      }
+      .cart-line-tools input.cart-qty-input {
+        width: 56px;
+        text-align: center;
+        padding: 4px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .cart-line-sub {
+        margin-top: 6px;
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 14px;
+      }
+      .cart-line-del {
+        margin-left: auto;
+        font-size: 12px;
+        border: none;
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 4px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .order-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .order-modal.is-open {
+        display: flex;
+      }
+      .order-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+      }
+      .order-modal-box {
+        position: relative;
+        background: #fff;
+        border-radius: 14px;
+        padding: 20px;
+        max-width: 420px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        max-height: 90vh;
+        overflow: auto;
+      }
+      .order-modal-box h3 {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+      .order-modal-box label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .order-modal-box input,
+      .order-modal-box textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+      .order-modal-box textarea {
+        min-height: 64px;
+        resize: vertical;
+      }
+      .order-modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .order-modal-actions .btn-primary {
+        flex: 1;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ea580c, var(--accent));
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+        font-size: 15px;
+      }
+      .order-modal-actions .btn-cancel {
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .cart-total {
+        padding: 14px 16px;
+        border-top: 1px solid var(--border);
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--accent);
+      }
+      .cart-submit {
+        margin: 0 16px 16px;
+        padding: 12px;
+        width: calc(100% - 32px);
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ea580c, var(--accent));
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .cart-submit:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .msg-banner {
+        max-width: 1400px;
+        margin: 12px auto 0;
+        padding: 0 16px;
+      }
+      .msg-banner > div {
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .msg-ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .msg-err {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .msg-info {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .msg-warn {
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+      }
+      .shop-footnote {
+        max-width: 1400px;
+        margin: 24px auto;
+        padding: 0 16px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .shop-footnote a {
+        color: #2563eb;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shop-top">
+      <div class="shop-top-inner">
+        <div class="shop-logo">奶茶原料 <span>批发商城</span></div>
+        <div class="shop-search">
+          <div class="shop-search-wrap">
+            <input type="search" id="shop-search" placeholder="搜索商品名称、SKU…" autocomplete="off" />
+          </div>
+        </div>
+        <a href="#shop-cart-anchor" class="shop-cart-mini" id="cart-jump">
+          🛒 购物车 <strong id="cart-badge">0</strong>
+        </a>
+        <div class="shop-user">
+          {% if shop_customer %}
+            <span>您好，<strong>{{ shop_customer.name }}</strong></span>
+            {% if shop_customer.account_status == "pending" %}
+              <span style="background: rgba(251, 191, 36, 0.25); padding: 2px 8px; border-radius: 8px; font-size: 12px">待审核</span>
+            {% elif shop_customer.account_status == "disabled" %}
+              <span style="background: rgba(248, 113, 113, 0.25); padding: 2px 8px; border-radius: 8px; font-size: 12px">已禁用</span>
+            {% elif shop_customer.account_status == "approved" %}
+              <span style="opacity: 0.85; font-size: 12px">已开通采购</span>
+            {% endif %}
+            {% if shop_unsettled is not None %}
+              <span style="opacity: 0.85">待结算：¥{{ shop_unsettled|floatformat:2 }}</span>
+            {% endif %}
+            <a href="{% url 'shop-logout' %}">退出</a>
+          {% else %}
+            <form method="post" action="{% url 'shop-login' %}">
+              {% csrf_token %}
+              <input type="text" name="phone" placeholder="手机号登录" maxlength="20" />
+              <button type="submit" class="btn-go">登录</button>
+            </form>
+            <span style="opacity: 0.75">登录后享 VIP 9 折 / 专属价</span>
+          {% endif %}
+          <a href="/" style="margin-left: 8px; opacity: 0.8">店员入口 →</a>
+        </div>
+      </div>
+    </header>
+
+    {% if messages %}
+      <div class="msg-banner">
+        {% for message in messages %}
+          <div
+            class="{% if message.tags == 'success' %}msg-ok{% elif message.tags == 'error' %}msg-err{% elif message.tags == 'warning' %}msg-warn{% else %}msg-info{% endif %}"
+          >
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if shop_customer and shop_order_block_hint %}
+      <div class="msg-banner">
+        <div class="msg-warn">{{ shop_order_block_hint }}</div>
+      </div>
+    {% endif %}
+
+    <div class="shop-layout">
+      <aside class="shop-sidebar">
+        <h3>商品分类</h3>
+        <button type="button" class="cat-item active" data-category-id="all">全部分类</button>
+        {% for c in categories %}
+          <button type="button" class="cat-item" data-category-id="{{ c.id }}">{{ c.name }}</button>
+        {% endfor %}
+      </aside>
+
+      <main class="shop-main">
+        <h2>商品列表 <span style="font-weight: 400; color: var(--muted)" id="product-count"></span></h2>
+        <div class="product-grid" id="product-grid"></div>
+      </main>
+
+      <aside class="shop-cart-panel" id="shop-cart-anchor">
+        <h3>
+          购物车
+          <span style="font-size: 12px; font-weight: 500; color: var(--muted)">
+            {% if not shop_customer %}
+              （请先登录后再提交订单）
+            {% elif shop_can_order %}
+              （已开通采购，可提交订单）
+            {% else %}
+              （{{ shop_order_block_hint }}）
+            {% endif %}
+          </span>
+        </h3>
+        <div class="cart-scroll" id="cart-body">
+          <p style="color: var(--muted); padding: 16px; text-align: center; margin: 0">购物车还是空的</p>
+        </div>
+        <div class="cart-total">合计：<span id="cart-total">¥0.00</span></div>
+        <button type="button" class="cart-submit" id="btn-submit-order" disabled>提交订单</button>
+      </aside>
+    </div>
+
+    <!-- 下单：填写收货信息，POST 到后端生成真实订单 -->
+    <div id="order-modal" class="order-modal" aria-hidden="true">
+      <div class="order-modal-backdrop" id="order-modal-backdrop"></div>
+      <div class="order-modal-box" role="dialog" aria-labelledby="order-modal-title">
+        <h3 id="order-modal-title">确认订单信息</h3>
+        <p style="margin: -6px 0 12px; font-size: 13px; color: var(--muted)">请填写收货信息，提交后将生成正式订单并扣减库存。</p>
+        <form method="post" action="{% url 'shop-submit-order' %}" id="shop-order-form-modal">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="home" />
+          <input type="hidden" name="lines_json" id="modal-lines-json" value="[]" />
+          <label for="f-contact">客户 / 收货人 *</label>
+          <input id="f-contact" name="contact_name" required maxlength="100" autocomplete="name" placeholder="姓名" />
+          <label for="f-phone">联系电话 *</label>
+          <input id="f-phone" name="delivery_phone" required maxlength="30" autocomplete="tel" placeholder="手机号" />
+          <label for="f-addr">配送地址 *</label>
+          <input id="f-addr" name="delivery_address" required maxlength="500" autocomplete="street-address" placeholder="详细地址" />
+          <label for="f-store">门店 / 公司（选填）</label>
+          <input id="f-store" name="store_name" maxlength="200" placeholder="选填" />
+          <label for="f-note">备注（选填）</label>
+          <textarea id="f-note" name="order_note" maxlength="2000" placeholder="到货时间等"></textarea>
+          <div class="order-modal-actions">
+            <button type="button" class="btn-cancel" id="order-modal-cancel">取消</button>
+            <button type="submit" class="btn-primary">确认提交订单</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <p class="shop-footnote">
+      页面定位：<strong>/shop/</strong> 客户商城 &nbsp;|&nbsp; <a href="/">/ 店员录单</a> &nbsp;|&nbsp;
+      <a href="/admin/">后台管理</a>
+      {% if missing_images or missing_prices %}
+        <br /><br />
+        <strong>数据质检：</strong>
+        {% if missing_images %}缺主图 {{ missing_images|length }} 条（已在页面用占位图展示）。{% endif %}
+        {% if missing_prices %}缺有效价格 {{ missing_prices|length }} 条（显示「请询价」，请在后台或 CSV 补价）。{% endif %}
+      {% endif %}
+    </p>
+
+    <script>
+      (function () {
+        var PRODUCTS = [];
+        try {
+          var el = document.getElementById("shop-products-data");
+          if (el && el.textContent) PRODUCTS = JSON.parse(el.textContent) || [];
+        } catch (e) {
+          console.error(e);
+        }
+
+        var STORAGE_KEY = "tea_shop_cart_v1";
+        var cart = [];
+        try {
+          var _raw = localStorage.getItem(STORAGE_KEY);
+          if (_raw) {
+            var _parsed = JSON.parse(_raw);
+            if (Array.isArray(_parsed)) cart = _parsed;
+          }
+        } catch (e) {}
+
+        function normalizeCartLines() {
+          cart.forEach(function (line) {
+            var p = productById(line.product_id);
+            if (line.min_qty == null) {
+              line.min_qty = p ? Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01) : 0.01;
+            }
+            if (!line.spec_label) {
+              line.spec_label = line.sale_type === "case" ? "整箱" : "单品";
+            }
+            if (!line.spec_detail && p) {
+              line.spec_detail = line.sale_type === "case" ? p.case_label || "—" : p.unit_label || "—";
+            }
+            line.subtotal = (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
+          });
+        }
+
+        var selectedCat = "all";
+        var searchQ = "";
+        var cardsBuilt = false;
+        var delegationReady = false;
+
+        var grid = document.getElementById("product-grid");
+        var cartBody = document.getElementById("cart-body");
+        var cartTotal = document.getElementById("cart-total");
+        var cartBadge = document.getElementById("cart-badge");
+        var btnSubmitOrder = document.getElementById("btn-submit-order");
+        var orderModal = document.getElementById("order-modal");
+        var modalLinesJson = document.getElementById("modal-lines-json");
+        var shopOrderFormModal = document.getElementById("shop-order-form-modal");
+        var productCount = document.getElementById("product-count");
+        var shopLoggedIn = {% if shop_customer %}true{% else %}false{% endif %};
+        var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
+        var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
+
+        var PLACEHOLDER =
+          "data:image/svg+xml," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="140" viewBox="0 0 200 140"><rect fill="#e2e8f0" width="200" height="140"/><text x="100" y="72" text-anchor="middle" fill="#94a3b8" font-size="13" font-family="sans-serif">商品图</text></svg>'
+          );
+
+        function fmtMoney(n) {
+          var x = parseFloat(n);
+          if (isNaN(x)) return "0.00";
+          return x.toFixed(2);
+        }
+
+        /** 与后端 JSON 中 id 可能为 number/string 的情况兼容 */
+        function productById(pid) {
+          if (pid == null || pid === "") return undefined;
+          var n = Number(pid);
+          if (!isNaN(n)) {
+            var hit = PRODUCTS.find(function (x) {
+              return Number(x.id) === n;
+            });
+            if (hit) return hit;
+          }
+          return PRODUCTS.find(function (x) {
+            return String(x.id) === String(pid);
+          });
+        }
+
+        function normCat(v) {
+          return v == null || v === "" ? "" : String(v).trim();
+        }
+
+        function categoryMatchesProduct(selected, productCategoryId) {
+          var s = normCat(selected);
+          if (s === "" || s === "all") return true;
+          var a = Number(s);
+          var b = Number(productCategoryId);
+          if (!isNaN(a) && !isNaN(b)) return a === b;
+          return normCat(productCategoryId) === s;
+        }
+
+        function noteClass(note) {
+          if (!note) return "";
+          if (note.indexOf("专属") !== -1) return "p-note ex";
+          if (note.indexOf("等级") !== -1 || note.indexOf("VIP") !== -1) return "p-note vip";
+          return "p-note";
+        }
+
+        function htmlPriceLine(p, mode) {
+          var base = mode === "case" ? parseFloat(p.base_case) : parseFloat(p.base_single);
+          var disp = mode === "case" ? parseFloat(p.display_case) : parseFloat(p.display_single);
+          var strike = mode === "case" ? p.strike_case : p.strike_single;
+          var can = mode === "case" ? p.can_quote_case : p.can_quote_single;
+          var lab = mode === "case" ? "整箱" : "单品";
+          if (!can) {
+            return '<span class="p-quote">' + lab + " 请询价</span>";
+          }
+          var h = "";
+          if (strike) {
+            h += '<del class="p-base">¥' + fmtMoney(base) + "</del> ";
+          }
+          h += '<span class="p-price-discount">¥' + fmtMoney(disp) + "</span> <small>" + lab + "</small>";
+          return h;
+        }
+
+        function buildCardsOnce() {
+          if (cardsBuilt) return;
+          cardsBuilt = true;
+          grid.innerHTML = "";
+          PRODUCTS.forEach(function (p) {
+            var card = document.createElement("div");
+            card.className = "p-card";
+            card.setAttribute("data-product-id", String(p.id));
+            card.setAttribute("data-category-id", normCat(p.category_id));
+            card.dataset.pid = p.id;
+            var canSingle = p.can_split_sale;
+            var modeSingle = "";
+            var modeCase = "";
+            if (canSingle && p.can_quote_single) {
+              modeSingle = "checked";
+            } else if (p.can_quote_case) {
+              modeCase = "checked";
+            } else if (!canSingle) {
+              modeCase = "checked";
+            } else {
+              modeSingle = "checked";
+            }
+            var imgSrc = (p.image_url && p.image_url.length) ? p.image_url : PLACEHOLDER;
+            var por = p.price_on_request;
+            var priceRowHtml = por
+              ? '<div class="p-price-row"><span class="p-quote" style="width:100%">请询价</span></div>'
+              : '<div class="p-price-row"><span class="p-price-col">' +
+                htmlPriceLine(p, "single") +
+                '</span><span class="p-price-col">' +
+                htmlPriceLine(p, "case") +
+                "</span></div>";
+            var noteHtml =
+              '<div><span class="' +
+              noteClass(p.price_note || "") +
+              '">' +
+              (por ? "价格待定" : (p.price_note || "")) +
+              "</span></div>";
+            var detailUrl = "/shop/product/" + encodeURIComponent(p.id) + "/";
+            card.innerHTML =
+              '<a class="p-img" href="' +
+              detailUrl +
+              '"><img src="' +
+              imgSrc +
+              '" alt="" loading="lazy" decoding="async" /></a>' +
+              '<div class="p-body">' +
+              '<div class="p-cat">' +
+              (p.category_name || "—") +
+              "</div>" +
+              '<div class="p-name"><a href="' +
+              detailUrl +
+              '"></a></div>' +
+              '<div class="p-sku">SKU：' +
+              (p.sku || "") +
+              "</div>" +
+              '<div class="p-spec">单位：' +
+              (p.unit_label || "—") +
+              "<br/>整箱：" +
+              (p.case_label || "—") +
+              "</div>" +
+              priceRowHtml +
+              noteHtml +
+              '<div class="p-mode"><label><input type="radio" name="mode-' +
+              p.id +
+              '" value="single" ' +
+              modeSingle +
+              (canSingle && p.can_quote_single ? "" : " disabled") +
+              '/> 单品</label><label><input type="radio" name="mode-' +
+              p.id +
+              '" value="case" ' +
+              modeCase +
+              (p.can_quote_case ? "" : " disabled") +
+              '/> 整箱</label></div>' +
+              '<div class="p-qty-row"><button type="button" data-act="minus">−</button><input type="number" min="0.01" step="0.01" value="' +
+              Math.max(p.minimum_order_qty || 0.01, 0.01) +
+              '" /><button type="button" data-act="plus">+</button></div>' +
+              '<button type="button" class="p-add" data-pid="' +
+              p.id +
+              '"' +
+              (por ? " disabled" : "") +
+              ">加入购物车</button></div>";
+            card.querySelector(".p-name a").textContent = p.name || "";
+            var im = card.querySelector(".p-img img");
+            if (im) {
+              im.addEventListener("error", function () {
+                this.onerror = null;
+                this.src = PLACEHOLDER;
+              });
+            }
+            grid.appendChild(card);
+          });
+          installGridDelegation();
+        }
+
+        function installGridDelegation() {
+          if (delegationReady) return;
+          delegationReady = true;
+          grid.addEventListener("click", function (e) {
+            var addBtn = e.target.closest(".p-add");
+            if (addBtn) {
+              var pid = parseInt(addBtn.getAttribute("data-pid"), 10);
+              var card = addBtn.closest(".p-card");
+              var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
+              var saleType = mode ? mode.value : "single";
+              var qtyIn = card.querySelector(".p-qty-row input");
+              var qty = parseFloat(qtyIn.value);
+              if (isNaN(qty) || qty <= 0) {
+                alert("请输入有效数量");
+                return;
+              }
+              addToCart(pid, saleType, qty);
+              return;
+            }
+            var qb = e.target.closest(".p-qty-row button");
+            if (qb) {
+              var row = qb.closest(".p-qty-row");
+              var inp = row.querySelector("input");
+              var v = parseFloat(inp.value) || 0;
+              if (qb.getAttribute("data-act") === "plus") v += 1;
+              else v = Math.max(0.01, v - 1);
+              inp.value = v;
+            }
+          });
+        }
+
+        function applyProductFilter() {
+          buildCardsOnce();
+          var total = PRODUCTS.length;
+          var vis = 0;
+          var catKey = normCat(selectedCat) === "" || normCat(selectedCat) === "all" ? "all" : normCat(selectedCat);
+          grid.querySelectorAll(".p-card").forEach(function (card) {
+            var pidRaw = card.getAttribute("data-product-id");
+            var p = productById(pidRaw);
+            if (!p) {
+              card.style.display = "none";
+              return;
+            }
+            var catOk = categoryMatchesProduct(selectedCat, p.category_id);
+            var searchOk = true;
+            if (searchQ) {
+              var q = searchQ.toLowerCase();
+              var n = (p.name || "").toLowerCase();
+              var s = (p.sku || "").toLowerCase();
+              searchOk = n.indexOf(q) !== -1 || s.indexOf(q) !== -1;
+            }
+            var show = catOk && searchOk;
+            card.style.display = show ? "" : "none";
+            if (show) vis++;
+          });
+          productCount.textContent = "（共 " + vis + " 件）";
+          console.log("[shop] category_id=", catKey, "商品总数=", total, "过滤后可见=", vis);
+        }
+
+        function unitPriceFor(p, saleType) {
+          if (p.price_on_request) return 0;
+          if (saleType === "case" && !p.can_quote_case) return 0;
+          if (saleType === "single" && !p.can_quote_single) return 0;
+          return saleType === "case" ? parseFloat(p.display_case) : parseFloat(p.display_single);
+        }
+
+        /** 按商品汇总「出库单位」需求量（与后端 _stock_need_for_line 一致） */
+        function needUnitsForProduct(pid, p, lines) {
+          var t = 0;
+          lines.forEach(function (l) {
+            if (Number(l.product_id) !== Number(pid)) return;
+            if (l.sale_type === "case") t += l.quantity * (p.units_per_case || 1);
+            else t += l.quantity;
+          });
+          return t;
+        }
+
+        function stockUnitsAvailable(p) {
+          if (p.stock_quantity === null || p.stock_quantity === undefined) return null;
+          return parseFloat(p.stock_quantity);
+        }
+
+        function addToCart(pid, saleType, qty) {
+          var p = productById(pid);
+          if (!p) return;
+          if (p.price_on_request) {
+            alert("该商品需询价，无法加入购物车");
+            return;
+          }
+          if (saleType === "single" && !p.can_quote_single) {
+            alert("单品无标价，请询价或选择整箱");
+            return;
+          }
+          if (saleType === "case" && !p.can_quote_case) {
+            alert("整箱无标价，请询价或选择单品");
+            return;
+          }
+          if (saleType === "single" && !p.can_split_sale) {
+            alert("该商品不可拆卖，请选择整箱");
+            return;
+          }
+          if (qty < p.minimum_order_qty) {
+            alert("数量不能低于起订量 " + p.minimum_order_qty);
+            return;
+          }
+          var unit = unitPriceFor(p, saleType);
+          if (unit <= 0) {
+            alert("无效价格");
+            return;
+          }
+          var sim = cart.map(function (l) {
+            return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
+          });
+          var found = cart.find(function (l) {
+            return l.product_id === pid && l.sale_type === saleType;
+          });
+          if (found) {
+            var fi = sim.findIndex(function (l) {
+              return l.product_id === pid && l.sale_type === saleType;
+            });
+            if (fi >= 0) sim[fi].quantity += qty;
+          } else {
+            sim.push({ product_id: pid, sale_type: saleType, quantity: qty });
+          }
+          var needAfter = needUnitsForProduct(pid, p, sim);
+          var avail = stockUnitsAvailable(p);
+          if (avail !== null && !isNaN(avail) && needAfter > avail + 1e-6) {
+            alert(
+              "库存不足：该商品当前可售约 " +
+                avail +
+                "（出库单位），请减少数量或联系业务员。"
+            );
+            return;
+          }
+          found = cart.find(function (l) {
+            return l.product_id === pid && l.sale_type === saleType;
+          });
+          var minQ = Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01);
+          var specLabel = saleType === "case" ? "整箱" : "单品";
+          var specDetail = saleType === "case" ? p.case_label || "—" : p.unit_label || "—";
+          if (found) {
+            found.quantity += qty;
+            found.subtotal = found.quantity * found.unit_price;
+          } else {
+            cart.push({
+              product_id: pid,
+              sale_type: saleType,
+              quantity: qty,
+              name: p.name,
+              sku: p.sku,
+              unit_price: unit,
+              price_note: p.price_note,
+              min_qty: minQ,
+              spec_label: specLabel,
+              spec_detail: specDetail,
+              subtotal: qty * unit,
+            });
+          }
+          renderCart();
+        }
+
+        function recalcLine(line) {
+          line.subtotal = parseFloat(line.quantity) * parseFloat(line.unit_price);
+          if (isNaN(line.subtotal)) line.subtotal = 0;
+        }
+
+        function renderCart() {
+          cartBody.innerHTML = "";
+          var sum = 0;
+          var n = 0;
+          cart.forEach(function (line, idx) {
+            recalcLine(line);
+            sum += line.subtotal;
+            n += parseFloat(line.quantity) || 0;
+            var p = productById(line.product_id);
+            var minQ = line.min_qty != null ? (line.min_qty) : (p && p.minimum_order_qty) || 0.01;
+            minQ = Math.max(parseFloat(minQ) || 0.01, 0.01);
+
+            var div = document.createElement("div");
+            div.className = "cart-line";
+            div.setAttribute("data-cart-idx", String(idx));
+            div.innerHTML =
+              '<div class="nm"></div>' +
+              '<div class="cart-meta"></div>' +
+              '<div class="cart-line-tools">' +
+              '<button type="button" class="qty-btn" data-act="minus" aria-label="减少">−</button>' +
+              '<input type="number" class="cart-qty-input" min="' +
+              minQ +
+              '" step="0.01" value="' +
+              line.quantity +
+              '" />' +
+              '<button type="button" class="qty-btn" data-act="plus" aria-label="增加">+</button>' +
+              '<button type="button" class="cart-line-del" data-act="remove">删除</button>' +
+              "</div>" +
+              '<div class="cart-line-sub">小计 ¥<span class="line-sub"></span></div>';
+
+            div.querySelector(".nm").textContent = line.name + "（" + (line.sku || "") + "）";
+            div.querySelector(".cart-meta").textContent =
+              (line.spec_label || (line.sale_type === "case" ? "整箱" : "单品")) +
+              " · 规格：" +
+              (line.spec_detail || "—") +
+              " · 单价 ¥" +
+              fmtMoney(line.unit_price) +
+              (line.price_note ? " · " + line.price_note : "");
+
+            div.querySelector(".line-sub").textContent = fmtMoney(line.subtotal);
+
+            var qtyInput = div.querySelector(".cart-qty-input");
+            qtyInput.addEventListener("change", function () {
+              var v = parseFloat(this.value);
+              if (isNaN(v) || v < minQ) {
+                alert("数量不能低于起订量 " + minQ);
+                this.value = line.quantity;
+                return;
+              }
+              line.quantity = v;
+              recalcLine(line);
+              renderCart();
+            });
+
+            div.querySelectorAll(".qty-btn").forEach(function (btn) {
+              btn.addEventListener("click", function () {
+                var act = btn.getAttribute("data-act");
+                var v = parseFloat(line.quantity) || 0;
+                if (act === "minus") {
+                  v = Math.max(minQ, v - 1);
+                } else if (act === "plus") {
+                  v = v + 1;
+                }
+                line.quantity = v;
+                qtyInput.value = v;
+                recalcLine(line);
+                renderCart();
+              });
+            });
+
+            div.querySelector(".cart-line-del").addEventListener("click", function () {
+              cart.splice(idx, 1);
+              renderCart();
+            });
+
+            cartBody.appendChild(div);
+          });
+          if (cart.length === 0) {
+            cartBody.innerHTML = '<p style="color: var(--muted); padding: 16px; text-align: center; margin: 0">购物车还是空的</p>';
+          }
+          cartTotal.textContent = "¥" + fmtMoney(sum);
+          var badgeNum = cart.length === 0 ? 0 : cart.reduce(function (s, l) { return s + (parseFloat(l.quantity) || 0); }, 0);
+          cartBadge.textContent = badgeNum % 1 === 0 ? String(badgeNum) : badgeNum.toFixed(1);
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+          } catch (e) {}
+          if (cart.length === 0) {
+            btnSubmitOrder.disabled = true;
+            btnSubmitOrder.title = "购物车为空";
+          } else if (!shopLoggedIn) {
+            btnSubmitOrder.disabled = true;
+            btnSubmitOrder.title = "请先使用手机号登录客户身份";
+          } else if (!shopCanOrder) {
+            btnSubmitOrder.disabled = true;
+            btnSubmitOrder.title = shopOrderBlockHint || "当前无法下单";
+          } else {
+            btnSubmitOrder.disabled = false;
+            btnSubmitOrder.title = "";
+          }
+        }
+
+        document.getElementById("shop-search").addEventListener("input", function () {
+          searchQ = this.value.trim();
+          applyProductFilter();
+        });
+
+        document.querySelectorAll(".cat-item").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            document.querySelectorAll(".cat-item").forEach(function (b) {
+              b.classList.remove("active");
+            });
+            btn.classList.add("active");
+            var raw = btn.getAttribute("data-category-id");
+            selectedCat = raw != null && String(raw).trim() !== "" ? String(raw).trim() : "all";
+            console.log("[shop] 点击分类 data-category-id=", selectedCat);
+            applyProductFilter();
+          });
+        });
+
+        function openOrderModal() {
+          orderModal.classList.add("is-open");
+          orderModal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+          if (modalLinesJson) {
+            modalLinesJson.value = JSON.stringify(
+              cart.map(function (l) {
+                return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
+              })
+            );
+          }
+        }
+
+        function closeOrderModal() {
+          orderModal.classList.remove("is-open");
+          orderModal.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+
+        btnSubmitOrder.addEventListener("click", function () {
+          if (!shopLoggedIn) {
+            alert("请先使用手机号登录客户身份");
+            return;
+          }
+          if (!shopCanOrder) {
+            alert(shopOrderBlockHint || "当前无法下单");
+            return;
+          }
+          if (cart.length === 0) {
+            alert("购物车为空");
+            return;
+          }
+          openOrderModal();
+        });
+
+        document.getElementById("order-modal-backdrop").addEventListener("click", closeOrderModal);
+        document.getElementById("order-modal-cancel").addEventListener("click", closeOrderModal);
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape" && orderModal.classList.contains("is-open")) closeOrderModal();
+        });
+
+        if (shopOrderFormModal) {
+          shopOrderFormModal.addEventListener("submit", function (ev) {
+            if (!shopLoggedIn) {
+              ev.preventDefault();
+              alert("请先使用手机号登录客户身份");
+              return;
+            }
+            if (!shopCanOrder) {
+              ev.preventDefault();
+              alert(shopOrderBlockHint || "当前无法下单");
+              return;
+            }
+            if (modalLinesJson) {
+              modalLinesJson.value = JSON.stringify(
+                cart.map(function (l) {
+                  return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
+                })
+              );
+            }
+          });
+        }
+
+        normalizeCartLines();
+        applyProductFilter();
+        renderCart();
+      })();
+    </script>
+  </body>
+</html>

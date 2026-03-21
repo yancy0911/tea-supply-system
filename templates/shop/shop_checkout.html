@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>确认订单 — 奶茶原料批发商城</title>
+    {{ shop_products|json_script:"shop-products-data" }}
+    <style>
+      :root {
+        --bg: #f4f6f8;
+        --card: #fff;
+        --accent: #ff5000;
+        --muted: #6b7280;
+        --border: #e8eaed;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: #111;
+      }
+      .shop-top {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: #fff;
+        padding: 12px 0;
+      }
+      .shop-top-inner {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .shop-logo {
+        font-weight: 900;
+        font-size: 20px;
+      }
+      .shop-logo span {
+        color: #fb923c;
+      }
+      .shop-top a {
+        color: #fdba74;
+        text-decoration: none;
+        margin-left: auto;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px 16px 48px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      .card h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      textarea {
+        min-height: 72px;
+        resize: vertical;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      @media (max-width: 600px) {
+        .row2 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .lines {
+        font-size: 14px;
+      }
+      .lines table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .lines th,
+      .lines td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #f1f5f9;
+        text-align: left;
+      }
+      .lines th {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .sum {
+        text-align: right;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--accent);
+        margin-top: 12px;
+      }
+      .btn {
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ea580c, var(--accent));
+        color: #fff;
+        font-size: 17px;
+        font-weight: 800;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .msg-banner {
+        margin-bottom: 12px;
+      }
+      .msg-banner > div {
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 14px;
+      }
+      .msg-err {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .msg-warn {
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shop-top">
+      <div class="shop-top-inner">
+        <div class="shop-logo">奶茶原料 <span>批发商城</span></div>
+        <a href="{% url 'shop-home' %}">← 返回商品列表</a>
+      </div>
+    </header>
+
+    {% if messages %}
+      <div class="wrap msg-banner">
+        {% for message in messages %}
+          <div class="{% if message.tags == 'error' %}msg-err{% elif message.tags == 'warning' %}msg-warn{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="wrap">
+      {% if shop_customer and shop_order_block_hint %}
+        <div class="msg-banner">
+          <div class="msg-warn">{{ shop_order_block_hint }}</div>
+        </div>
+      {% endif %}
+      <div class="card">
+        <h2>收货与配送信息</h2>
+        <form method="post" action="{% url 'shop-submit-order' %}" id="checkout-form">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="checkout" />
+          <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
+          <div class="row2">
+            <div>
+              <label for="contact_name">收货人 *</label>
+              <input id="contact_name" name="contact_name" required maxlength="100" autocomplete="name" />
+            </div>
+            <div>
+              <label for="delivery_phone">联系电话 *</label>
+              <input id="delivery_phone" name="delivery_phone" required maxlength="30" autocomplete="tel" />
+            </div>
+          </div>
+          <div style="margin-top: 12px">
+            <label for="store_name">门店名 / 公司名</label>
+            <input id="store_name" name="store_name" maxlength="200" placeholder="选填" />
+          </div>
+          <div style="margin-top: 12px">
+            <label for="delivery_address">配送地址 *</label>
+            <input id="delivery_address" name="delivery_address" required maxlength="500" autocomplete="street-address" />
+          </div>
+          <div style="margin-top: 12px">
+            <label for="order_note">备注</label>
+            <textarea id="order_note" name="order_note" maxlength="2000" placeholder="选填：到货时间、卸货点等"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>订单明细</h2>
+        <div class="lines" id="lines-area">
+          <p style="color: var(--muted)">正在加载购物车…</p>
+        </div>
+        <div class="sum" id="order-sum">合计：¥0.00</div>
+        <button type="submit" form="checkout-form" class="btn" id="btn-place" disabled>提交订单</button>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
+        var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
+        var STORAGE_KEY = "tea_shop_cart_v1";
+        var PRODUCTS = [];
+        try {
+          var el = document.getElementById("shop-products-data");
+          if (el && el.textContent) PRODUCTS = JSON.parse(el.textContent) || [];
+        } catch (e) {}
+
+        function productById(pid) {
+          var n = Number(pid);
+          return PRODUCTS.find(function (x) {
+            return Number(x.id) === n;
+          });
+        }
+
+        function fmtMoney(n) {
+          var x = parseFloat(n);
+          if (isNaN(x)) return "0.00";
+          return x.toFixed(2);
+        }
+
+        function loadCart() {
+          try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return [];
+            var arr = JSON.parse(raw);
+            return Array.isArray(arr) ? arr : [];
+          } catch (e) {
+            return [];
+          }
+        }
+
+        var cart = loadCart();
+        var linesArea = document.getElementById("lines-area");
+        var sumEl = document.getElementById("order-sum");
+        var hiddenJson = document.getElementById("cart-lines-json");
+        var btn = document.getElementById("btn-place");
+        var checkoutForm = document.getElementById("checkout-form");
+        if (checkoutForm) {
+          checkoutForm.addEventListener("submit", function (ev) {
+            if (!shopCanOrder) {
+              ev.preventDefault();
+              alert(shopOrderBlockHint || "当前无法下单");
+            }
+          });
+        }
+
+        function render() {
+          if (cart.length === 0) {
+            linesArea.innerHTML =
+              '<p style="color:#b45309;font-weight:600">购物车为空，请返回商城选购。</p><p><a href="/shop/">去选购</a></p>';
+            sumEl.textContent = "合计：¥0.00";
+            hiddenJson.value = "[]";
+            btn.disabled = true;
+            btn.title = "购物车为空";
+            return;
+          }
+          var html =
+            "<table><thead><tr><th>商品</th><th>规格</th><th>单价</th><th>数量</th><th>小计</th></tr></thead><tbody>";
+          var sum = 0;
+          cart.forEach(function (l) {
+            var p = productById(l.product_id);
+            var name = p ? p.name : l.name || "商品";
+            var sku = p ? p.sku : l.sku || "";
+            var spec = l.sale_type === "case" ? "整箱" : "单品（袋/件）";
+            sum += parseFloat(l.subtotal) || 0;
+            html +=
+              "<tr><td>" +
+              name +
+              "<div style='font-size:12px;color:#6b7280'>SKU " +
+              sku +
+              "</div></td><td>" +
+              spec +
+              "</td><td>¥" +
+              fmtMoney(l.unit_price) +
+              "</td><td>" +
+              l.quantity +
+              "</td><td>¥" +
+              fmtMoney(l.subtotal) +
+              "</td></tr>";
+          });
+          html += "</tbody></table>";
+          linesArea.innerHTML = html;
+          sumEl.textContent = "合计：¥" + fmtMoney(sum);
+          hiddenJson.value = JSON.stringify(
+            cart.map(function (l) {
+              return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
+            })
+          );
+          if (!shopCanOrder) {
+            btn.disabled = true;
+            btn.title = shopOrderBlockHint || "当前无法下单";
+          } else {
+            btn.disabled = false;
+            btn.title = "";
+          }
+        }
+
+        render();
+      })();
+    </script>
+  </body>
+</html>

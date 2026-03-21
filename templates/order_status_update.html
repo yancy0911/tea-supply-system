@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2 style="margin: 0 0 12px 0">订单详情 / 状态</h2>
+
+  <div class="card" style="max-width: 900px">
+    {% if messages %}
+      {% for message in messages %}
+        <div
+          style="
+            margin-bottom: 10px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            {% if message.tags == 'success' %}
+              background: #dcfce7;
+              color: #166534;
+            {% else %}
+              background: #fee2e2;
+              color: #991b1b;
+            {% endif %}
+          "
+        >
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div style="margin-bottom: 16px; line-height: 1.85; font-size: 14px">
+      <div><strong>订单号：</strong>#{{ order.id }} · {{ order.name }}</div>
+      <div><strong>客户：</strong>{% if order.customer %}{{ order.customer.name }}（{{ order.customer.phone }}）{% else %}未指定客户{% endif %}</div>
+      <div><strong>创建时间：</strong>{{ order.created_at|date:"Y-m-d H:i:s" }}</div>
+      <div><strong>收货人：</strong>{{ order.contact_name|default:"—" }} · {{ order.delivery_phone|default:"—" }}</div>
+      <div><strong>门店/公司：</strong>{{ order.store_name|default:"—" }}</div>
+      <div><strong>配送地址：</strong>{{ order.delivery_address|default:"—" }}</div>
+      {% if order.order_note %}
+        <div><strong>备注：</strong>{{ order.order_note }}</div>
+      {% endif %}
+    </div>
+
+    <h3 style="margin: 0 0 8px; font-size: 15px">商品明细</h3>
+    <table class="table" style="margin-bottom: 16px">
+      <thead>
+        <tr>
+          <th>商品</th>
+          <th>规格</th>
+          <th>数量</th>
+          <th>单价</th>
+          <th>小计</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order.items.all %}
+          <tr>
+            <td>{{ item.product.name }} <span class="muted" style="font-size: 12px">{{ item.product.sku }}</span></td>
+            <td>{% if item.sale_type == "case" %}整箱{% else %}单品{% endif %}</td>
+            <td>{{ item.quantity }}</td>
+            <td>¥{{ item.unit_price|floatformat:2 }}</td>
+            <td>¥{{ item.total_revenue|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="muted">无明细</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p style="text-align: right; font-size: 16px; font-weight: 700">订单金额：¥{{ order.total_revenue|floatformat:2 }}</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div style="margin-bottom: 12px">
+        <label for="workflow_status" class="muted" style="display: block; margin-bottom: 6px">履约状态（发货进度）</label>
+        <select id="workflow_status" name="workflow_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+          {% for value, label in workflow_choices %}
+            <option value="{{ value }}" {% if order.workflow_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom: 12px">
+        <label for="status" class="muted" style="display: block; margin-bottom: 6px">结算状态（应收账款）</label>
+        <select id="status" name="status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn">保存</button>
+      <a href="/orders/" class="btn secondary" style="margin-left: 8px">返回列表</a>
+    </form>
+  </div>
+{% endblock %}

@@ -1,0 +1,4 @@
+项目仓库内未发现「朋友提供」的独立产品文档（PDF/Excel 等）。
+本批导入数据唯一可追溯来源：templates/home.html 中的演示商品（奶茶1号 ¥18、奶茶2号 ¥22）。
+后续拿到正式文档后，可替换 data/products_import_ready.csv 并重新运行：
+  python manage.py import_products_ready

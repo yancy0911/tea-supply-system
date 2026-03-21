@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ product_row.name }} — 奶茶原料批发商城</title>
+    {{ product_row|json_script:"shop-product-data" }}
+    <style>
+      :root {
+        --accent: #ff5000;
+        --muted: #6b7280;
+        --border: #e8eaed;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+        background: #f4f6f8;
+      }
+      .top {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        color: #fff;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .top a {
+        color: #fdba74;
+        text-decoration: none;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      }
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .imgbox {
+        background: #f1f5f9;
+        border-radius: 12px;
+        min-height: 260px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .imgbox img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        max-height: 360px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 20px;
+        line-height: 1.35;
+      }
+      .sku {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+      .spec {
+        font-size: 13px;
+        color: #334155;
+        line-height: 1.6;
+        margin-bottom: 12px;
+      }
+      .price-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .tag {
+        background: #fff7ed;
+        color: #c2410c;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .big-price {
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--accent);
+      }
+      .mode {
+        display: flex;
+        gap: 12px;
+        margin: 12px 0;
+        font-size: 14px;
+      }
+      .qty {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .qty button {
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #f8fafc;
+        cursor: pointer;
+      }
+      .qty input {
+        width: 72px;
+        text-align: center;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .btn {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #ea580c, var(--accent));
+        color: #fff;
+        font-weight: 800;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 8px;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .acct-banner {
+        background: #fffbeb;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <a href="{% url 'shop-home' %}">← 返回商城</a>
+      {% if shop_customer %}
+        <span style="margin-left: auto; font-size: 13px">您好，{{ shop_customer.name }}</span>
+      {% endif %}
+    </div>
+    <div class="wrap">
+      {% if shop_customer and shop_order_block_hint %}
+        <div class="acct-banner">{{ shop_order_block_hint }}</div>
+      {% endif %}
+      <div class="grid">
+        <div class="imgbox">
+          <img id="pimg" src="" alt="" />
+        </div>
+        <div>
+          <h1 id="pname"></h1>
+          <div class="sku" id="psku"></div>
+          <div class="spec" id="pspec"></div>
+          <div class="price-row" id="pprice"></div>
+          <div class="tag" id="pnote"></div>
+          <div class="mode" id="pmode"></div>
+          <div class="qty">
+            <button type="button" id="bminus">−</button>
+            <input type="number" id="pqty" min="0.01" step="0.01" value="1" />
+            <button type="button" id="bplus">+</button>
+          </div>
+          <button type="button" class="btn" id="padd">加入购物车</button>
+          <p class="hint">加入后可去购物车「去结算」填写收货信息并提交订单。</p>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var STORAGE_KEY = "tea_shop_cart_v1";
+        var p = {};
+        try {
+          var el = document.getElementById("shop-product-data");
+          if (el && el.textContent) p = JSON.parse(el.textContent) || {};
+        } catch (e) {}
+
+        var PLACEHOLDER =
+          "data:image/svg+xml," +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect fill="#e2e8f0" width="400" height="300"/><text x="200" y="150" text-anchor="middle" fill="#94a3b8" font-size="16">暂无图片</text></svg>'
+          );
+
+        function fmtMoney(n) {
+          var x = parseFloat(n);
+          if (isNaN(x)) return "0.00";
+          return x.toFixed(2);
+        }
+
+        var img = document.getElementById("pimg");
+        img.src = p.image_url && p.image_url.length ? p.image_url : PLACEHOLDER;
+        img.onerror = function () {
+          this.onerror = null;
+          this.src = PLACEHOLDER;
+        };
+
+        document.getElementById("pname").textContent = p.name || "";
+        document.getElementById("psku").textContent = "SKU：" + (p.sku || "");
+        document.getElementById("pspec").innerHTML =
+          "分类：" +
+          (p.category_name || "—") +
+          "<br/>单位规格：" +
+          (p.unit_label || "—") +
+          "<br/>整箱规格：" +
+          (p.case_label || "—");
+
+        var priceHtml = "";
+        if (p.price_on_request) {
+          priceHtml = '<span class="big-price">请询价</span>';
+        } else {
+          priceHtml +=
+            '<div><span class="big-price">¥' +
+            fmtMoney(p.display_single) +
+            '</span> <small style="color:#6b7280">单品</small></div>';
+          priceHtml +=
+            '<div><span class="big-price">¥' +
+            fmtMoney(p.display_case) +
+            '</span> <small style="color:#6b7280">整箱</small></div>';
+        }
+        document.getElementById("pprice").innerHTML = priceHtml;
+        document.getElementById("pnote").textContent = p.price_on_request ? "价格待定" : p.price_note || "";
+
+        var canSingle = p.can_split_sale && p.can_quote_single;
+        var canCase = p.can_quote_case;
+        var modeHtml = "";
+        if (canSingle) {
+          modeHtml +=
+            '<label><input type="radio" name="sale" value="single" checked /> 按袋/件（单品）</label>';
+        }
+        if (canCase) {
+          modeHtml +=
+            '<label><input type="radio" name="sale" value="case" ' +
+            (!canSingle ? "checked" : "") +
+            " /> 整箱</label>";
+        }
+        if (!modeHtml) modeHtml = "<span style='color:#b45309'>暂无标价</span>";
+        document.getElementById("pmode").innerHTML = modeHtml;
+
+        var minQ = Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01);
+        var qIn = document.getElementById("pqty");
+        qIn.value = minQ;
+        qIn.min = minQ;
+
+        document.getElementById("bminus").onclick = function () {
+          var v = parseFloat(qIn.value) || 0;
+          qIn.value = Math.max(minQ, v - 1);
+        };
+        document.getElementById("bplus").onclick = function () {
+          var v = parseFloat(qIn.value) || 0;
+          qIn.value = v + 1;
+        };
+
+        function unitPrice() {
+          var sale = document.querySelector('input[name="sale"]:checked');
+          var st = sale ? sale.value : "single";
+          if (st === "case") return parseFloat(p.display_case) || 0;
+          return parseFloat(p.display_single) || 0;
+        }
+
+        function saleType() {
+          var sale = document.querySelector('input[name="sale"]:checked');
+          return sale && sale.value === "case" ? "case" : "single";
+        }
+
+        document.getElementById("padd").onclick = function () {
+          if (p.price_on_request) {
+            alert("该商品需询价");
+            return;
+          }
+          var st = saleType();
+          if (st === "single" && !p.can_split_sale) {
+            alert("不可拆卖，请选择整箱");
+            return;
+          }
+          if (st === "single" && !p.can_quote_single) {
+            alert("单品无标价");
+            return;
+          }
+          if (st === "case" && !p.can_quote_case) {
+            alert("整箱无标价");
+            return;
+          }
+          var qty = parseFloat(qIn.value);
+          if (isNaN(qty) || qty < minQ) {
+            alert("数量不能低于起订量 " + minQ);
+            return;
+          }
+          var unit = unitPrice();
+          if (unit <= 0) {
+            alert("无效价格");
+            return;
+          }
+          var cart = [];
+          try {
+            var raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) cart = JSON.parse(raw) || [];
+          } catch (e) {}
+          var pid = Number(p.id);
+          var found = cart.find(function (l) {
+            return l.product_id === pid && l.sale_type === st;
+          });
+          if (found) {
+            found.quantity += qty;
+            found.subtotal = found.quantity * found.unit_price;
+          } else {
+            cart.push({
+              product_id: pid,
+              sale_type: st,
+              quantity: qty,
+              name: p.name,
+              sku: p.sku,
+              unit_price: unit,
+              price_note: p.price_note,
+              subtotal: qty * unit,
+            });
+          }
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+          alert("已加入购物车");
+          window.location.href = "/shop/#shop-cart-anchor";
+        };
+      })();
+    </script>
+  </body>
+</html>

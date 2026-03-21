@@ -1,0 +1,19 @@
+# Django 项目运行与部署（由当前 venv 整理 + 部署依赖）
+# Python 建议：3.9.x（见 runtime.txt）
+
+Django==4.2.29
+asgiref==3.11.1
+sqlparse==0.5.5
+typing_extensions==4.15.0
+
+# WSGI/静态文件（生产）
+gunicorn==23.0.0
+whitenoise==6.11.0
+
+# 图片处理（常用；若后续使用 ImageField/处理上传图建议保留）
+pillow==11.3.0
+packaging==26.0
+
+# PDF 工具（管理命令 / data 脚本会用到；运行时非必须但建议安装以便运维脚本一致）
+PyMuPDF==1.26.5
+pypdf==6.9.1
