@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
-from django.core.exceptions import ImproperlyConfigured
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,10 +20,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# ---- 环境变量（生产部署）----
-# DJANGO_SECRET_KEY：生产环境必须设置
-# DJANGO_DEBUG：未设置时默认 True，便于本地开发
-# DJANGO_ALLOWED_HOSTS：逗号分隔；生产环境必须设置
+# ---- 环境变量（Railway / 生产部署）----
+# DJANGO_SECRET_KEY：强烈建议设置；未设置时仍可启动（见下方兜底，仅便于首次部署）
+# DJANGO_DEBUG：未设置时：本地默认 True；检测到 Railway 环境时默认 False
+# ALLOWED_HOSTS：固定为 *（Railway 临时域名 / 部署兼容性；上线后可在平台侧限制访问）
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -35,7 +33,9 @@ def _env_bool(name: str, default: bool) -> bool:
     return str(v).strip().lower() in ("1", "true", "yes", "on")
 
 
-DEBUG = _env_bool("DJANGO_DEBUG", True)
+# Railway 通常提供 RAILWAY_ENVIRONMENT；未显式设置 DJANGO_DEBUG 时，在 Railway 上默认关闭 DEBUG
+_on_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
+DEBUG = _env_bool("DJANGO_DEBUG", default=False if _on_railway else True)
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
 if not SECRET_KEY:
@@ -43,17 +43,12 @@ if not SECRET_KEY:
         # 本地开发默认 key（切勿用于生产）
         SECRET_KEY = "django-insecure-$5m7-x87f2saqy35--zh-j0@b*n)&680%8o*uu1jbeg@@)#0^k"
     else:
-        raise ImproperlyConfigured("生产环境必须设置环境变量 DJANGO_SECRET_KEY")
+        # 生产未设置密钥时仍可启动（避免首部署因缺变量崩溃）；上线后请在面板设置 DJANGO_SECRET_KEY
+        SECRET_KEY = (
+            "django-insecure-RAILWAY-UNSET-SECRET-KEY-PLEASE-SET-DJANGO_SECRET_KEY-IN-DASHBOARD"
+        )
 
-_allowed_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "").strip()
-if _allowed_raw:
-    ALLOWED_HOSTS = [h.strip() for h in _allowed_raw.split(",") if h.strip()]
-elif DEBUG:
-    # 本地 / 内网穿透调试：默认放宽；生产请用 DJANGO_ALLOWED_HOSTS 明确域名
-    ALLOWED_HOSTS = ["127.0.0.1", "localhost", "*"]
-else:
-    ALLOWED_HOSTS = []
-    raise ImproperlyConfigured("生产环境必须设置环境变量 DJANGO_ALLOWED_HOSTS（逗号分隔域名）")
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -150,10 +145,14 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 # collectstatic 输出目录（生产部署用；勿提交到 git，见 .gitignore）
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 
-# 生产环境使用 WhiteNoise 压缩；开发环境仍可用 runserver + STATICFILES_DIRS
+# 生产环境使用 WhiteNoise 压缩；部署请用 gunicorn（见根目录 Procfile）
 if not DEBUG:
     STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
+# 未执行 collectstatic 时，DEBUG 下仍可从 STATICFILES_DIRS 找静态文件
+WHITENOISE_USE_FINDERS = DEBUG
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"

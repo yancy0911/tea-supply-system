@@ -1,5 +1,9 @@
 # Django 项目运行与部署（由当前 venv 整理 + 部署依赖）
 # Python 建议：3.9.x（见 runtime.txt）
+#
+# Railway 必需（gunicorn + whitenoise）：
+#   gunicorn
+#   whitenoise
 
 Django==4.2.29
 asgiref==3.11.1

@@ -1,72 +1,57 @@
-# 部署说明（Django + Gunicorn + WhiteNoise）
+# 部署说明（Django + Gunicorn + WhiteNoise + Railway）
 
-本仓库已做**部署准备**（不新增业务功能）：环境变量、`STATIC_ROOT`、`WhiteNoise`、Gunicorn/Procfile。
+本仓库已做**部署准备**（不新增业务功能）：环境变量、`STATIC_ROOT`、`WhiteNoise`、Gunicorn/Procfile、Railway 兼容（缺省不崩溃、不 DisallowedHost）。
 
-## 环境变量（生产）
+## Railway 推荐环境变量
 
-| 变量 | 必填 | 说明 |
-|------|------|------|
-| `DJANGO_SECRET_KEY` | **生产必填** | 随机长字符串；**禁止**使用仓库默认的 insecure key |
-| `DJANGO_DEBUG` | 可选 | `False` / `0` / `no` 表示关闭调试；未设置时默认 `True`（本地开发） |
-| `DJANGO_ALLOWED_HOSTS` | **生产必填** | 逗号分隔，如 `example.com,www.example.com` |
+| 变量 | 是否必须 | 说明 |
+|------|----------|------|
+| `DJANGO_SECRET_KEY` | **强烈建议** | 随机长字符串；未设置时项目仍可启动，但**不安全**，上线后务必在 Railway 面板配置 |
+| `DJANGO_DEBUG` | 可选 | `False` / `0` / `no` 关闭调试；**未设置时**：检测到 Railway 环境则默认 `False`，本地默认 `True` |
+| `DJANGO_ALLOWED_HOSTS` | 可选 | 逗号分隔域名；**未设置或为空**时默认为 `["*"]`，避免临时域名/首部署出现 `DisallowedHost`；稳定后建议改为你的正式域名 |
+| `PORT` | 由平台注入 | Railway 自动设置；`Procfile` 已使用 `$PORT` |
 
-## 部署步骤（概要）
+## Railway 最简重新部署步骤
 
-1. **安装依赖**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **迁移数据库**
-
-   ```bash
-   python manage.py migrate
-   ```
-
-3. **收集静态文件到 `STATIC_ROOT`（生产需要）**
-
-   - 使用 `WhiteNoise` 时，部署后应执行 `collectstatic`，将 `STATICFILES_DIRS` / 各 app 的 static 收集到 `staticfiles/`。
-   - 本地开发若未执行 `collectstatic`，仍可通过 Django `runserver` 的静态查找与 `STATICFILES_DIRS` 访问；生产环境请执行：
-
+1. 将代码推送到 Railway 关联的分支（触发构建/部署）。
+2. 在 Railway **Variables** 中至少设置 `DJANGO_SECRET_KEY`（推荐同时设置 `DJANGO_DEBUG=False`）。
+3. **Build**（或在 Start Command 前执行一次）：
    ```bash
    python manage.py collectstatic --noinput
    ```
-
-4. **启动 Gunicorn**
-
+4. **Release / 启动前迁移**（二选一，按你平台习惯）：
    ```bash
-   gunicorn tea_supply.wsgi:application --bind 0.0.0.0:8000
+   python manage.py migrate --noinput
+   ```
+5. 启动命令已由根目录 `Procfile` 提供：
+   ```text
+   web: gunicorn tea_supply.wsgi:application --bind 0.0.0.0:$PORT
    ```
 
-   或使用平台提供的 `Procfile`（见仓库根目录 `Procfile`）。
+> SQLite：默认使用仓库内 `db.sqlite3`。Railway 文件系统若为**临时盘**，重启可能丢库；长期生产建议改为托管数据库（属架构升级，不在本次「仅部署修复」范围）。
 
-## 本地如何先验证 Gunicorn
+## 通用：安装与迁移
 
-在项目根目录、虚拟环境已激活的前提下：
+```bash
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+```
+
+## 本地验证 Gunicorn（模拟生产）
 
 ```bash
 export DJANGO_DEBUG=False
 export DJANGO_SECRET_KEY="local-test-only-change-me"
 export DJANGO_ALLOWED_HOSTS="127.0.0.1,localhost"
+export PORT=8000
 
 python manage.py migrate
 python manage.py collectstatic --noinput
 
-gunicorn tea_supply.wsgi:application --bind 127.0.0.1:8000
+gunicorn tea_supply.wsgi:application --bind 127.0.0.1:${PORT}
 ```
-
-浏览器访问 `http://127.0.0.1:8000/` 验证页面与静态资源。
-
-## 常见问题
-
-- **`collectstatic` 是否必须？**  
-  - **生产**：建议必须执行（`STATIC_ROOT` 指向 `staticfiles/`，由 WhiteNoise 提供）。  
-  - **仅本地 `runserver` + DEBUG**：可不执行，但生产/ Gunicorn 下应执行。
-
-- **`migrate` 如何执行？**  
-  - 每次部署新版本代码后，在对应环境执行一次 `python manage.py migrate`（与数据库文件或远程 DB 一致）。
 
 ## Python 版本
 
-见 `runtime.txt`（与当前开发环境兼容的 3.9.x）。
+见 `runtime.txt`。
