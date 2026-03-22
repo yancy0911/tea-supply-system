@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path, reverse
+from django.urls import path
 
 from .models import (
     Customer,
@@ -82,7 +82,6 @@ class ProductCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    change_list_template = "admin/tea_supply/product/change_list.html"
     list_display = (
         "category",
         "name",
@@ -111,13 +110,6 @@ class ProductAdmin(admin.ModelAdmin):
             ),
         ]
         return custom + urls
-
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context["import_csv_url"] = reverse(
-            "admin:%s_%s_import_csv" % (self.model._meta.app_label, self.model._meta.model_name)
-        )
-        return super().changelist_view(request, extra_context=extra_context)
 
 
 @admin.register(Order)
