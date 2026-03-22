@@ -4,6 +4,8 @@
 """
 from __future__ import annotations
 
+import importlib.util
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -11,12 +13,86 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from tea_supply.models import Product, ProductCategory
-from tea_supply.mocha_pdf_import import (
-    format_t_sku,
-    load_extract_catalog,
-    normalize_category_name,
-    parse_max_t_sku_number,
+
+# 按优先级：更具体的规则在前
+_CATEGORY_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Tea Leaves", "Filtered Tea", "Espresso Tea", "Tea Bag"), "茶叶"),
+    (("Creamer",), "奶制品"),
+    (("Tropical Fruit Jam", "Fruit Jam", "Jam"), "果酱"),
+    (("Pulp Topping", "Pulp"), "果浆/配料"),
+    (("Sugar Syrup", "Tropical Fruit Syrup"), "糖浆"),
+    (("Pure Powder", "Special Powder", "Powder"), "粉类"),
+    (("Tapioca", "Popping Boba", "Agar Boba", "Jelly 椰果", "Jelly"), "小料"),
+    (("Canned Topping", "Canned"), "罐头辅料"),
+    (
+        (
+            "Machinery",
+            "Sealing Film",
+            "Individually Wrap Straw",
+            "Tools",
+            "Bag & Hand Carrier",
+            "Lid",
+            "Strainer",
+            "Straw",
+            "Sealing",
+            "Wrap",
+            "Red Heart",
+        ),
+        "包材/器具",
+    ),
+    (("PP 1 Oz", "PP 530ml", "PP700ml", "PP 700ml", "PC2oz", "PC Double"), "包材/器具"),
 )
+
+
+def _normalize_category_name(raw: str) -> str:
+    s = re.sub(r"\s+", " ", (raw or "").strip())
+    if not s:
+        return "未分类"
+    up = s.upper()
+    for keys, zh in _CATEGORY_RULES:
+        for k in keys:
+            if k.upper() in up or k.lower() in s.lower():
+                return zh
+    low = s.lower()
+    if any(w in low for w in ("tea", "乌龙", "红茶", "绿茶")):
+        return "茶叶"
+    if "creamer" in low or "奶精" in s:
+        return "奶制品"
+    if "syrup" in low:
+        return "糖浆"
+    if "jam" in low:
+        return "果酱"
+    if "powder" in low:
+        return "粉类"
+    if "boba" in low or "tapioca" in low or "椰果" in s:
+        return "小料"
+    return s[:100] if len(s) <= 100 else s[:97] + "…"
+
+
+def _load_extract_catalog(data_dir: Path):
+    path = data_dir / "extract_mocha_pdf_cards.py"
+    spec = importlib.util.spec_from_file_location("extract_mocha_pdf_cards", path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"无法加载: {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    if not hasattr(mod, "extract_catalog") or not hasattr(mod, "dedupe_cards"):
+        raise ImportError("extract_mocha_pdf_cards 缺少 extract_catalog / dedupe_cards")
+    return mod.extract_catalog, mod.dedupe_cards
+
+
+def _format_t_sku(n: int) -> str:
+    return f"T{n:03d}"
+
+
+def _parse_max_t_sku_number() -> int:
+    best = 0
+    for sku in Product.objects.filter(sku__startswith="T").values_list("sku", flat=True):
+        m = re.match(r"^T(\d+)$", sku, re.I)
+        if m:
+            best = max(best, int(m.group(1)))
+    return best
+
 
 # 新建分类时的排序（越小越靠前）
 _CATEGORY_SORT = {
@@ -42,7 +118,7 @@ class Command(BaseCommand):
             "--pdf",
             type=str,
             default=str(default_pdf),
-            help=f"PDF 路径（默认: 项目内 tea_supply/data/mocha.pdf）",
+            help="PDF 路径（默认: 项目内 tea_supply/data/mocha.pdf）",
         )
         parser.add_argument(
             "--units-per-case",
@@ -75,7 +151,7 @@ class Command(BaseCommand):
             raise CommandError("--units-per-case 必须大于 0")
 
         data_dir = Path(settings.BASE_DIR) / "data"
-        extract_catalog, dedupe_cards = load_extract_catalog(data_dir)
+        extract_catalog, dedupe_cards = _load_extract_catalog(data_dir)
 
         self.stdout.write(f"解析 PDF（跳过导出图片，主图留空）: {pdf_path}")
         cards, failures = extract_catalog(pdf_path, skip_images=True)
@@ -84,13 +160,13 @@ class Command(BaseCommand):
 
         if opts["dry_run"]:
             for c in final[:5]:
-                zh = normalize_category_name(c["category"])
+                zh = _normalize_category_name(c["category"])
                 ps = c.get("price_single")
                 self.stdout.write(f"  样例: [{zh}] {c['name'][:40]}… 单价={ps}")
             self.stdout.write(self.style.WARNING("dry-run 结束，未写入数据库"))
             return
 
-        seq = parse_max_t_sku_number()
+        seq = _parse_max_t_sku_number()
         created = 0
         updated = 0
         cats_created = set()
@@ -98,7 +174,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             for card in sorted(final, key=lambda x: (x.get("page", 0), str(x.get("sku", "")))):
                 raw_cat = card.get("category") or ""
-                cat_name = normalize_category_name(raw_cat)
+                cat_name = _normalize_category_name(raw_cat)
                 sort_order = _CATEGORY_SORT.get(cat_name, 500)
 
                 category, cat_created = ProductCategory.objects.get_or_create(
@@ -153,7 +229,7 @@ class Command(BaseCommand):
                     updated += 1
                 else:
                     seq += 1
-                    sku = format_t_sku(seq)
+                    sku = _format_t_sku(seq)
                     Product.objects.create(sku=sku, **fields)
                     created += 1
 
@@ -162,4 +238,8 @@ class Command(BaseCommand):
         self.stdout.write(f"新建分类: {len(cats_created)} {sorted(cats_created)}")
         self.stdout.write(f"整箱价公式: 单价 × {units}")
         if failures:
-            self.stdout.write(self.style.WARNING(f"PDF 内未解析行数（无 PRICE 等）: {len(failures)}，可查看 data/pdf_import_failures.txt（若用脚本独立跑会生成）"))
+            self.stdout.write(
+                self.style.WARNING(
+                    f"PDF 内未解析行数（无 PRICE 等）: {len(failures)}，可查看 data/pdf_import_failures.txt（若用脚本独立跑会生成）"
+                )
+            )
