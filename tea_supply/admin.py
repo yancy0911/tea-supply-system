@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.urls import path
 
 from .models import (
     Customer,
@@ -96,20 +95,6 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
     list_editable = ("is_active", "stock_quantity")
-
-    def get_urls(self):
-        from .views import product_csv_import
-
-        urls = super().get_urls()
-        info = self.model._meta.app_label, self.model._meta.model_name
-        custom = [
-            path(
-                "import-csv/",
-                self.admin_site.admin_view(product_csv_import),
-                name="%s_%s_import_csv" % info,
-            ),
-        ]
-        return custom + urls
 
 
 @admin.register(Order)
