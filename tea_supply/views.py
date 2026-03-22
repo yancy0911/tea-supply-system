@@ -419,21 +419,27 @@ def wholesale_order_entry(request):
 
 
 def shop_home(request):
-    """客户前台商城（/shop/）：展示商品与购物车，定价随 session 中的客户身份变化。"""
+    """客户前台商城（/shop/）：商品与分类均来自数据库；定价随 session 客户身份变化。"""
     categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
-    if not categories.exists():
-        categories = ProductCategory.objects.all().order_by("sort_order", "id")
     customer = get_shop_customer(request)
-    products = Product.objects.filter(is_active=True).select_related("category", "ingredient").order_by(
-        "category", "name"
+    products = (
+        Product.objects.filter(is_active=True)
+        .select_related("category", "ingredient")
+        .order_by("category__sort_order", "category_id", "name")
     )
-    if not products.exists():
-        products = Product.objects.all().select_related("category", "ingredient").order_by("category", "name")
     shop_items = []
     missing_images = []
     missing_prices = []
     for p in products:
         row = _shop_product_row(customer, p)
+        if row["can_split_sale"] and row["can_quote_single"]:
+            row["default_mode"] = "single"
+        elif row["can_quote_case"]:
+            row["default_mode"] = "case"
+        elif not row["can_split_sale"]:
+            row["default_mode"] = "case"
+        else:
+            row["default_mode"] = "single"
         shop_items.append(row)
         if not row["has_image"]:
             missing_images.append({"sku": p.sku, "name": p.name})
@@ -443,6 +449,7 @@ def shop_home(request):
     can_order, order_hint = shop_order_permission(customer)
     ctx = {
         "categories": categories,
+        "products": shop_items,
         "shop_products": shop_items,
         "shop_customer": customer,
         "shop_unsettled": unsettled_amount_for_customer(customer) if customer else None,
@@ -503,8 +510,10 @@ def shop_checkout(request):
         return redirect("shop-home")
     can_order, order_hint = shop_order_permission(customer)
     categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
-    products = Product.objects.filter(is_active=True).select_related("category", "ingredient").order_by(
-        "category", "name"
+    products = (
+        Product.objects.filter(is_active=True)
+        .select_related("category", "ingredient")
+        .order_by("category__sort_order", "category_id", "name")
     )
     shop_items = [_shop_product_row(customer, p) for p in products]
     return render(

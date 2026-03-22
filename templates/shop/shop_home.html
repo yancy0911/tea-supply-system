@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>奶茶原料批发商城</title>
-    {{ shop_products|json_script:"shop-products-data" }}
+    {{ products|json_script:"shop-products-data" }}
     <style>
       :root {
         --bg: #f4f6f8;
@@ -652,7 +652,13 @@
 
       <main class="shop-main">
         <h2>商品列表 <span style="font-weight: 400; color: var(--muted)" id="product-count"></span></h2>
-        <div class="product-grid" id="product-grid"></div>
+        <div class="product-grid" id="product-grid">
+          {% for product in products %}
+            {% include "shop/_product_card.html" with product=product %}
+          {% empty %}
+            <p id="shop-catalog-empty" style="color: var(--muted); margin: 0; grid-column: 1 / -1; font-size: 14px">暂无商品</p>
+          {% endfor %}
+        </div>
       </main>
 
       <aside class="shop-cart-panel" id="shop-cart-anchor">
@@ -809,119 +815,14 @@
           return normCat(productCategoryId) === s;
         }
 
-        function noteClass(note) {
-          if (!note) return "";
-          if (note.indexOf("专属") !== -1) return "p-note ex";
-          if (note.indexOf("等级") !== -1 || note.indexOf("VIP") !== -1) return "p-note vip";
-          return "p-note";
-        }
-
-        function htmlPriceLine(p, mode) {
-          var base = mode === "case" ? parseFloat(p.base_case) : parseFloat(p.base_single);
-          var disp = mode === "case" ? parseFloat(p.display_case) : parseFloat(p.display_single);
-          var strike = mode === "case" ? p.strike_case : p.strike_single;
-          var can = mode === "case" ? p.can_quote_case : p.can_quote_single;
-          var lab = mode === "case" ? "整箱" : "单品";
-          if (!can) {
-            return '<span class="p-quote">' + lab + " 请询价</span>";
-          }
-          var h = "";
-          if (strike) {
-            h += '<del class="p-base">¥' + fmtMoney(base) + "</del> ";
-          }
-          h += '<span class="p-price-discount">¥' + fmtMoney(disp) + "</span> <small>" + lab + "</small>";
-          return h;
-        }
-
         function buildCardsOnce() {
           if (cardsBuilt) return;
           cardsBuilt = true;
-          grid.innerHTML = "";
-          PRODUCTS.forEach(function (p) {
-            var card = document.createElement("div");
-            card.className = "p-card";
-            card.setAttribute("data-product-id", String(p.id));
-            card.setAttribute("data-category-id", normCat(p.category_id));
-            card.dataset.pid = p.id;
-            var canSingle = p.can_split_sale;
-            var modeSingle = "";
-            var modeCase = "";
-            if (canSingle && p.can_quote_single) {
-              modeSingle = "checked";
-            } else if (p.can_quote_case) {
-              modeCase = "checked";
-            } else if (!canSingle) {
-              modeCase = "checked";
-            } else {
-              modeSingle = "checked";
-            }
-            var imgSrc = (p.image_url && p.image_url.length) ? p.image_url : PLACEHOLDER;
-            var por = p.price_on_request;
-            var priceRowHtml = por
-              ? '<div class="p-price-row"><span class="p-quote" style="width:100%">请询价</span></div>'
-              : '<div class="p-price-row"><span class="p-price-col">' +
-                htmlPriceLine(p, "single") +
-                '</span><span class="p-price-col">' +
-                htmlPriceLine(p, "case") +
-                "</span></div>";
-            var noteHtml =
-              '<div><span class="' +
-              noteClass(p.price_note || "") +
-              '">' +
-              (por ? "价格待定" : (p.price_note || "")) +
-              "</span></div>";
-            var detailUrl = "/shop/product/" + encodeURIComponent(p.id) + "/";
-            card.innerHTML =
-              '<a class="p-img" href="' +
-              detailUrl +
-              '"><img src="' +
-              imgSrc +
-              '" alt="" loading="lazy" decoding="async" /></a>' +
-              '<div class="p-body">' +
-              '<div class="p-cat">' +
-              (p.category_name || "—") +
-              "</div>" +
-              '<div class="p-name"><a href="' +
-              detailUrl +
-              '"></a></div>' +
-              '<div class="p-sku">SKU：' +
-              (p.sku || "") +
-              "</div>" +
-              '<div class="p-spec">单位：' +
-              (p.unit_label || "—") +
-              "<br/>整箱：" +
-              (p.case_label || "—") +
-              "</div>" +
-              priceRowHtml +
-              noteHtml +
-              '<div class="p-mode"><label><input type="radio" name="mode-' +
-              p.id +
-              '" value="single" ' +
-              modeSingle +
-              (canSingle && p.can_quote_single ? "" : " disabled") +
-              '/> 单品</label><label><input type="radio" name="mode-' +
-              p.id +
-              '" value="case" ' +
-              modeCase +
-              (p.can_quote_case ? "" : " disabled") +
-              '/> 整箱</label></div>' +
-              '<div class="p-qty-row"><button type="button" data-act="minus">−</button><input type="number" min="0.01" step="0.01" value="' +
-              Math.max(p.minimum_order_qty || 0.01, 0.01) +
-              '" /><button type="button" data-act="plus">+</button></div>' +
-              '<button type="button" class="p-add" data-pid="' +
-              p.id +
-              '"' +
-              (por ? " disabled" : "") +
-              ">加入购物车</button></div>";
-            card.querySelector(".p-name a").textContent = p.name || "";
-            var im = card.querySelector(".p-img img");
-            if (im) {
-              im.addEventListener("error", function () {
-                this.onerror = null;
-                this.src = PLACEHOLDER;
-              });
-            }
-            grid.appendChild(card);
+          grid.querySelectorAll(".p-img img").forEach(function (im) {
+            im.addEventListener("error", function () {
+              this.onerror = null;
+              this.src = PLACEHOLDER;
+            });
           });
           installGridDelegation();
         }

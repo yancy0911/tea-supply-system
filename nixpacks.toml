@@ -1,0 +1,4 @@
+# Railway / Nixpacks：固定 Python，避免 3.14+ 与 Django 4.2 模板 BaseContext.__copy__ 不兼容
+# （'super' object has no attribute 'dicts'）
+[variables]
+NIXPACKS_PYTHON_VERSION = "3.12"

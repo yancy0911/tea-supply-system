@@ -1,5 +1,5 @@
 # Django 项目运行与部署（由当前 venv 整理 + 部署依赖）
-# Python 建议：3.9.x（见 runtime.txt）
+# Python 建议：3.12.x（见 runtime.txt / .python-version / nixpacks.toml；勿用 3.14+ 跑 Django 4.2 admin）
 #
 # Railway 必需（gunicorn + whitenoise）：
 #   gunicorn
