@@ -243,7 +243,7 @@ def _shop_product_row(customer, p):
     img = (getattr(p, "image", None) or "").strip()
     image_url = _default_product_image_url()
     cu = getattr(p, "catalog_upload", None)
-    if cu:
+    if cu and getattr(cu, "name", None):
         try:
             image_url = cu.url
         except Exception:

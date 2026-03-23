@@ -36,10 +36,44 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 # Railway 通常提供 RAILWAY_ENVIRONMENT；Render 提供 RENDER / RENDER_EXTERNAL_URL
-# 未显式设置 DJANGO_DEBUG 时，在以上平台默认关闭 DEBUG（与 collectstatic + WhiteNoise 生产配置一致）
 _on_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
 _on_render = bool(os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_URL"))
-DEBUG = _env_bool("DJANGO_DEBUG", default=False if (_on_railway or _on_render) else True)
+# 优先读环境变量 DEBUG（与常见 PaaS 一致）；未设置时再回退 DJANGO_DEBUG / 平台默认
+if "DEBUG" in os.environ:
+    DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
+else:
+    DEBUG = _env_bool("DJANGO_DEBUG", default=False if (_on_railway or _on_render) else True)
+
+# 生产环境将 500 等错误打到 stderr，便于 Render / 容器日志查看 traceback
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
 if not SECRET_KEY:
