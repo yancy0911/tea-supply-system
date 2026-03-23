@@ -276,6 +276,11 @@ class Order(models.Model):
         verbose_name="游客会话标识",
         help_text="未登录商城下单时写入 session key，用于成功页校验；已登录客户订单为空。",
     )
+    confirmed = models.BooleanField(
+        default=False,
+        verbose_name="商家已确认",
+        help_text="与履约状态配合使用；新单默认未确认。",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=20,
@@ -466,7 +471,7 @@ class OrderItem(models.Model):
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="商品")
-    quantity = models.FloatField(verbose_name="数量")
+    quantity = models.FloatField(default=1, verbose_name="数量")
     sale_type = models.CharField(
         max_length=10,
         choices=SaleType.choices,
@@ -483,9 +488,16 @@ class OrderItem(models.Model):
         return f"{self.order.name} - {self.product.name}"
 
     def _apply_line_amounts(self, p, customer):
-        unit_price, pricing_note = resolve_selling_unit_price(customer, p, self.sale_type)
-        self.unit_price = float(unit_price)
-        self.pricing_note = pricing_note
+        if customer is None:
+            if self.sale_type == self.SaleType.CASE:
+                self.unit_price = float(p.price_case)
+            else:
+                self.unit_price = float(p.price_single)
+            self.pricing_note = "基础价"
+        else:
+            unit_price, pricing_note = resolve_selling_unit_price(customer, p, self.sale_type)
+            self.unit_price = float(unit_price)
+            self.pricing_note = pricing_note
         q = float(self.quantity)
         self.total_revenue = q * self.unit_price
         if self.sale_type == self.SaleType.CASE:
@@ -715,6 +727,10 @@ def _order_item_deleted_update_tier(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Product)
 def _product_prev_stock_qty(sender, instance, **kwargs):
+    if instance.price_on_request is None:
+        instance.price_on_request = False
+    if instance.stock_quantity is None:
+        instance.stock_quantity = 0.0
     if instance.pk:
         try:
             old = Product.objects.only("stock_quantity").get(pk=instance.pk)

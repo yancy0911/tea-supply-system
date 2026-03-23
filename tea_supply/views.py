@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import hashlib
+import secrets
 import time
 from collections import defaultdict
 from datetime import timedelta
@@ -94,128 +95,159 @@ def _clear_submit_lock_if_matches(*, request, lock_key: str, signature: str):
         request.session.modified = True
 
 
-def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=None, guest_session_key=""):
+def _ensure_request_session_key(request):
+    """商城下单：保证 session 存在并返回 session_key（无 request 时返回空）。"""
+    if request is None:
+        return ""
+    if not request.session.session_key:
+        request.session.create()
+    sk = (request.session.session_key or "").strip()
+    if not sk:
+        request.session.save()
+        sk = (request.session.session_key or "").strip()
+    return sk[:40]
+
+
+def _guest_order_session_key(request, explicit=None):
+    if explicit and str(explicit).strip():
+        return str(explicit).strip()[:40]
+    sk = _ensure_request_session_key(request)
+    if sk:
+        return sk
+    return secrets.token_hex(20)[:40]
+
+
+def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, shipping=None, guest_session_key=None):
     """
     从购物车明细创建订单（批发录单 / 客户商城共用逻辑）。
+    request: 可为 None（店员录单）；商城下单传入 request 以绑定 session。
     lines: 已解析的 list，元素为 dict：product_id, sale_type, quantity
     from_shop=True 时跳过赊账/额度校验（商城现结/线下对账由老板处理）。
-    shipping: contact_name, delivery_phone, store_name, delivery_address, order_note
-    customer_obj 可为 None：商城游客按基础价下单，guest_session_key 写入订单供成功页校验。
     """
-    if not isinstance(lines, list) or len(lines) == 0:
-        raise ValidationError("请至少添加一条订单明细后再提交")
+    try:
+        if not isinstance(lines, list) or len(lines) == 0:
+            raise ValidationError("请至少添加一条订单明细后再提交")
 
-    shipping = shipping or {}
-    if from_shop:
-        cn = (shipping.get("contact_name") or "").strip()
-        phone = (shipping.get("delivery_phone") or "").strip()
-        addr = (shipping.get("delivery_address") or "").strip()
-        if not cn:
-            raise ValidationError("请填写收货人")
-        if not phone:
-            raise ValidationError("请填写联系电话")
-        if not addr:
-            raise ValidationError("请填写配送地址")
-        if customer_obj is not None:
-            reason = customer_obj.shop_order_denial_reason()
-            if reason:
-                raise ValidationError(reason)
-    else:
-        if customer_obj is None:
-            raise ValidationError("请选择客户")
-        if not customer_obj.allow_credit:
-            raise ValidationError("该客户不允许赊账下单（原材料供应链未开放欠款权限）")
-
-    current_unsettled = unsettled_amount_for_customer(customer_obj) if customer_obj else 0.0
-    credit_limit = float(customer_obj.credit_limit) if customer_obj else 0.0
-
-    order_total = 0.0
-    validated = []
-    for raw in lines:
-        if raw.get("product_id") is None:
-            raise ValidationError("订单明细缺少商品")
-        pid = int(raw["product_id"])
-        sale_type = raw.get("sale_type", OrderItem.SaleType.SINGLE)
-        qty = float(raw.get("quantity", 0))
-        if qty <= 0:
-            raise ValidationError("数量必须大于 0")
-        if sale_type not in (OrderItem.SaleType.SINGLE, OrderItem.SaleType.CASE):
-            raise ValidationError("无效的销售方式")
-
-        p = Product.objects.get(pk=pid)
-        if not p.is_active:
-            raise ValidationError(f"商品「{p.name}」已停用")
-        if sale_type == OrderItem.SaleType.SINGLE and not p.can_split_sale:
-            raise ValidationError(f"商品「{p.name}」不可拆卖，请选择整箱")
-        if qty < float(p.minimum_order_qty):
-            raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
-
-        unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)  # 游客 customer_obj=None → 基础价
-        if float(unit_price) <= 0:
-            raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
-        line_amt = qty * float(unit_price)
-        order_total += line_amt
-        validated.append({"product_id": pid, "sale_type": sale_type, "quantity": qty})
-
-    # 按商品汇总需求量（同一 SKU 多行合并），校验不超卖（待确认订单不扣库存，仅校验）
-    needs = defaultdict(float)
-    for v in validated:
-        p = Product.objects.get(pk=v["product_id"])
-        probe = OrderItem(product=p, quantity=v["quantity"], sale_type=v["sale_type"])
-        needs[v["product_id"]] += float(_stock_need_for_line(probe, p))
-    for pid, need in needs.items():
-        if need <= 0:
-            continue
-        p = Product.objects.get(pk=pid)
-        if p.ingredient_id:
-            ing = Ingredient.objects.filter(pk=p.ingredient_id).first()
-            cur = float(ing.stock) if ing else 0.0
-            if cur < need:
-                raise ValidationError(
-                    f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
-                )
-        else:
-            cur = float(p.stock_quantity)
-            if cur < need:
-                raise ValidationError(
-                    f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
-                )
-
-    if not from_shop and credit_limit > 0:
-        if current_unsettled >= credit_limit:
-            raise ValidationError("当前应收账款已用满信用额度，无法继续下单")
-        if current_unsettled + order_total > credit_limit:
-            raise ValidationError("本次下单将超出信用额度，无法继续下单")
-
-    with transaction.atomic():
-        create_kwargs = {}
-        if customer_obj is not None:
-            create_kwargs["customer"] = customer_obj
+        shipping = shipping or {}
         if from_shop:
-            ts = timezone.now().strftime("%m%d%H%M")
+            cn = (shipping.get("contact_name") or "").strip()
+            phone = (shipping.get("delivery_phone") or "").strip()
+            addr = (shipping.get("delivery_address") or "").strip()
+            if not cn:
+                raise ValidationError("请填写收货人")
+            if not phone:
+                raise ValidationError("请填写联系电话")
+            if not addr:
+                raise ValidationError("请填写配送地址")
             if customer_obj is not None:
-                create_kwargs["name"] = f"商城-{customer_obj.name}-{ts}"
-                create_kwargs["guest_session_key"] = ""
-            else:
-                create_kwargs["name"] = f"商城-游客-{ts}"
-                create_kwargs["guest_session_key"] = (guest_session_key or "")[:40]
-            create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
-            create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[:100]
-            create_kwargs["delivery_phone"] = (shipping.get("delivery_phone") or "")[:30]
-            create_kwargs["store_name"] = (shipping.get("store_name") or "")[:200]
-            create_kwargs["delivery_address"] = (shipping.get("delivery_address") or "")[:500]
-            create_kwargs["order_note"] = (shipping.get("order_note") or "")[:2000]
+                reason = customer_obj.shop_order_denial_reason()
+                if reason:
+                    raise ValidationError(reason)
         else:
-            create_kwargs["customer"] = customer_obj
-        order = Order.objects.create(**create_kwargs)
+            if customer_obj is None:
+                raise ValidationError("请选择客户")
+            if not customer_obj.allow_credit:
+                raise ValidationError("该客户不允许赊账下单（原材料供应链未开放欠款权限）")
+
+        current_unsettled = unsettled_amount_for_customer(customer_obj) if customer_obj else 0.0
+        credit_limit = float(customer_obj.credit_limit) if customer_obj else 0.0
+
+        order_total = 0.0
+        validated = []
+        for raw in lines:
+            if raw.get("product_id") is None:
+                raise ValidationError("订单明细缺少商品")
+            pid = int(raw["product_id"])
+            sale_type = raw.get("sale_type", OrderItem.SaleType.SINGLE)
+            qraw = raw.get("quantity", 1)
+            try:
+                qty = float(qraw)
+            except (TypeError, ValueError):
+                qty = 1.0
+            if qty <= 0:
+                qty = 1.0
+            if sale_type not in (OrderItem.SaleType.SINGLE, OrderItem.SaleType.CASE):
+                raise ValidationError("无效的销售方式")
+
+            p = Product.objects.get(pk=pid)
+            if not p.is_active:
+                raise ValidationError(f"商品「{p.name}」已停用")
+            if sale_type == OrderItem.SaleType.SINGLE and not p.can_split_sale:
+                raise ValidationError(f"商品「{p.name}」不可拆卖，请选择整箱")
+            if qty < float(p.minimum_order_qty):
+                raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
+
+            if customer_obj is None:
+                unit_price = float(p.price_case) if sale_type == OrderItem.SaleType.CASE else float(p.price_single)
+            else:
+                unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)
+            if float(unit_price) <= 0:
+                raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
+            line_amt = qty * float(unit_price)
+            order_total += line_amt
+            validated.append({"product_id": pid, "sale_type": sale_type, "quantity": qty})
+
+        needs = defaultdict(float)
         for v in validated:
-            OrderItem.objects.create(
-                order=order,
-                product_id=v["product_id"],
-                sale_type=v["sale_type"],
-                quantity=v["quantity"],
-            )
-    return order
+            p = Product.objects.get(pk=v["product_id"])
+            probe = OrderItem(product=p, quantity=v["quantity"], sale_type=v["sale_type"])
+            needs[v["product_id"]] += float(_stock_need_for_line(probe, p))
+        for pid, need in needs.items():
+            if need <= 0:
+                continue
+            p = Product.objects.get(pk=pid)
+            if p.ingredient_id:
+                ing = Ingredient.objects.filter(pk=p.ingredient_id).first()
+                cur = float(ing.stock) if ing else 0.0
+                if cur < need:
+                    raise ValidationError(
+                        f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
+                    )
+            else:
+                cur = float(p.stock_quantity or 0)
+                if cur < need:
+                    raise ValidationError(
+                        f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
+                    )
+
+        if not from_shop and credit_limit > 0:
+            if current_unsettled >= credit_limit:
+                raise ValidationError("当前应收账款已用满信用额度，无法继续下单")
+            if current_unsettled + order_total > credit_limit:
+                raise ValidationError("本次下单将超出信用额度，无法继续下单")
+
+        with transaction.atomic():
+            create_kwargs = {"confirmed": False}
+            if customer_obj is not None:
+                create_kwargs["customer"] = customer_obj
+            if from_shop:
+                ts = timezone.now().strftime("%m%d%H%M")
+                if customer_obj is not None:
+                    create_kwargs["name"] = f"商城-{customer_obj.name}-{ts}"
+                    create_kwargs["guest_session_key"] = ""
+                else:
+                    create_kwargs["name"] = f"商城-游客-{ts}"
+                    create_kwargs["guest_session_key"] = _guest_order_session_key(request, guest_session_key)
+                create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
+                create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[:100]
+                create_kwargs["delivery_phone"] = (shipping.get("delivery_phone") or "")[:30]
+                create_kwargs["store_name"] = (shipping.get("store_name") or "")[:200]
+                create_kwargs["delivery_address"] = (shipping.get("delivery_address") or "")[:500]
+                create_kwargs["order_note"] = (shipping.get("order_note") or "")[:2000]
+            else:
+                create_kwargs["customer"] = customer_obj
+            order = Order.objects.create(**create_kwargs)
+            for v in validated:
+                OrderItem.objects.create(
+                    order=order,
+                    product_id=v["product_id"],
+                    sale_type=v["sale_type"],
+                    quantity=v["quantity"],
+                )
+        return order
+    except Exception as e:
+        print(e)
+        raise
 
 
 def get_shop_customer(request):
@@ -399,17 +431,21 @@ def wholesale_order_entry(request):
 
             lines = json.loads(lines_raw)
             customer_obj = Customer.objects.get(pk=customer_id)
-            submit_order_from_lines(customer_obj, lines)
+            submit_order_from_lines(request, customer_obj, lines)
             _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
             messages.success(request, "录单成功")
             return redirect("wholesale-order-entry")
-        except Customer.DoesNotExist:
+        except Customer.DoesNotExist as exc:
+            print(exc)
             messages.error(request, "客户或商品不存在，请刷新重试")
-        except Product.DoesNotExist:
+        except Product.DoesNotExist as exc:
+            print(exc)
             messages.error(request, "客户或商品不存在，请刷新重试")
         except (ValueError, TypeError, ValidationError) as exc:
+            print(exc)
             messages.error(request, str(exc))
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
+            print(exc)
             messages.error(request, "订单明细格式错误")
         finally:
             # 失败也清锁，允许用户修正后重试
@@ -643,25 +679,29 @@ def shop_submit_order(request):
         }
         if customer:
             order = submit_order_from_lines(
-                customer, lines, from_shop=True, shipping=shipping, guest_session_key=""
+                request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
             )
         else:
             order = submit_order_from_lines(
-                None, lines, from_shop=True, shipping=shipping, guest_session_key=session_key
+                request, None, lines, from_shop=True, shipping=shipping, guest_session_key=session_key or None
             )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.success(request, "批发订单已提交")
         return redirect("shop-order-success", order_id=order.id)
     except (ValidationError, ValueError, TypeError) as exc:
+        print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.error(request, str(exc))
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as exc:
+        print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.error(request, "订单数据格式错误")
-    except Product.DoesNotExist:
+    except Product.DoesNotExist as exc:
+        print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.error(request, "商品不存在，请刷新后重试")
     except Exception as exc:
+        print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.error(request, f"提交失败：{exc}")
     return redirect(fail_redirect)
