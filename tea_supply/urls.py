@@ -17,8 +17,8 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib.auth import views as auth_views
 from django.urls import include, path
+from tea_supply.views import register_view
 
 # 后台管理仅老板（superuser）可进入；员工使用业务页面处理订单。
 admin.site.has_permission = lambda request: bool(
@@ -27,13 +27,8 @@ admin.site.has_permission = lambda request: bool(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("register/", register_view, name="register"),
     path("", include("main.urls")),
-    path(
-        "login/",
-        auth_views.LoginView.as_view(template_name="registration/login.html"),
-        name="login",
-    ),
-    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

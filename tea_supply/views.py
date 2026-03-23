@@ -4,23 +4,28 @@ import json
 import hashlib
 import secrets
 import time
+import os
 from functools import wraps
 from collections import defaultdict
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Min, Q, Sum
-from django.http import HttpResponseForbidden
+from django.db.models import Count, F, Min, Q, Sum
+from django.db.models.functions import Coalesce
+from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import (
     CUSTOMER_TIER_DISCOUNT,
+    CreditApplication,
     Customer,
     CustomerProductPrice,
     Ingredient,
@@ -30,6 +35,7 @@ from .models import (
     ProductCategory,
     UserRole,
     deduct_stock_for_order,
+    recalculate_order_totals,
     _stock_need_for_line,
     resolve_selling_unit_price,
 )
@@ -168,6 +174,12 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             raise ValidationError("请至少添加一条订单明细后再提交")
 
         shipping = shipping or {}
+        settlement_type = str(shipping.get("settlement_type") or Order.SettlementType.CASH).strip().lower()
+        if settlement_type not in (Order.SettlementType.CASH, Order.SettlementType.CREDIT):
+            settlement_type = Order.SettlementType.CASH
+        payment_method = str(shipping.get("payment_method") or Order.PaymentMethod.STRIPE).strip().lower()
+        if payment_method not in (Order.PaymentMethod.STRIPE, Order.PaymentMethod.BANK_TRANSFER):
+            payment_method = Order.PaymentMethod.STRIPE
         if from_shop:
             cn = (shipping.get("contact_name") or "").strip()
             phone = (shipping.get("delivery_phone") or "").strip()
@@ -185,10 +197,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         else:
             if customer_obj is None:
                 raise ValidationError("请选择客户")
-            if not customer_obj.allow_credit:
-                raise ValidationError("该客户不允许赊账下单（原材料供应链未开放欠款权限）")
 
-        current_unsettled = unsettled_amount_for_customer(customer_obj) if customer_obj else 0.0
+        current_unsettled = float(customer_obj.current_debt) if customer_obj else 0.0
         credit_limit = float(customer_obj.credit_limit) if customer_obj else 0.0
 
         order_total = 0.0
@@ -249,37 +259,61 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                         f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
                     )
 
-        if not from_shop and credit_limit > 0:
+        if settlement_type == Order.SettlementType.CREDIT:
+            if customer_obj is None:
+                raise ValidationError("挂账订单必须绑定客户")
+            if not customer_obj.allow_credit:
+                raise ValidationError("该客户未开通赊账权限，仅支持现结")
+            if credit_limit <= 0:
+                raise ValidationError("该客户信用额度为 0，无法挂账")
             if current_unsettled >= credit_limit:
                 raise ValidationError("当前应收账款已用满信用额度，无法继续下单")
             if current_unsettled + order_total > credit_limit:
                 raise ValidationError("本次下单将超出信用额度，无法继续下单")
 
         with transaction.atomic():
-            create_kwargs = {"confirmed": False}
+            customer_locked = None
             if customer_obj is not None:
-                create_kwargs["customer"] = customer_obj
+                customer_locked = Customer.objects.select_for_update().get(pk=customer_obj.pk)
+
+            # 1) 先组装订单头字段（每次提交只创建一条 Order）
+            create_kwargs = {"confirmed": False}
+            if customer_locked is not None:
+                create_kwargs["customer"] = customer_locked
             if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
                 create_kwargs["ordered_by"] = request.user
-            elif customer_obj is not None and customer_obj.user_id:
-                create_kwargs["ordered_by_id"] = customer_obj.user_id
+            elif customer_locked is not None and customer_locked.user_id:
+                create_kwargs["ordered_by_id"] = customer_locked.user_id
             if from_shop:
                 ts = timezone.now().strftime("%m%d%H%M")
-                if customer_obj is not None:
-                    create_kwargs["name"] = f"商城-{customer_obj.name}-{ts}"
+                if customer_locked is not None:
+                    create_kwargs["name"] = f"商城-{customer_locked.name}-{ts}"
                     create_kwargs["guest_session_key"] = ""
                 else:
                     create_kwargs["name"] = f"商城-游客-{ts}"
                     create_kwargs["guest_session_key"] = _guest_order_session_key(request, guest_session_key)
                 create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
+                create_kwargs["settlement_type"] = settlement_type
+                create_kwargs["payment_method"] = payment_method
+                if payment_method == Order.PaymentMethod.BANK_TRANSFER:
+                    create_kwargs["payment_status"] = Order.PaymentStatus.PENDING_TRANSFER
+                else:
+                    create_kwargs["payment_status"] = Order.PaymentStatus.UNPAID
                 create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[:100]
                 create_kwargs["delivery_phone"] = (shipping.get("delivery_phone") or "")[:30]
                 create_kwargs["store_name"] = (shipping.get("store_name") or "")[:200]
                 create_kwargs["delivery_address"] = (shipping.get("delivery_address") or "")[:500]
                 create_kwargs["order_note"] = (shipping.get("order_note") or "")[:2000]
+                create_kwargs["transfer_reference"] = (shipping.get("transfer_reference") or "")[:255]
             else:
-                create_kwargs["customer"] = customer_obj
+                create_kwargs["customer"] = customer_locked
+                create_kwargs["settlement_type"] = settlement_type
+                create_kwargs["payment_method"] = payment_method
+
+            # 2) 创建订单头（一次提交仅一条）
             order = Order.objects.create(**create_kwargs)
+
+            # 3) 明细只写 OrderItem（不重复建 Order）
             for v in validated:
                 OrderItem.objects.create(
                     order=order,
@@ -287,7 +321,11 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                     sale_type=v["sale_type"],
                     quantity=v["quantity"],
                 )
-            # 基础库存联动：下单成功即扣减，库存不足会抛错并整体回滚。
+
+            # 4) 统一重算总金额：order.total_amount = sum(order_items.line_total)
+            recalculate_order_totals(order.id)
+
+            # 5) 基础库存联动：下单成功即扣减；不足时抛错并整体回滚
             deduct_stock_for_order(order.id)
         return order
     except Exception as e:
@@ -302,6 +340,10 @@ def get_shop_customer(request):
     return Customer.objects.filter(user_id=u.id).first()
 
 
+def _ensure_customer_role(user):
+    UserRole.objects.update_or_create(user=user, defaults={"role": UserRole.Role.CUSTOMER})
+
+
 def shop_order_permission(customer):
     """
     商城是否允许提交订单。
@@ -309,7 +351,7 @@ def shop_order_permission(customer):
     仅已登录且绑定客户档案的用户可下单。
     """
     if not customer:
-        return False, "请先使用已开通的客户账号登录"
+        return False, "请先登录后下单（没有账号可先注册）"
     reason = customer.shop_order_denial_reason()
     if reason:
         return False, reason
@@ -580,7 +622,7 @@ def shop_home(request):
         "shop_unsettled": unsettled_amount_for_customer(customer) if customer else None,
         "shop_can_order": can_order,
         "shop_order_block_hint": order_hint,
-        "shop_logged_in": bool(customer),
+        "shop_logged_in": bool(getattr(request, "user", None) and request.user.is_authenticated),
         "missing_images": missing_images,
         "missing_prices": missing_prices,
     }
@@ -597,8 +639,174 @@ def shop_logout(request):
     return redirect("/logout/?next=/shop/")
 
 
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("shop-home")
+    if request.method == "GET":
+        return render(request, "shop/register.html")
+
+    username = (request.POST.get("username") or "").strip()
+    password = (request.POST.get("password") or "").strip()
+    confirm_password = (request.POST.get("confirm_password") or request.POST.get("confirm") or "").strip()
+
+    if not username or not password or not confirm_password:
+        messages.error(request, "请完整填写用户名、密码和确认密码")
+        return render(request, "shop/register.html")
+    if len(password) < 6:
+        messages.error(request, "密码至少 6 位")
+        return render(request, "shop/register.html")
+    if password != confirm_password:
+        messages.error(request, "两次输入的密码不一致")
+        return render(request, "shop/register.html")
+    if Customer.objects.filter(phone=username).exists():
+        messages.error(request, "该用户名已注册，请直接登录")
+        return render(request, "shop/register.html")
+
+    from django.contrib.auth.models import User
+
+    if User.objects.filter(username=username).exists():
+        messages.error(request, "该用户名已被占用，请更换后重试")
+        return render(request, "shop/register.html")
+
+    with transaction.atomic():
+        user = User.objects.create_user(username=username, password=password, first_name=username[:150])
+        _ensure_customer_role(user)
+        Customer.objects.create(
+            user=user,
+            name=username[:100],
+            phone=username[:30],
+            shop_name=f"{username}的店"[:200],
+            address="待完善",
+            delivery_zone="待分配",
+            customer_level=Customer.Level.C,
+            allow_credit=False,
+            credit_limit=0.0,
+            current_debt=0.0,
+            payment_cycle=Customer.PaymentCycle.CASH,
+            account_status=Customer.AccountStatus.APPROVED,
+        )
+        auth_login(request, user)
+    messages.success(request, "注册成功，欢迎登录批发商城")
+    return redirect("shop-home")
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("shop-home")
+    if request.method == "GET":
+        return render(request, "shop/login.html")
+
+    username = (request.POST.get("username") or "").strip()
+    password = (request.POST.get("password") or "").strip()
+    user = authenticate(request, username=username, password=password)
+    if not user:
+        messages.error(request, "用户名或密码错误")
+        return render(request, "shop/login.html")
+    auth_login(request, user)
+    _ensure_customer_role(user)
+    next_url = (request.POST.get("next") or "").strip()
+    if next_url:
+        return redirect(next_url)
+    return redirect("shop-home")
+
+
+@login_required
+def logout_view(request):
+    auth_logout(request)
+    return redirect("login")
+
+
+@login_required
+def profile_view(request):
+    customer = get_shop_customer(request)
+    if not customer:
+        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        return redirect("shop-home")
+    current_debt = float(customer.current_debt or 0.0)
+    return render(
+        request,
+        "shop/profile.html",
+        {"shop_customer": customer, "current_debt": current_debt},
+    )
+
+
+@login_required(login_url="/login/")
+def my_orders_view(request):
+    customer = get_shop_customer(request)
+    if not customer:
+        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        return redirect("shop-home")
+    orders = (
+        Order.objects.filter(ordered_by_id=request.user.id, customer_id=customer.pk)
+        .prefetch_related("items__product")
+        .order_by("-created_at")
+    )
+    return render(
+        request,
+        "shop/my_orders.html",
+        {"orders": orders, "shop_customer": customer},
+    )
+
+
+@login_required
+def credit_apply_view(request):
+    customer = get_shop_customer(request)
+    if not customer:
+        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        return redirect("shop-home")
+    if request.method == "GET":
+        latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
+        return render(
+            request,
+            "shop/credit_apply.html",
+            {"shop_customer": customer, "latest_application": latest},
+        )
+
+    monthly_purchase_estimate = float(request.POST.get("monthly_purchase_estimate") or 0)
+    requested_credit_limit = float(request.POST.get("requested_credit_limit") or 0)
+    if monthly_purchase_estimate <= 0 or requested_credit_limit <= 0:
+        messages.error(request, "月采购额与申请额度必须大于 0")
+        return redirect("credit-apply")
+
+    CreditApplication.objects.create(
+        customer=customer,
+        shop_name=(request.POST.get("shop_name") or customer.shop_name or "")[:200],
+        contact_name=(request.POST.get("contact_name") or customer.name or "")[:100],
+        phone=(request.POST.get("phone") or customer.phone or "")[:30],
+        monthly_purchase_estimate=monthly_purchase_estimate,
+        requested_credit_limit=requested_credit_limit,
+        note=(request.POST.get("note") or "")[:2000],
+        status=CreditApplication.Status.PENDING,
+    )
+    messages.success(request, "信用额度申请已提交，等待老板审核")
+    return redirect("credit-home")
+
+
+@login_required
+def credit_home_view(request):
+    customer = get_shop_customer(request)
+    if not customer:
+        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        return redirect("shop-home")
+    current_debt = float(customer.current_debt or 0.0)
+    latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
+    return render(
+        request,
+        "shop/credit_home.html",
+        {
+            "shop_customer": customer,
+            "current_debt": current_debt,
+            "used_credit": current_debt,
+            "remaining_credit": max(0.0, float(customer.credit_limit or 0.0) - current_debt),
+            "latest_application": latest,
+        },
+    )
+
+
 @require_GET
 def shop_checkout(request):
+    if not request.user.is_authenticated:
+        return redirect(f"/login/?next={request.path}")
     customer = get_shop_customer(request)
     can_order, order_hint = shop_order_permission(customer)
     categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
@@ -677,7 +885,8 @@ def shop_orders(request):
 def shop_submit_order(request):
     if not request.user.is_authenticated:
         messages.error(request, "请先登录客户账号后再提交订单")
-        return redirect("/login/?next=/shop/")
+        next_path = "/checkout/" if (request.POST.get("next") or "").strip() == "checkout" else "/shop/"
+        return redirect(f"/login/?next={next_path}")
     customer = get_shop_customer(request)
     can_order, hint = shop_order_permission(customer)
     if not can_order:
@@ -693,6 +902,9 @@ def shop_submit_order(request):
         "store_name": request.POST.get("store_name", ""),
         "delivery_address": request.POST.get("delivery_address", ""),
         "order_note": request.POST.get("order_note", ""),
+        "settlement_type": request.POST.get("settlement_type", Order.SettlementType.CASH),
+        "payment_method": request.POST.get("payment_method", Order.PaymentMethod.STRIPE),
+        "transfer_reference": request.POST.get("transfer_reference", ""),
     }
     sig_id = str(customer.pk)
     sig = _make_order_submit_signature(
@@ -720,13 +932,19 @@ def shop_submit_order(request):
             "store_name": request.POST.get("store_name", ""),
             "delivery_address": request.POST.get("delivery_address", ""),
             "order_note": request.POST.get("order_note", ""),
+            "settlement_type": request.POST.get("settlement_type", Order.SettlementType.CASH),
+            "payment_method": request.POST.get("payment_method", Order.PaymentMethod.STRIPE),
+            "transfer_reference": request.POST.get("transfer_reference", ""),
         }
         order = submit_order_from_lines(
             request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
         )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        messages.success(request, "批发订单已提交")
-        return redirect("shop-order-success", order_id=order.id)
+        payment_method = str(request.POST.get("payment_method") or Order.PaymentMethod.STRIPE).strip().lower()
+        if payment_method == Order.PaymentMethod.STRIPE:
+            return redirect("stripe-create-session", order_id=order.id)
+        messages.success(request, "订单已提交，请按转账信息完成付款")
+        return redirect("bank-transfer-instructions", order_id=order.id)
     except (ValidationError, ValueError, TypeError) as exc:
         print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
@@ -744,6 +962,13 @@ def shop_submit_order(request):
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.error(request, f"提交失败：{exc}")
     return redirect(fail_redirect)
+
+
+@login_required
+@require_POST
+def checkout_submit_order(request):
+    """Checkout 专用提交入口，复用商城下单逻辑。"""
+    return shop_submit_order(request)
 
 
 def _sales_units_by_product(days):
@@ -1056,8 +1281,8 @@ def orders_list(request):
                     "quantity": item.quantity,
                     "line_amount": float(item.total_revenue),
                     "amount": float(order.total_revenue),
-                    "line_cost": float(order.total_cost),
-                    "line_profit": float(order.profit),
+                    "line_cost": float(item.total_cost),
+                    "line_profit": float(item.profit),
                 }
             )
 
@@ -1081,10 +1306,125 @@ def orders_list(request):
     )
 
 
+@login_required
+@internal_user_required
+def reports_dashboard(request):
+    """基础报表：销售/利润概览 + 客户/商品 TOP10。"""
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+
+    valid_orders = Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+    today_orders = valid_orders.filter(created_at__date=today)
+    month_orders = valid_orders.filter(created_at__date__gte=month_start, created_at__date__lte=today)
+
+    today_agg = today_orders.aggregate(
+        sales=Coalesce(Sum("total_revenue"), 0.0),
+        profit=Coalesce(Sum("profit"), 0.0),
+    )
+    month_agg = month_orders.aggregate(
+        sales=Coalesce(Sum("total_revenue"), 0.0),
+        profit=Coalesce(Sum("profit"), 0.0),
+    )
+    pending_confirm_count = Order.objects.filter(workflow_status=Order.WorkflowStatus.PENDING_CONFIRM).count()
+    confirmed_unpaid_amount = (
+        Order.objects.filter(workflow_status=Order.WorkflowStatus.CONFIRMED, status=Order.Status.PENDING)
+        .aggregate(v=Coalesce(Sum("total_revenue"), 0.0))
+        .get("v", 0.0)
+    )
+
+    customer_sales_top = (
+        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        .exclude(customer__isnull=True)
+        .values("customer_id", "customer__name")
+        .annotate(value=Coalesce(Sum("total_revenue"), 0.0))
+        .order_by("-value")[:10]
+    )
+    customer_profit_top = (
+        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        .exclude(customer__isnull=True)
+        .values("customer_id", "customer__name")
+        .annotate(value=Coalesce(Sum("profit"), 0.0))
+        .order_by("-value")[:10]
+    )
+    customer_debt_top = (
+        Customer.objects.values("id", "name")
+        .annotate(value=Coalesce(F("current_debt"), 0.0))
+        .order_by("-value")[:10]
+    )
+
+    product_base = (
+        OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
+        .values("product_id", "product__name", "product__sku")
+    )
+    product_qty_top = (
+        product_base.annotate(value=Coalesce(Sum("quantity"), 0.0)).order_by("-value")[:10]
+    )
+    product_sales_top = (
+        product_base.annotate(value=Coalesce(Sum("total_revenue"), 0.0)).order_by("-value")[:10]
+    )
+    product_profit_top = (
+        product_base.annotate(value=Coalesce(Sum("profit"), 0.0)).order_by("-value")[:10]
+    )
+
+    context = {
+        "kpi_today_sales": float(today_agg["sales"] or 0.0),
+        "kpi_today_profit": float(today_agg["profit"] or 0.0),
+        "kpi_pending_confirm_count": int(pending_confirm_count),
+        "kpi_confirmed_unpaid_amount": float(confirmed_unpaid_amount or 0.0),
+        "kpi_month_sales": float(month_agg["sales"] or 0.0),
+        "kpi_month_profit": float(month_agg["profit"] or 0.0),
+        "customer_sales_top": list(customer_sales_top),
+        "customer_profit_top": list(customer_profit_top),
+        "customer_debt_top": list(customer_debt_top),
+        "product_qty_top": list(product_qty_top),
+        "product_sales_top": list(product_sales_top),
+        "product_profit_top": list(product_profit_top),
+    }
+    return render(request, "reports_basic.html", context)
+
+
 _MSG_SETTLED_RELEASE = (
     "结算成功：本笔应收账款已核销，该笔不再占用信用额度；"
     "客户欠款与风险提示已实时更新，若此前因额度用满无法录单，现可继续下单。"
 )
+
+
+def _increase_debt_on_confirm(order):
+    """挂账订单在确认后计入欠款；幂等（仅计入一次）。"""
+    if (
+        order.settlement_type != Order.SettlementType.CREDIT
+        or not order.customer_id
+        or order.is_debt_counted
+    ):
+        return
+    cust = Customer.objects.select_for_update().get(pk=order.customer_id)
+    latest_debt = float(cust.current_debt or 0.0)
+    latest_limit = float(cust.credit_limit or 0.0)
+    order_amt = float(order.total_revenue or 0.0)
+    if latest_debt >= latest_limit:
+        raise ValidationError("额度已用完，无法继续挂账下单")
+    if latest_debt + order_amt > latest_limit:
+        raise ValidationError("本次挂账将超出信用额度，无法确认订单")
+    cust.current_debt = max(0.0, latest_debt + order_amt)
+    cust.save(update_fields=["current_debt"])
+    order.is_debt_counted = True
+    order.save(update_fields=["is_debt_counted"])
+
+
+def _decrease_debt_if_counted(order):
+    """挂账订单在收款/取消时回冲欠款；幂等（仅已计入才减）。"""
+    if (
+        order.settlement_type != Order.SettlementType.CREDIT
+        or not order.customer_id
+        or not order.is_debt_counted
+    ):
+        return
+    cust = Customer.objects.select_for_update().get(pk=order.customer_id)
+    new_debt = float(cust.current_debt or 0.0) - float(order.total_revenue or 0.0)
+    cust.current_debt = max(0.0, new_debt)
+    cust.save(update_fields=["current_debt"])
+    order.is_debt_counted = False
+    order.save(update_fields=["is_debt_counted"])
 
 
 @login_required
@@ -1094,9 +1434,49 @@ def mark_order_paid(request, order_id):
     if order.status == Order.Status.PAID:
         messages.info(request, "该订单已是「已结算」，未重复变更额度占用。")
         return redirect("orders-list")
-    order.status = Order.Status.PAID
-    order.save(update_fields=["status"])
+    with transaction.atomic():
+        order = Order.objects.select_related("customer").select_for_update().get(pk=order_id)
+        if order.status == Order.Status.PAID:
+            messages.info(request, "该订单已是「已结算」，未重复变更额度占用。")
+            return redirect("orders-list")
+        order.status = Order.Status.PAID
+        order.payment_status = Order.PaymentStatus.PAID
+        order.paid_at = timezone.now()
+        order.save(update_fields=["status", "payment_status", "paid_at"])
+        _decrease_debt_if_counted(order)
     messages.success(request, _MSG_SETTLED_RELEASE)
+    return redirect("orders-list")
+
+
+@login_required
+@internal_user_required
+def confirm_order(request, order_id):
+    with transaction.atomic():
+        order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
+        if order.workflow_status == Order.WorkflowStatus.CANCELLED:
+            messages.error(request, "已取消订单不能确认")
+            return redirect("orders-list")
+        if order.workflow_status != Order.WorkflowStatus.CONFIRMED:
+            order.workflow_status = Order.WorkflowStatus.CONFIRMED
+            order.save(update_fields=["workflow_status"])
+        try:
+            _increase_debt_on_confirm(order)
+        except ValidationError as exc:
+            messages.error(request, str(exc))
+            return redirect("orders-list")
+    messages.success(request, "订单已确认")
+    return redirect("orders-list")
+
+
+@login_required
+@internal_user_required
+def cancel_order(request, order_id):
+    with transaction.atomic():
+        order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
+        order.workflow_status = Order.WorkflowStatus.CANCELLED
+        order.save(update_fields=["workflow_status"])
+        _decrease_debt_if_counted(order)
+    messages.success(request, "订单已取消")
     return redirect("orders-list")
 
 
@@ -1118,9 +1498,25 @@ def order_status_update(request, order_id):
                         pk=order_id,
                     )
                     old_status = order.status
+                    old_wf = order.workflow_status
                     order.status = status
                     order.workflow_status = workflow
-                    order.save(update_fields=["status", "workflow_status"])
+                    if status == Order.Status.PAID:
+                        order.payment_status = Order.PaymentStatus.PAID
+                        order.paid_at = timezone.now()
+                    order.save(update_fields=["status", "workflow_status", "payment_status", "paid_at"])
+                    if (
+                        workflow == Order.WorkflowStatus.CONFIRMED
+                        and old_wf != Order.WorkflowStatus.CONFIRMED
+                    ):
+                        _increase_debt_on_confirm(order)
+                    if workflow == Order.WorkflowStatus.CANCELLED and old_wf != Order.WorkflowStatus.CANCELLED:
+                        _decrease_debt_if_counted(order)
+                    if (
+                        status == Order.Status.PAID
+                        and old_status != Order.Status.PAID
+                    ):
+                        _decrease_debt_if_counted(order)
                     if status == Order.Status.PAID and old_status != Order.Status.PAID:
                         messages.success(request, _MSG_SETTLED_RELEASE)
                     else:
@@ -1141,6 +1537,168 @@ def order_status_update(request, order_id):
         "workflow_choices": Order.WorkflowStatus.choices,
     }
     return render(request, "order_status_update.html", context)
+
+
+def _stripe_secret_key():
+    return (os.environ.get("STRIPE_SECRET_KEY") or getattr(settings, "STRIPE_SECRET_KEY", "") or "").strip()
+
+
+def _bank_transfer_info():
+    return {
+        "bank_name": (os.environ.get("BANK_NAME") or getattr(settings, "BANK_NAME", "") or "").strip(),
+        "account_name": (os.environ.get("BANK_ACCOUNT_NAME") or getattr(settings, "BANK_ACCOUNT_NAME", "") or "").strip(),
+        "account_number": (os.environ.get("BANK_ACCOUNT_NUMBER") or getattr(settings, "BANK_ACCOUNT_NUMBER", "") or "").strip(),
+        "routing_number": (os.environ.get("BANK_ROUTING_NUMBER") or getattr(settings, "BANK_ROUTING_NUMBER", "") or "").strip(),
+    }
+
+
+@login_required
+@require_GET
+def stripe_create_session(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
+    if order.payment_method != Order.PaymentMethod.STRIPE:
+        messages.error(request, "该订单不是 Stripe 支付方式")
+        return redirect("shop-order-success", order_id=order.id)
+    secret_key = _stripe_secret_key()
+    if not secret_key:
+        messages.error(request, "未配置 Stripe 密钥，请联系管理员")
+        return redirect("shop-checkout")
+    try:
+        import stripe
+    except Exception:
+        messages.error(request, "Stripe SDK 未安装，请联系管理员")
+        return redirect("shop-checkout")
+
+    stripe.api_key = secret_key
+    success_url = request.build_absolute_uri(reverse("stripe-success")) + f"?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}"
+    cancel_url = request.build_absolute_uri(reverse("stripe-cancel")) + f"?order_id={order.id}"
+
+    amount = int(round(float(order.total_revenue or 0.0) * 100))
+    if amount <= 0:
+        messages.error(request, "订单金额无效，无法发起支付")
+        return redirect("shop-checkout")
+
+    session = stripe.checkout.Session.create(
+        mode="payment",
+        success_url=success_url,
+        cancel_url=cancel_url,
+        payment_method_types=["card"],
+        line_items=[
+            {
+                "price_data": {
+                    "currency": "cny",
+                    "product_data": {"name": f"订单 #{order.id}"},
+                    "unit_amount": amount,
+                },
+                "quantity": 1,
+            }
+        ],
+        metadata={"order_id": str(order.id), "user_id": str(request.user.id)},
+    )
+    Order.objects.filter(pk=order.id).update(stripe_session_id=session.id, payment_status=Order.PaymentStatus.UNPAID)
+    return redirect(session.url, permanent=False)
+
+
+@login_required
+@require_GET
+def stripe_success(request):
+    order_id = request.GET.get("order_id")
+    session_id = (request.GET.get("session_id") or "").strip()
+    if not order_id or not str(order_id).isdigit():
+        return HttpResponseBadRequest("缺少订单号")
+    order = get_object_or_404(Order, pk=int(order_id), ordered_by_id=request.user.id)
+
+    secret_key = _stripe_secret_key()
+    if not secret_key:
+        messages.error(request, "未配置 Stripe 密钥，请联系管理员")
+        return redirect("shop-checkout")
+    try:
+        import stripe
+    except Exception:
+        messages.error(request, "Stripe SDK 未安装，请联系管理员")
+        return redirect("shop-checkout")
+    stripe.api_key = secret_key
+
+    if not session_id:
+        session_id = order.stripe_session_id or ""
+    if not session_id:
+        messages.error(request, "未获取到支付会话，请重试")
+        return redirect("shop-checkout")
+
+    session = stripe.checkout.Session.retrieve(session_id)
+    if getattr(session, "payment_status", "") == "paid":
+        with transaction.atomic():
+            o = Order.objects.select_for_update().get(pk=order.id)
+            o.payment_method = Order.PaymentMethod.STRIPE
+            o.payment_status = Order.PaymentStatus.PAID
+            o.paid_at = timezone.now()
+            o.status = Order.Status.PAID
+            if o.workflow_status == Order.WorkflowStatus.PENDING_CONFIRM:
+                o.workflow_status = Order.WorkflowStatus.CONFIRMED
+            o.save(
+                update_fields=[
+                    "payment_method",
+                    "payment_status",
+                    "paid_at",
+                    "status",
+                    "workflow_status",
+                ]
+            )
+        messages.success(request, "Stripe 支付成功")
+        return redirect("shop-order-success", order_id=order.id)
+
+    Order.objects.filter(pk=order.id).update(payment_status=Order.PaymentStatus.FAILED)
+    messages.error(request, "支付未完成，请重试")
+    return redirect("shop-checkout")
+
+
+@login_required
+@require_GET
+def stripe_cancel(request):
+    order_id = request.GET.get("order_id")
+    if order_id and str(order_id).isdigit():
+        Order.objects.filter(pk=int(order_id), ordered_by_id=request.user.id).update(
+            payment_status=Order.PaymentStatus.UNPAID
+        )
+    messages.warning(request, "已取消支付，你可以重新发起支付")
+    return redirect("shop-checkout")
+
+
+@login_required
+@require_GET
+def bank_transfer_instructions(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
+    bank = _bank_transfer_info()
+    return render(
+        request,
+        "shop/bank_transfer_instructions.html",
+        {"order": order, "bank_info": bank},
+    )
+
+
+@login_required
+@require_POST
+def update_transfer_reference(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
+    ref = (request.POST.get("transfer_reference") or "").strip()[:255]
+    order.transfer_reference = ref
+    if order.payment_method == Order.PaymentMethod.BANK_TRANSFER and order.payment_status == Order.PaymentStatus.UNPAID:
+        order.payment_status = Order.PaymentStatus.PENDING_TRANSFER
+        order.save(update_fields=["transfer_reference", "payment_status"])
+    else:
+        order.save(update_fields=["transfer_reference"])
+    messages.success(request, "转账参考号已保存")
+    return redirect("my-orders")
+
+
+@login_required
+@internal_user_required
+def mark_order_payment_failed(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+    order.payment_status = Order.PaymentStatus.FAILED
+    order.save(update_fields=["payment_status"])
+    messages.success(request, "已标记为支付失败")
+    return redirect("orders-list")
 
 
 PRODUCT_CSV_HEADER = [

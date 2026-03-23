@@ -485,6 +485,7 @@
         margin-bottom: 4px;
       }
       .order-modal-box input,
+      .order-modal-box select,
       .order-modal-box textarea {
         width: 100%;
         padding: 10px 12px;
@@ -597,25 +598,16 @@
           🛒 购物车 <strong id="cart-badge">0</strong>
         </a>
         {% if shop_logged_in %}
-          <a href="{% url 'shop-orders' %}" class="shop-cart-mini" style="text-decoration: none">我的订单</a>
+          <a href="{% url 'my-orders' %}" class="shop-cart-mini" style="text-decoration: none">我的订单</a>
         {% endif %}
         <div class="shop-user">
-          {% if shop_customer %}
-            <span>您好，<strong>{{ shop_customer.name }}</strong></span>
-            {% if shop_customer.account_status == "pending" %}
-              <span style="background: rgba(251, 191, 36, 0.25); padding: 2px 8px; border-radius: 8px; font-size: 12px">待审核</span>
-            {% elif shop_customer.account_status == "disabled" %}
-              <span style="background: rgba(248, 113, 113, 0.25); padding: 2px 8px; border-radius: 8px; font-size: 12px">已禁用</span>
-            {% elif shop_customer.account_status == "approved" %}
-              <span style="opacity: 0.85; font-size: 12px">已开通采购</span>
-            {% endif %}
-            {% if shop_unsettled is not None %}
-              <span style="opacity: 0.85">待结算：¥{{ shop_unsettled|floatformat:2 }}</span>
-            {% endif %}
-            <a href="{% url 'shop-logout' %}">退出</a>
+          {% if shop_logged_in %}
+            <span>您好，<strong>{{ request.user.username }}</strong></span>
+            <a href="{% url 'my-orders' %}">我的订单</a>
+            <a href="{% url 'logout' %}">退出</a>
           {% else %}
-            <a href="/login/?next=/shop/" class="btn-go" style="text-decoration: none; text-align: center">客户登录</a>
-            <span style="opacity: 0.75">请使用老板创建的客户账号登录</span>
+            <a href="{% url 'login' %}" class="btn-go" style="text-decoration: none; text-align: center">登录</a>
+            <a href="{% url 'register' %}" class="btn-go" style="text-decoration: none; text-align: center; margin-left: 6px">注册</a>
           {% endif %}
           <a href="/" style="margin-left: 8px; opacity: 0.8">店员入口 →</a>
         </div>
@@ -665,7 +657,7 @@
           购物车
           <span style="font-size: 12px; font-weight: 500; color: var(--muted)">
             {% if not shop_customer %}
-              （请先登录客户账号后下单）
+              （请先登录后下单，没有账号可先注册）
             {% elif shop_can_order %}
               （已开通采购，可提交订单）
             {% else %}
@@ -677,7 +669,7 @@
           <p style="color: var(--muted); padding: 16px; text-align: center; margin: 0">购物车还是空的</p>
         </div>
         <div class="cart-total">合计：<span id="cart-total">¥0.00</span></div>
-        <button type="button" class="cart-submit" id="btn-submit-order" disabled>提交订单</button>
+        <button type="button" class="cart-submit" id="btn-submit-order" disabled>去结算</button>
       </aside>
     </div>
 
@@ -699,6 +691,13 @@
           <input id="f-addr" name="delivery_address" required maxlength="500" autocomplete="street-address" placeholder="详细地址" />
           <label for="f-store">门店 / 公司（选填）</label>
           <input id="f-store" name="store_name" maxlength="200" placeholder="选填" />
+          <label for="f-settle">结算方式 *</label>
+          <select id="f-settle" name="settlement_type" required>
+            <option value="cash" selected>现结</option>
+            {% if shop_customer and shop_customer.allow_credit %}
+              <option value="credit">挂账（使用信用额度）</option>
+            {% endif %}
+          </select>
           <label for="f-note">备注（选填）</label>
           <textarea id="f-note" name="order_note" maxlength="2000" placeholder="到货时间等"></textarea>
           <div class="order-modal-actions">
@@ -766,9 +765,6 @@
         var cartTotal = document.getElementById("cart-total");
         var cartBadge = document.getElementById("cart-badge");
         var btnSubmitOrder = document.getElementById("btn-submit-order");
-        var orderModal = document.getElementById("order-modal");
-        var modalLinesJson = document.getElementById("modal-lines-json");
-        var shopOrderFormModal = document.getElementById("shop-order-form-modal");
         var productCount = document.getElementById("product-count");
         var shopLoggedIn = {% if shop_customer %}true{% else %}false{% endif %};
         var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
@@ -1108,25 +1104,6 @@
           });
         });
 
-        function openOrderModal() {
-          orderModal.classList.add("is-open");
-          orderModal.setAttribute("aria-hidden", "false");
-          document.body.style.overflow = "hidden";
-          if (modalLinesJson) {
-            modalLinesJson.value = JSON.stringify(
-              cart.map(function (l) {
-                return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
-              })
-            );
-          }
-        }
-
-        function closeOrderModal() {
-          orderModal.classList.remove("is-open");
-          orderModal.setAttribute("aria-hidden", "true");
-          document.body.style.overflow = "";
-        }
-
         btnSubmitOrder.addEventListener("click", function () {
           if (shopLoggedIn && !shopCanOrder) {
             alert(shopOrderBlockHint || "当前无法下单");
@@ -1136,31 +1113,12 @@
             alert("购物车为空");
             return;
           }
-          openOrderModal();
+          if (!shopLoggedIn) {
+            window.location.href = "/login/?next=/checkout/";
+            return;
+          }
+          window.location.href = "/checkout/";
         });
-
-        document.getElementById("order-modal-backdrop").addEventListener("click", closeOrderModal);
-        document.getElementById("order-modal-cancel").addEventListener("click", closeOrderModal);
-        document.addEventListener("keydown", function (ev) {
-          if (ev.key === "Escape" && orderModal.classList.contains("is-open")) closeOrderModal();
-        });
-
-        if (shopOrderFormModal) {
-          shopOrderFormModal.addEventListener("submit", function (ev) {
-            if (shopLoggedIn && !shopCanOrder) {
-              ev.preventDefault();
-              alert(shopOrderBlockHint || "当前无法下单");
-              return;
-            }
-            if (modalLinesJson) {
-              modalLinesJson.value = JSON.stringify(
-                cart.map(function (l) {
-                  return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
-                })
-              );
-            }
-          });
-        }
 
         normalizeCartLines();
         applyProductFilter();
