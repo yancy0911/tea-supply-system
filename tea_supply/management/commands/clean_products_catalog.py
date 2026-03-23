@@ -121,16 +121,7 @@ class Command(BaseCommand):
 
                 ps = float(p2.price_single or 0)
                 pc = float(p2.price_case or 0)
-                if pc == 0 and ps > 0:
-                    p2.price_case = ps
-                    changed.append("price_case")
-                    pc = float(p2.price_case)
-
-                serious_no_price = ps <= 0 and pc <= 0
-                want_active = not serious_no_price
-                if bool(p2.is_active) != want_active:
-                    p2.is_active = want_active
-                    changed.append("is_active")
+                # 不自动把整箱价抄成单品价：单侧为 0 时由模型标记为询价商品，仍保持上架展示。
 
                 sq = float(p2.stock_quantity or 0)
                 if sq <= 0:

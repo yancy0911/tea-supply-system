@@ -365,6 +365,16 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
+      a.p-add.p-contact {
+        display: block;
+        text-align: center;
+        text-decoration: none;
+        background: linear-gradient(90deg, #334155, #475569);
+        box-sizing: border-box;
+      }
+      a.p-add.p-contact:hover {
+        filter: brightness(1.05);
+      }
       .shop-cart-panel {
         background: var(--card);
         border-radius: 12px;
@@ -654,7 +664,7 @@
         <h2>商品列表 <span style="font-weight: 400; color: var(--muted)" id="product-count"></span></h2>
         <div class="product-grid" id="product-grid">
           {% for product in products %}
-            {% include "shop/_product_card.html" with product=product %}
+            {% include "shop/_product_card.html" with product=product shop_can_order=shop_can_order shop_customer=shop_customer shop_order_block_hint=shop_order_block_hint shop_contact_phone=shop_contact_phone %}
           {% empty %}
             <p id="shop-catalog-empty" style="color: var(--muted); margin: 0; grid-column: 1 / -1; font-size: 14px">暂无商品</p>
           {% endfor %}
@@ -710,7 +720,14 @@
       </div>
     </div>
 
-    <p class="shop-footnote">
+    <p class="shop-footnote" id="shop-contact-bar">
+      <strong>联系下单：</strong>
+      {% if shop_contact_phone %}
+        电话 <a href="tel:{{ shop_contact_phone }}">{{ shop_contact_phone }}</a>
+        &nbsp;|&nbsp;
+      {% endif %}
+      {{ shop_contact_hint }}
+      <br /><br />
       页面定位：<strong>/shop/</strong> 客户商城 &nbsp;|&nbsp; <a href="/">/ 店员录单</a> &nbsp;|&nbsp;
       <a href="/admin/">后台管理</a>
       {% if missing_images or missing_prices %}
@@ -832,8 +849,18 @@
           delegationReady = true;
           grid.addEventListener("click", function (e) {
             var addBtn = e.target.closest(".p-add");
+            if (addBtn && addBtn.classList.contains("p-contact")) {
+              return;
+            }
             if (addBtn) {
+              if (addBtn.disabled) {
+                if (shopLoggedIn && !shopCanOrder) {
+                  alert(shopOrderBlockHint || "当前无法加入购物车");
+                }
+                return;
+              }
               var pid = parseInt(addBtn.getAttribute("data-pid"), 10);
+              if (isNaN(pid)) return;
               var card = addBtn.closest(".p-card");
               var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
               var saleType = mode ? mode.value : "single";
@@ -912,8 +939,12 @@
         function addToCart(pid, saleType, qty) {
           var p = productById(pid);
           if (!p) return;
+          if (shopLoggedIn && !shopCanOrder) {
+            alert(shopOrderBlockHint || "当前无法加入购物车（账号未开通采购）");
+            return;
+          }
           if (p.price_on_request) {
-            alert("该商品需询价，无法加入购物车");
+            alert("该商品为询价商品，请使用「联系下单 / Contact Us」");
             return;
           }
           if (saleType === "single" && !p.can_quote_single) {

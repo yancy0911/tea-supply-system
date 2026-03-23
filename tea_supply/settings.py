@@ -166,6 +166,13 @@ MEDIA_ROOT = BASE_DIR / "media"
 # 商城商品无图时前台使用（STATICFILES_DIRS 下 static/images/default.png）
 DEFAULT_PRODUCT_IMAGE_STATIC = "images/default.png"
 
+# 询价条 / 联系下单（可选，用于「联系下单 / Contact Us」链接）
+SHOP_CONTACT_PHONE = os.environ.get("SHOP_CONTACT_PHONE", "").strip()
+SHOP_CONTACT_HINT = (
+    os.environ.get("SHOP_CONTACT_HINT", "").strip()
+    or "请联系业务员或致电门店确认价格与下单（Contact us to order）。"
+)
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
