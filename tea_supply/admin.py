@@ -84,6 +84,7 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(ImportExportModelAdmin):
+    """list_editable 与 import_export 在部分环境下会导致 Import 按钮不显示，故不在列表内联编辑。"""
     resource_class = ProductResource
     list_display = (
         "category",
@@ -98,7 +99,6 @@ class ProductAdmin(ImportExportModelAdmin):
     )
     list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
-    list_editable = ("is_active", "stock_quantity")
 
 
 @admin.register(Order)
