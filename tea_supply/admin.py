@@ -1,4 +1,5 @@
 from django.contrib import admin
+from import_export.admin import ImportExportModelAdmin
 
 from .models import (
     Customer,
@@ -10,6 +11,7 @@ from .models import (
     ProductCategory,
     StockLog,
 )
+from .resources import ProductCategoryResource, ProductResource
 
 
 class CustomerProductPriceInline(admin.TabularInline):
@@ -73,14 +75,16 @@ class CustomerProductPriceAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProductCategory)
-class ProductCategoryAdmin(admin.ModelAdmin):
+class ProductCategoryAdmin(ImportExportModelAdmin):
+    resource_class = ProductCategoryResource
     list_display = ("name", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
     search_fields = ("name",)
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(ImportExportModelAdmin):
+    resource_class = ProductResource
     list_display = (
         "category",
         "name",

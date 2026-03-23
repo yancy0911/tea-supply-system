@@ -6,6 +6,7 @@
 #   whitenoise
 
 Django==4.2.29
+django-import-export==4.3.3
 asgiref==3.11.1
 sqlparse==0.5.5
 typing_extensions==4.15.0
