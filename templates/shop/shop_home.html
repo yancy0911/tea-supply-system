@@ -666,7 +666,7 @@
           购物车
           <span style="font-size: 12px; font-weight: 500; color: var(--muted)">
             {% if not shop_customer %}
-              （请先登录后再提交订单）
+              （未登录可游客下单；登录享专属价）
             {% elif shop_can_order %}
               （已开通采购，可提交订单）
             {% else %}
@@ -687,7 +687,7 @@
       <div class="order-modal-backdrop" id="order-modal-backdrop"></div>
       <div class="order-modal-box" role="dialog" aria-labelledby="order-modal-title">
         <h3 id="order-modal-title">确认订单信息</h3>
-        <p style="margin: -6px 0 12px; font-size: 13px; color: var(--muted)">请填写收货信息，提交后将生成正式订单并扣减库存。</p>
+        <p style="margin: -6px 0 12px; font-size: 13px; color: var(--muted)">请填写收货信息，提交后生成批发订单；备货时再扣库存。</p>
         <form method="post" action="{% url 'shop-submit-order' %}" id="shop-order-form-modal">
           {% csrf_token %}
           <input type="hidden" name="next" value="home" />
@@ -1082,10 +1082,7 @@
           if (cart.length === 0) {
             btnSubmitOrder.disabled = true;
             btnSubmitOrder.title = "购物车为空";
-          } else if (!shopLoggedIn) {
-            btnSubmitOrder.disabled = true;
-            btnSubmitOrder.title = "请先使用手机号登录客户身份";
-          } else if (!shopCanOrder) {
+          } else if (shopLoggedIn && !shopCanOrder) {
             btnSubmitOrder.disabled = true;
             btnSubmitOrder.title = shopOrderBlockHint || "当前无法下单";
           } else {
@@ -1132,11 +1129,7 @@
         }
 
         btnSubmitOrder.addEventListener("click", function () {
-          if (!shopLoggedIn) {
-            alert("请先使用手机号登录客户身份");
-            return;
-          }
-          if (!shopCanOrder) {
+          if (shopLoggedIn && !shopCanOrder) {
             alert(shopOrderBlockHint || "当前无法下单");
             return;
           }
@@ -1155,12 +1148,7 @@
 
         if (shopOrderFormModal) {
           shopOrderFormModal.addEventListener("submit", function (ev) {
-            if (!shopLoggedIn) {
-              ev.preventDefault();
-              alert("请先使用手机号登录客户身份");
-              return;
-            }
-            if (!shopCanOrder) {
+            if (shopLoggedIn && !shopCanOrder) {
               ev.preventDefault();
               alert(shopOrderBlockHint || "当前无法下单");
               return;

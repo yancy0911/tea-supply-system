@@ -101,11 +101,23 @@ class ProductAdmin(ImportExportModelAdmin):
     search_fields = ("name", "sku", "unit_label")
 
 
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ("product", "quantity", "sale_type", "unit_price", "total_revenue", "total_cost", "profit")
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    inlines = (OrderItemInline,)
     list_display = (
         "name",
         "customer",
+        "guest_session_key",
         "workflow_status",
         "stock_deducted",
         "status",
@@ -114,10 +126,10 @@ class OrderAdmin(admin.ModelAdmin):
         "profit",
         "created_at",
     )
-    search_fields = ("name", "customer__name", "delivery_phone", "store_name", "contact_name")
+    search_fields = ("name", "customer__name", "delivery_phone", "store_name", "contact_name", "guest_session_key")
     list_filter = ("workflow_status", "status", "stock_deducted", "created_at")
     list_editable = ("workflow_status", "status")
-    readonly_fields = ("stock_deducted", "total_revenue", "total_cost", "profit", "created_at")
+    readonly_fields = ("stock_deducted", "total_revenue", "total_cost", "profit", "created_at", "guest_session_key")
 
 
 @admin.register(OrderItem)

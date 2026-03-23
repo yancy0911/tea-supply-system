@@ -95,7 +95,10 @@
   <body>
     <div class="hero">
       <h1>订单提交成功</h1>
-      <p style="margin: 0; opacity: 0.95">订单号 #{{ order.id }} · 我们会尽快确认并发货</p>
+      <p style="margin: 0; opacity: 0.95">订单号 #{{ order.id }}</p>
+      <p style="margin: 8px 0 0; opacity: 0.95; font-size: 15px; max-width: 520px; margin-left: auto; margin-right: auto">
+        批发订单已提交，商家会尽快联系您确认价格与发货。
+      </p>
     </div>
     <div class="wrap">
       <div class="card">
@@ -143,7 +146,9 @@
 
         <div class="actions">
           <a class="primary" href="{% url 'shop-home' %}">继续采购</a>
-          <a class="secondary" href="{% url 'shop-logout' %}">退出登录</a>
+          {% if order.customer_id %}
+            <a class="secondary" href="{% url 'shop-logout' %}">退出登录</a>
+          {% endif %}
         </div>
       </div>
     </div>

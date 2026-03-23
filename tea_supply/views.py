@@ -94,12 +94,13 @@ def _clear_submit_lock_if_matches(*, request, lock_key: str, signature: str):
         request.session.modified = True
 
 
-def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=None):
+def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=None, guest_session_key=""):
     """
     从购物车明细创建订单（批发录单 / 客户商城共用逻辑）。
     lines: 已解析的 list，元素为 dict：product_id, sale_type, quantity
     from_shop=True 时跳过赊账/额度校验（商城现结/线下对账由老板处理）。
     shipping: contact_name, delivery_phone, store_name, delivery_address, order_note
+    customer_obj 可为 None：商城游客按基础价下单，guest_session_key 写入订单供成功页校验。
     """
     if not isinstance(lines, list) or len(lines) == 0:
         raise ValidationError("请至少添加一条订单明细后再提交")
@@ -115,15 +116,18 @@ def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=No
             raise ValidationError("请填写联系电话")
         if not addr:
             raise ValidationError("请填写配送地址")
-        reason = customer_obj.shop_order_denial_reason()
-        if reason:
-            raise ValidationError(reason)
+        if customer_obj is not None:
+            reason = customer_obj.shop_order_denial_reason()
+            if reason:
+                raise ValidationError(reason)
     else:
+        if customer_obj is None:
+            raise ValidationError("请选择客户")
         if not customer_obj.allow_credit:
             raise ValidationError("该客户不允许赊账下单（原材料供应链未开放欠款权限）")
 
-    current_unsettled = unsettled_amount_for_customer(customer_obj)
-    credit_limit = float(customer_obj.credit_limit)
+    current_unsettled = unsettled_amount_for_customer(customer_obj) if customer_obj else 0.0
+    credit_limit = float(customer_obj.credit_limit) if customer_obj else 0.0
 
     order_total = 0.0
     validated = []
@@ -146,7 +150,7 @@ def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=No
         if qty < float(p.minimum_order_qty):
             raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
 
-        unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)
+        unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)  # 游客 customer_obj=None → 基础价
         if float(unit_price) <= 0:
             raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
         line_amt = qty * float(unit_price)
@@ -184,15 +188,25 @@ def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=No
             raise ValidationError("本次下单将超出信用额度，无法继续下单")
 
     with transaction.atomic():
-        create_kwargs = {"customer": customer_obj}
+        create_kwargs = {}
+        if customer_obj is not None:
+            create_kwargs["customer"] = customer_obj
         if from_shop:
-            create_kwargs["name"] = f"商城-{customer_obj.name}-{timezone.now().strftime('%m%d%H%M')}"
+            ts = timezone.now().strftime("%m%d%H%M")
+            if customer_obj is not None:
+                create_kwargs["name"] = f"商城-{customer_obj.name}-{ts}"
+                create_kwargs["guest_session_key"] = ""
+            else:
+                create_kwargs["name"] = f"商城-游客-{ts}"
+                create_kwargs["guest_session_key"] = (guest_session_key or "")[:40]
             create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
             create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[:100]
             create_kwargs["delivery_phone"] = (shipping.get("delivery_phone") or "")[:30]
             create_kwargs["store_name"] = (shipping.get("store_name") or "")[:200]
             create_kwargs["delivery_address"] = (shipping.get("delivery_address") or "")[:500]
             create_kwargs["order_note"] = (shipping.get("order_note") or "")[:2000]
+        else:
+            create_kwargs["customer"] = customer_obj
         order = Order.objects.create(**create_kwargs)
         for v in validated:
             OrderItem.objects.create(
@@ -215,9 +229,10 @@ def shop_order_permission(customer):
     """
     商城是否允许提交订单。
     返回 (can_order: bool, block_hint: str)；block_hint 在不可下单时用于按钮提示/弹窗。
+    未登录：允许以游客身份下单（基础价）；已登录：按账号状态。
     """
     if not customer:
-        return False, "请先使用手机号登录客户身份"
+        return True, ""
     reason = customer.shop_order_denial_reason()
     if reason:
         return False, reason
@@ -519,9 +534,6 @@ def shop_logout(request):
 @require_GET
 def shop_checkout(request):
     customer = get_shop_customer(request)
-    if not customer:
-        messages.error(request, "请先使用手机号登录后再结算")
-        return redirect("shop-home")
     can_order, order_hint = shop_order_permission(customer)
     categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
     products = (
@@ -566,28 +578,35 @@ def shop_product_detail(request, product_id):
 
 @require_GET
 def shop_order_success(request, order_id):
-    customer = get_shop_customer(request)
     order = get_object_or_404(Order.objects.prefetch_related("items__product"), pk=order_id)
-    if not customer or order.customer_id != customer.pk:
-        messages.error(request, "无权查看该订单")
-        return redirect("shop-home")
+    customer = get_shop_customer(request)
+    if order.customer_id:
+        if not customer or order.customer_id != customer.pk:
+            messages.error(request, "无权查看该订单")
+            return redirect("shop-home")
+    else:
+        sk = request.session.session_key or ""
+        if not sk or (order.guest_session_key or "") != sk:
+            messages.error(request, "无权查看该订单")
+            return redirect("shop-home")
     return render(request, "shop/shop_order_success.html", {"order": order})
 
 
 @require_POST
 def shop_submit_order(request):
+    if not request.session.session_key:
+        request.session.create()
+    session_key = request.session.session_key or ""
+
     customer = get_shop_customer(request)
-    if not customer:
-        messages.error(request, "请先登录客户身份后再提交订单")
-        return redirect("shop-home")
     can_order, hint = shop_order_permission(customer)
     if not can_order:
         messages.error(request, hint)
         if (request.POST.get("next") or "").strip() == "checkout":
             return redirect("shop-checkout")
         return redirect("shop-home")
+
     lines_raw = request.POST.get("lines_json", "[]")
-    # 防重复提交：避免双击生成多张订单。
     submit_extra = {
         "contact_name": request.POST.get("contact_name", ""),
         "delivery_phone": request.POST.get("delivery_phone", ""),
@@ -595,18 +614,23 @@ def shop_submit_order(request):
         "delivery_address": request.POST.get("delivery_address", ""),
         "order_note": request.POST.get("order_note", ""),
     }
+    sig_id = str(customer.pk) if customer else f"guest::{session_key}"
     sig = _make_order_submit_signature(
         prefix="shop",
-        customer_id=str(customer.pk),
+        customer_id=sig_id,
         lines_json=str(lines_raw),
         extra=submit_extra,
     )
-    lock_key = f"submit_lock::shop::{customer.pk}"
+    lock_key = f"submit_lock::shop::{sig_id}"
     if _check_and_set_submit_lock(request=request, lock_key=lock_key, signature=sig):
         messages.error(request, "检测到重复提交，请不要重复点击“确认提交订单”。")
         if (request.POST.get("next") or "").strip() == "checkout":
             return redirect("shop-checkout")
         return redirect("shop-home")
+
+    fail_redirect = (
+        "shop-checkout" if (request.POST.get("next") or "").strip() == "checkout" else "shop-home"
+    )
 
     try:
         lines = json.loads(lines_raw)
@@ -617,9 +641,16 @@ def shop_submit_order(request):
             "delivery_address": request.POST.get("delivery_address", ""),
             "order_note": request.POST.get("order_note", ""),
         }
-        order = submit_order_from_lines(customer, lines, from_shop=True, shipping=shipping)
+        if customer:
+            order = submit_order_from_lines(
+                customer, lines, from_shop=True, shipping=shipping, guest_session_key=""
+            )
+        else:
+            order = submit_order_from_lines(
+                None, lines, from_shop=True, shipping=shipping, guest_session_key=session_key
+            )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        messages.success(request, "订单已提交，我们会尽快与您确认发货")
+        messages.success(request, "批发订单已提交")
         return redirect("shop-order-success", order_id=order.id)
     except (ValidationError, ValueError, TypeError) as exc:
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
@@ -633,7 +664,7 @@ def shop_submit_order(request):
     except Exception as exc:
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.error(request, f"提交失败：{exc}")
-    return redirect("shop-checkout")
+    return redirect(fail_redirect)
 
 
 def _sales_units_by_product(days):
@@ -645,6 +676,7 @@ def _sales_units_by_product(days):
         .exclude(
             order__workflow_status__in=[
                 Order.WorkflowStatus.PENDING_CONFIRM,
+                Order.WorkflowStatus.CONFIRMED,
                 Order.WorkflowStatus.CANCELLED,
             ]
         )

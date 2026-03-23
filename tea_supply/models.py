@@ -255,6 +255,7 @@ class Order(models.Model):
 
     class WorkflowStatus(models.TextChoices):
         PENDING_CONFIRM = "pending_confirm", "待确认"
+        CONFIRMED = "confirmed", "已确认"
         PREPARING = "preparing", "备货中"
         SHIPPED = "shipped", "已发货"
         COMPLETED = "completed", "已完成"
@@ -267,6 +268,13 @@ class Order(models.Model):
         null=True,
         blank=True,
         verbose_name="客户",
+    )
+    guest_session_key = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        verbose_name="游客会话标识",
+        help_text="未登录商城下单时写入 session key，用于成功页校验；已登录客户订单为空。",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
@@ -495,9 +503,7 @@ class OrderItem(models.Model):
 
         with transaction.atomic():
             order = Order.objects.select_related("customer").get(pk=self.order_id)
-            if not order.customer_id:
-                raise ValidationError("订单必须指定客户后才能计算价格")
-            customer = order.customer
+            customer = order.customer if order.customer_id else None
 
             p = Product.objects.select_for_update().get(pk=self.product_id)
             if not p.is_active:
