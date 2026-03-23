@@ -18,6 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+
 from tea_supply.views import register_view
 
 # 后台管理仅老板（superuser）可进入；员工使用业务页面处理订单。
@@ -25,11 +26,10 @@ admin.site.has_permission = lambda request: bool(
     request.user.is_active and request.user.is_staff
 )
 
+# /register/ 必须在本文件最前声明，且早于 include("main.urls")，避免被其它规则覆盖
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    # 项目根级注册（必须在 include main.urls 之前，避免被其它规则吞掉）
     path("register/", register_view, name="register"),
-    path("shop/register/", register_view, name="shop-register"),
+    path("admin/", admin.site.urls),
     path("", include("main.urls")),
 ]
 
