@@ -160,6 +160,9 @@ WHITENOISE_USE_FINDERS = DEBUG
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# 商城商品无图时前台使用（STATICFILES_DIRS 下 static/images/default.png）
+DEFAULT_PRODUCT_IMAGE_STATIC = "images/default.png"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 

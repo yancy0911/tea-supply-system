@@ -6,6 +6,7 @@ import time
 from collections import defaultdict
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -223,10 +224,23 @@ def shop_order_permission(customer):
     return True, ""
 
 
+def _default_product_image_url():
+    """无商品图时使用 static/images/default.png（见 settings.DEFAULT_PRODUCT_IMAGE_STATIC）。"""
+    su = settings.STATIC_URL
+    su = str(su)
+    if not su.startswith("/"):
+        su = "/" + su.lstrip("/")
+    rel = getattr(settings, "DEFAULT_PRODUCT_IMAGE_STATIC", "images/default.png")
+    return su.rstrip("/") + "/" + str(rel).lstrip("/")
+
+
 def _shop_product_row(customer, p):
     """客户商城商品 JSON 行（列表页 / 详情页共用）。"""
     img = (getattr(p, "image", None) or "").strip()
-    image_url = ("/media/" + img.lstrip("/")) if img else ""
+    if img:
+        image_url = "/media/" + img.lstrip("/")
+    else:
+        image_url = _default_product_image_url()
     base_s = float(p.price_single)
     base_c = float(p.price_case)
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
@@ -246,8 +260,8 @@ def _shop_product_row(customer, p):
         "category_name": p.category.name if p.category_id else "",
         "name": p.name,
         "sku": p.sku,
-        "unit_label": p.unit_label or "—",
-        "case_label": p.case_label or "—",
+        "unit_label": (p.unit_label or "").strip() or "per unit",
+        "case_label": (p.case_label or "").strip() or "per case",
         "price_single": base_s,
         "price_case": base_c,
         "base_single": base_s,
@@ -262,7 +276,7 @@ def _shop_product_row(customer, p):
         "can_split_sale": p.can_split_sale,
         "minimum_order_qty": float(p.minimum_order_qty),
         "image_url": image_url,
-        "has_image": bool(img),
+        "has_image": True,
         "price_on_request": base_s <= 0 and base_c <= 0,
         "can_quote_single": base_s > 0,
         "can_quote_case": base_c > 0,
