@@ -85,6 +85,18 @@ class Product(models.Model):
         verbose_name="商品主图",
         help_text="相对 MEDIA_ROOT 的路径，如 products/T010103.png；由目录 PDF 导入时写入。",
     )
+    catalog_upload = models.ImageField(
+        upload_to="products/uploaded/",
+        null=True,
+        blank=True,
+        verbose_name="上传主图",
+        help_text="若上传则优先于上方「相对路径」在商城展示；可与 CSV 路径并存。",
+    )
+    price_on_request = models.BooleanField(
+        default=False,
+        verbose_name="询价商品",
+        help_text="单品价或整箱价任一侧 ≤0 时自动为 True；商城仅展示「联系下单」，不可加入购物车。",
+    )
 
     class Meta:
         ordering = ("category", "name")

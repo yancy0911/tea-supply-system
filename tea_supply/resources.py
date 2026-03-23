@@ -1,7 +1,6 @@
 """django-import-export：后台 Product / ProductCategory CSV 导入导出。
 
-与 data/extract_mocha_pdf_cards.py 生成的 products_import_ready.csv 表头一致；
-缺省列（成本、库存、units_per_case）可不出现，将用模型默认值。
+与 data/extract_mocha_pdf_cards.py 生成的 products_import_ready.csv 表头一致（含 cost/stock/units_per_case）。
 """
 from import_export import fields, resources
 from import_export.widgets import BooleanWidget, ForeignKeyWidget

@@ -104,6 +104,11 @@ class Command(BaseCommand):
                     units_per_case = _f(upc_raw) if str(upc_raw or "").strip() else 1.0
                     if units_per_case <= 0:
                         units_per_case = 1.0
+                    por_raw = row.get("price_on_request")
+                    if str(por_raw or "").strip() == "":
+                        price_on_request = False
+                    else:
+                        price_on_request = _bool(por_raw)
 
                     with transaction.atomic():
                         category, cat_created = ProductCategory.objects.get_or_create(
@@ -130,6 +135,7 @@ class Command(BaseCommand):
                             "stock_quantity": stock_quantity,
                             "units_per_case": units_per_case,
                             "image": image_path,
+                            "price_on_request": price_on_request,
                         }
                         if product:
                             for k, v in fields.items():

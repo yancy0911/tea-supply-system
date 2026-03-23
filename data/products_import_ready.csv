@@ -1,158 +1,158 @@
-﻿category,name,sku,unit_label,case_label,price_single,price_case,shelf_life_months,can_split_sale,minimum_order_qty,is_active,image
-Tapioca Boba,B010103,B010103,2.2 LBS /BAG,20 BAGS/CASE,5.0,75.0,12,1,1,1,products/B010103.png
-Tapioca Boba,B010203,B010203,6.6 LBS /BAG,20 BAGS/CASE,10.0,50.0,10,1,1,1,products/B010203.png
-Tapioca Boba,Premium 2.5 Instant 2.5 快煮大珍珠,B010303,2.2 LBS /BAG,20 BAGS/CASE,5.0,75.0,12,1,1,1,products/B010303.png
-Popping Boba 爆爆珠,B020103,B020103,2.2 LBS /BAG,12 BAGS/CASE,6.0,55.0,12,1,1,1,products/B020103.png
-Popping Boba 爆爆珠,B020203,B020203,2.2 LBS /BAG,12 BAGS/CASE,6.0,55.0,12,1,1,1,products/B020203.png
-Popping Boba 爆爆珠,Mango Popping Boba 芒果爆爆珠,B030103,2.2 LBS /BAG,12 BAGS/CASE,20.0,65.0,24,1,1,1,products/B030103.png
-Popping Boba 爆爆珠,B030203,B030203,7.48 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,24,1,1,1,products/B030203.png
-Popping Boba,B030303,B030303,7.48 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,24,1,1,1,products/B030303.png
-Popping Boba,B030403,B030403,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,24,1,1,1,products/B030403.png
-Popping Boba,Peach Popping Boba 水蜜桃爆爆珠,B030503,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,24,1,1,1,products/B030503.png
-Popping Boba,B030603,B030603,7.48 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,24,1,1,1,products/B030603.png
-Popping Boba,B030702,B030702,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,24,1,1,1,products/B030702.png
-Popping Boba,Boba 奇异果爆爆珠,B030802,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,24,1,1,1,products/B030802.png
-Jelly 椰果,B040103,B040103,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,24,1,1,1,products/B040103.png
-Jelly 椰果,Pineapple Jelly 鳳梨椰果,B040203,8.47 LBS /BOTTLE,4 BOTTLES/CASE,25.0,75.0,24,1,1,1,products/B040203.png
-Jelly 椰果,B040303,B040303,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,24,1,1,1,products/B040303.png
-Jelly 椰果,Mango Star Jelly 芒果星鑽椰果,B040403,8.47 LBS /BOTTLE,4 BOTTLES/CASE,25.0,75.0,24,1,1,1,products/B040403.png
-Jelly 椰果,B040503,B040503,8.47 LBS /BOTTLE,4 BOTTLES/CASE,25.0,75.0,24,1,1,1,products/B040503.png
-Jelly 椰果,Coﬀee Jelly 咖啡椰果,B040603,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,70.0,24,1,1,1,products/B040603.png
-Jelly 椰果,Coconut Jelly 原味椰果,B040703,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,24,1,1,1,products/B040703.png
-Popping Boba,C010103,C010103,7.48 LBS /CAN,4 CANS/CASE,17.0,60.0,24,1,1,1,products/C010103.png
-Popping Boba,C010203,C010203,7.48 LBS /CAN,6 CANS/CASE,25.0,125.0,24,1,1,1,products/C010203.png
-Popping Boba,C010303,C010303,7.48 LBS /CAN,4 CANS/CASE,17.0,80.0,24,1,1,1,products/C010303.png
-Special Powder 特殊粉,C010503,C010503,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/C010503.png
-Sugar Syrup,C010603,C010603,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,24,1,1,1,products/C010603.png
-Sugar Syrup,Passion Fruit Pulp Topping 百香果果粒,C010703,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,24,1,1,1,products/C010703.png
-Sugar Syrup,C010803,C010803,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,24,1,1,1,products/C010803.png
-Sugar Syrup,C010903,C010903,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,24,1,1,1,products/C010903.png
-PP700ml雪克杯,G010103,G010103,,,15.0,15.0,12,1,1,1,products/G010103.png
-PP700ml雪克杯,G010203,G010203,,,18.0,18.0,12,1,1,1,products/G010203.png
-Tools 工具,G010303,G010303,,,3.5,3.5,12,1,1,1,products/G010303.png
-Tools 工具,G010403,G010403,,,5.0,5.0,12,1,1,1,products/G010403.png
-PP700ml雪克杯,G010503,G010503,,,20.0,20.0,12,1,1,1,products/G010503.png
-Tools 工具,G010603,G010603,,,4.0,4.0,12,1,1,1,products/G010603.png
-PP700ml雪克杯,G010703,G010703,,,4.0,4.0,12,1,1,1,products/G010703.png
-Tools 工具,G010803,G010803,,,1.0,1.0,12,1,1,1,products/G010803.png
-PP700ml雪克杯,Syrup Pump Topping Strainer 果汁壓頭,G010903,,,20.0,20.0,12,1,1,1,products/G010903.png
-Tools 工具,G011003,G011003,,,1.0,1.0,12,1,1,1,products/G011003.png
-Tools 工具,G011103,G011103,,,3.5,3.5,12,1,1,1,products/G011103.png
-PP700ml雪克杯,G011303,G011303,,,4.0,4.0,12,1,1,1,products/G011303.png
-PP700ml雪克杯,G011403,G011403,,,20.0,20.0,12,1,1,1,products/G011403.png
-Machinery 機器,H0103,H0103,,,1000.0,1000.0,12,1,1,1,products/H0103.png
-Machinery 機器,Cane Sugar Syrup Dispenser Machine 蔗糖定量機,H0203,,,1000.0,1000.0,12,1,1,1,products/H0203.png
-Machinery 機器,H0303,H0303,,,500.0,500.0,12,1,1,1,products/H0303.png
-Machinery 機器,H0403,H0403,,,650.0,650.0,12,1,1,1,products/H0403.png
-Machinery 機器,H0603,H0603,,,650.0,650.0,12,1,1,1,products/H0603.png
-Machinery 機器,H0803,H0803,,,500.0,500.0,12,1,1,1,products/H0803.png
-Machinery 機器,HO703,HO703,,,675.0,675.0,12,1,1,1,products/HO703.png
-Tropical Fruit Jam 果醬,J010103,J010103,6LBS/BOTTLE,4 BOTTLES/CASE,15.0,75.0,24,1,1,1,products/J010103.png
-Tropical Fruit Jam 果醬,Strawberry Jam 草莓醬,J010203,6LBS/BOTTLE,4 BOTTLES/CASE,15.0,75.0,24,1,1,1,products/J010203.png
-Tropical Fruit Jam 果醬,J010303,J010303,6LBS/BOTTLE,6 BOTTLES/CASE,15.0,75.0,24,1,1,1,products/J010303.png
-Tropical Fruit Jam 果醬,Golden Diamond Pineapple Jam 金鑽鳳梨醬,J010403,6LBS/BOTTLE,6 BOTTLES/CASE,15.0,75.0,24,1,1,1,products/J010403.png
-Pure Powder 純粉,Peach Jam 黃桃果醬,J010503,2.2 LBS /BAG,10 BAGS/CASE,15.0,75.0,24,1,1,1,products/J010503.png
-Pure Powder 純粉,J010603,J010603,1.1 LBS /BAG,20 BAGS/CASE,12.0,75.0,24,1,1,1,products/J010603.png
-Pure Powder 純粉,Pink Peach Jam 粉桃果醬,J010703,1.1 LBS /BAG,20 BAGS/CASE,12.0,75.0,24,1,1,1,products/J010703.png
-Pure Powder 純粉,J010803,J010803,2.2 LBS /BAG,10 BAGS/CASE,15.0,75.0,24,1,1,1,products/J010803.png
-Tropical Fruit Jam 果醬,J010903,J010903,1.1 LBS /BAG,20 BAGS/CASE,55.0,500.0,24,1,1,1,products/J010903.png
-Machinery 機器,L010103,L010103,,,40.0,40.0,12,1,1,1,products/L010103.png
-Machinery 機器,95 /90 PET 16 & 22oz Cold Cup Dome Lid 95/90 PET 冷飲杯凸蓋,L010203,,,45.0,50.0,12,1,1,1,products/L010203.png
-Machinery 機器,L010603,L010603,,,50.0,50.0,12,1,1,1,products/L010603.png
-Machinery 機器,L010703,L010703,,,55.0,55.0,12,1,1,1,products/L010703.png
-Machinery 機器,L011103,L011103,,,60.0,60.0,12,1,1,1,products/L011103.png
-Bag & Hand Carrier,L020102,L020102,,,45.0,45.0,12,1,1,1,products/L020102.png
-Bag & Hand Carrier,L020202,L020202,,,30.0,30.0,12,1,1,1,products/L020202.png
-Bag & Hand Carrier,L020302,L020302,,,25.0,25.0,12,1,1,1,products/L020302.png
-Bag & Hand Carrier,Four Cup Hand Carrier 四杯手提杯托,L020602,,,45.0,45.0,12,1,1,1,
-Special Powder 特殊粉,Popcorn Chicken Marinate Powder 鹽酥雞醃漬粉,N010103,2.2 LBS /BAG,10 BAGS/CASE,18.0,135.0,24,1,1,1,products/N010103.png
-Special Powder 特殊粉,Popcorn Chicken Pepper Salt Powder 鹽酥雞胡椒粉,N010203,2.2 LBS /BAG,10 BAGS/CASE,20.0,175.0,24,1,1,1,products/N010203.png
-Special Powder 特殊粉,N010302,N010302,22 LBS /BAG,2 BAGS/CASE,15.0,110.0,24,1,1,1,products/N010302.png
-Special Powder 特殊粉,N010403,N010403,2.2 LBS /BAG,10 BAGS/CASE,18.0,135.0,24,1,1,1,products/N010403.png
-Pure Powder 純粉,P010303,P010303,2.2 LBS /BAG,10 BAGS/CASE,16.0,135.0,24,1,1,1,products/P010303.png
-Pure Powder 純粉,P010313,P010313,2.2 LBS /BAG,10 BAGS/CASE,15.0,125.0,24,1,1,1,products/P010313.png
-Pure Powder 純粉,P020103,P020103,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P020103.png
-Pure Powder 純粉,P020203,P020203,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P020203.png
-Pure Powder 純粉,P020303,P020303,2.2 LBS /BAG,10 BAGS/CASE,16.0,135.0,24,1,1,1,products/P020303.png
-Pure Powder 純粉,P020403,P020403,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P020403.png
-Pure Powder 純粉,Honeydew Powder 哈密瓜粉,P020503,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,24,1,1,1,products/P020503.png
-Pure Powder 純粉,P020703,P020703,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,24,1,1,1,products/P020703.png
-Pure Powder 純粉,P020803,P020803,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P020803.png
-Special Powder 特殊粉,P020903,P020903,2.2 LBS /BAG,10 BAGS/CASE,6.0,55.0,24,1,1,1,products/P020903.png
-Pure Powder 純粉,P040203,P040203,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,24,1,1,1,products/P040203.png
-Pure Powder 純粉,P040303,P040303,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,24,1,1,1,products/P040303.png
-Pure Powder 純粉,Blue Mountain Coﬀee Powder 藍山咖啡粉,P040403,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,24,1,1,1,products/P040403.png
-Tapioca Boba,Premium Non-Dairy Premium 2.2 Medium Creamer 厚奶精粉 2.2 中珍珠,P050103,6.6 LBS /BAG,20 BAGS/CASE,8.0,140.0,10,1,1,1,products/P050103.png
-Tapioca Boba,P050203,P050203,6.6 LBS /BAG,20 BAGS/CASE,8.0,140.0,10,1,1,1,products/P050203.png
-Tapioca Boba,P050303,P050303,2.2 LBS /BAG,20 BAGS/CASE,8.0,135.0,24,1,1,1,products/P050303.png
-Special Powder 特殊粉,P060103,P060103,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P060103.png
-Special Powder 特殊粉,P060203,P060203,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P060203.png
-Special Powder 特殊粉,Caramel Pudding New Orleans Powder Marinate Powder 焦糖布丁粉 新奧爾良醃漬粉,P070103,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P070103.png
-Pure Powder 純粉,P070503,P070503,2.2 LBS /BAG,10 BAGS/CASE,45.0,400.0,24,1,1,1,products/P070503.png
-Pure Powder 純粉,P070703,P070703,2.2 LBS /BAG,10 BAGS/CASE,25.0,200.0,24,1,1,1,products/P070703.png
-Special Powder 特殊粉,Creme Brulee Powder 布蕾蛋糕粉,P070903,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,24,1,1,1,products/P070903.png
-Special Powder 特殊粉,P071003,P071003,22 LBS /BAG,2 BAGS/CASE,160.0,160.0,24,1,1,1,products/P071003.png
-Special Powder 特殊粉,P071102,P071102,22 LBS /BAG,2 BAGS/CASE,15.0,110.0,24,1,1,1,products/P071102.png
-Bag & Hand Carrier,PC010103,PC010103,,,40.0,145.0,12,1,1,1,products/PC010103.png
-Bag & Hand Carrier,PC010403,PC010403,,,40.0,145.0,12,1,1,1,products/PC010403.png
-Tools 工具,Q010103,Q010103,,,55.0,55.0,12,1,1,1,products/Q010103.png
-Tools 工具,Q010203,Q010203,,,55.0,55.0,12,1,1,1,products/Q010203.png
-Tools 工具,Individually Wrapped Black Large Straw Individually Wrapped Black Medium 黑色獨立包裝大吸管 长度 23cm,Q010303,,,45.0,45.0,12,1,1,1,products/Q010303.png
-Tools 工具,Q010403,Q010403,,,55.0,55.0,12,1,1,1,products/Q010403.png
-Tools 工具,QP010103,QP010103,,,55.0,55.0,12,1,1,1,products/QP010103.png
-Tools 工具,Individually Wrapped Paper White Individually Wrapped Paper White Large Medium Straw 白色紙質 獨立包裝中吸管,QP010203,,,65.0,65.0,12,1,1,1,products/QP010203.png
-Sugar Syrup 糖漿,S010103,S010103,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S010103.png
-Sugar Syrup 糖漿,S010203,S010203,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S010203.png
-Sugar Syrup 糖漿,S010303,S010303,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S010303.png
-Sugar Syrup 糖漿,S010403,S010403,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S010403.png
-Sugar Syrup 糖漿,S010503,S010503,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S010503.png
-Sugar Syrup 糖漿,S010603,S010603,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.25,50.0,24,1,1,1,products/S010603.png
-Sugar Syrup 糖漿,S010703,S010703,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S010703.png
-Sugar Syrup 糖漿,S010803,S010803,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S010803.png
-Sugar Syrup 糖漿,S010903,S010903,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S010903.png
-Sugar Syrup 糖漿,S011003,S011003,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011003.png
-Sugar Syrup 糖漿,S011103,S011103,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011103.png
-Sugar Syrup 糖漿,Kumquat Lemon Syrup 金桔檸檬汁,S011203,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011203.png
-Sugar Syrup 糖漿,S011303,S011303,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011303.png
-Sugar Syrup 糖漿,S011403,S011403,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011403.png
-Sugar Syrup 糖漿,S011503,S011503,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S011503.png
-Pulp Topping 果肉,Blueberry Syrup 藍莓汁,S011603,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011603.png
-Sugar Syrup 糖漿,Passion Fruit Rose Syrup Syrup Seedless 玫瑰汁 百香果汁(無籽),S011703,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011703.png
-Sugar Syrup 糖漿,S011704,S011704,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S011704.png
-Sugar Syrup 糖漿,S011803,S011803,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011803.png
-Sugar Syrup,S011903,S011903,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S011903.png
-Sugar Syrup 糖漿,S012003,S012003,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S012003.png
-Sugar Syrup 糖漿,S030103,S030103,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S030103.png
-Sugar Syrup 糖漿,Lychee Longan Syrup Honey Syrup 荔枝汁 龍眼蜂蜜,S030203,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S030203.png
-Sugar Syrup 糖漿,S030303,S030303,5.5LBS/BOTTLE,4 BOTTLES/CASE,18.0,65.0,24,1,1,1,products/S030303.png
-Sugar Syrup,S030403,S030403,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S030403.png
-Sugar Syrup 糖漿,S030502,S030502,,,55.0,55.0,12,1,1,1,products/S030502.png
-Sugar Syrup 糖漿,Fructose 果糖 50LBS,S030702,,,50.0,50.0,12,1,1,1,products/S030702.png
-Sugar Syrup 糖漿,S030803,S030803,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S030803.png
-Sugar Syrup 糖漿,S030903,S030903,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,24,1,1,1,products/S030903.png
-Pulp Topping 果肉,S090103,S090103,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,24,1,1,1,products/S090103.png
-默认分类,T010103,T010103,500G/BAG,10 BAGS/CASE,10.0,80.0,24,1,1,1,products/T010103.png
-默认分类,T010203,T010203,500G/BAG,10 BAGS/CASE,10.0,80.0,24,1,1,1,products/T010203.png
-默认分类,T010503,T010503,500G/BAG,10 BAGS/CASE,12.0,105.0,24,1,1,1,products/T010503.png
-默认分类,T010603,T010603,500G/BAG,10 BAGS/CASE,12.0,95.0,24,1,1,1,products/T010603.png
-Filtered Tea Bag,T010703,T010703,500G/BAG,10 BAGS/CASE,10.0,85.0,24,1,1,1,products/T010703.png
-Filtered Tea Bag,T020103,T020103,500G/BAG,10 BAGS/CASE,10.0,90.0,24,1,1,1,products/T020103.png
-Filtered Tea Bag,T020203,T020203,500G/BAG,10 BAGS/CASE,12.0,105.0,24,1,1,1,products/T020203.png
-Espresso Tea Bag 萃茶包,Earl Grey Espresso Black Tea Bag 伯爵紅茶萃茶包,T030103,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,24,1,1,1,products/T030103.png
-Filtered Tea Bag,Premium Jasmine Green Tea Leaves 茉莉綠茶葉,T030203,500G/BAG,10 BAGS/CASE,11.0,95.0,24,1,1,1,products/T030203.png
-Espresso Tea Bag 萃茶包,T030403,T030403,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,24,1,1,1,products/T030403.png
-Espresso Tea Bag 萃茶包,T030503,T030503,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,24,1,1,1,products/T030503.png
-Espresso Tea Bag 萃茶包,Osmanthus Espresso Oolong Tea Bag 桂花烏龍茶萃茶包,T030603,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,24,1,1,1,products/T030603.png
-Espresso Tea Bag 萃茶包,T030703,T030703,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,24,1,1,1,products/T030703.png
-Espresso Tea Bag 萃茶包,T030803,T030803,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,24,1,1,1,products/T030803.png
-Machinery 機器,U010103,U010103,,,55.0,55.0,12,1,1,1,products/U010103.png
-Machinery 機器,U010203,U010203,,,65.0,65.0,12,1,1,1,products/U010203.png
-Machinery 機器,U010303,U010303,,,40.0,40.0,12,1,1,1,products/U010303.png
-Machinery 機器,U010403,U010403,,,80.0,80.0,12,1,1,1,products/U010403.png
-Machinery 機器,U010503,U010503,,,65.0,65.0,12,1,1,1,products/U010503.png
-Machinery 機器,90 PAPER Spring Artistic 22oz Hot / Cold Cup 90春季藝術霧面紙杯 Shaker Machine,U010603,,,60.0,60.0,12,1,1,1,products/U010603.png
-Machinery 機器,U010703,U010703,,,85.0,85.0,12,1,1,1,products/U010703.png
-Machinery 機器,U010803,U010803,,,80.0,80.0,12,1,1,1,products/U010803.png
-Machinery 機器,U010903,U010903,,,80.0,80.0,12,1,1,1,products/U010903.png
-Machinery 機器,U011003,U011003,,,80.0,80.0,12,1,1,1,products/U011003.png
-Machinery 機器,U011203,U011203,,,80.0,80.0,12,1,1,1,products/U011203.png
+﻿category,name,sku,stock_quantity,unit_label,case_label,price_single,price_case,cost_price_single,cost_price_case,shelf_life_months,can_split_sale,minimum_order_qty,is_active,units_per_case,image,price_on_request
+Tapioca Boba,B010103,B010103,0,2.2 LBS /BAG,20 BAGS/CASE,5.0,75.0,0,0,12,1,1,1,20.0,products/B010103.png,False
+Tapioca Boba,B010203,B010203,0,6.6 LBS /BAG,20 BAGS/CASE,10.0,50.0,0,0,10,1,1,1,20.0,products/B010203.png,False
+Tapioca Boba,Premium 2.5 Instant 2.5 快煮大珍珠,B010303,0,2.2 LBS /BAG,20 BAGS/CASE,5.0,75.0,0,0,12,1,1,1,20.0,products/B010303.png,False
+Popping Boba 爆爆珠,B020103,B020103,0,2.2 LBS /BAG,12 BAGS/CASE,6.0,55.0,0,0,12,1,1,1,12.0,products/B020103.png,False
+Popping Boba 爆爆珠,B020203,B020203,0,2.2 LBS /BAG,12 BAGS/CASE,6.0,55.0,0,0,12,1,1,1,12.0,products/B020203.png,False
+Popping Boba 爆爆珠,Mango Popping Boba 芒果爆爆珠,B030103,0,2.2 LBS /BAG,12 BAGS/CASE,20.0,65.0,0,0,24,1,1,1,12.0,products/B030103.png,False
+Popping Boba 爆爆珠,B030203,B030203,0,7.48 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,0,0,24,1,1,1,4.0,products/B030203.png,False
+Popping Boba,B030303,B030303,0,7.48 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,0,0,24,1,1,1,4.0,products/B030303.png,False
+Popping Boba,B030403,B030403,0,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,0,0,24,1,1,1,6.0,products/B030403.png,False
+Popping Boba,Peach Popping Boba 水蜜桃爆爆珠,B030503,0,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,0,0,24,1,1,1,6.0,products/B030503.png,False
+Popping Boba,B030603,B030603,0,7.48 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,0,0,24,1,1,1,4.0,products/B030603.png,False
+Popping Boba,B030702,B030702,0,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,0,0,24,1,1,1,6.0,products/B030702.png,False
+Popping Boba,Boba 奇异果爆爆珠,B030802,0,7.48 LBS /BOTTLE,6 CANS/CASE,20.0,65.0,0,0,24,1,1,1,6.0,products/B030802.png,False
+Jelly 椰果,B040103,B040103,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,0,0,24,1,1,1,4.0,products/B040103.png,False
+Jelly 椰果,Pineapple Jelly 鳳梨椰果,B040203,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,25.0,75.0,0,0,24,1,1,1,4.0,products/B040203.png,False
+Jelly 椰果,B040303,B040303,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,0,0,24,1,1,1,4.0,products/B040303.png,False
+Jelly 椰果,Mango Star Jelly 芒果星鑽椰果,B040403,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,25.0,75.0,0,0,24,1,1,1,4.0,products/B040403.png,False
+Jelly 椰果,B040503,B040503,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,25.0,75.0,0,0,24,1,1,1,4.0,products/B040503.png,False
+Jelly 椰果,Coﬀee Jelly 咖啡椰果,B040603,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,70.0,0,0,24,1,1,1,4.0,products/B040603.png,False
+Jelly 椰果,Coconut Jelly 原味椰果,B040703,0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,20.0,65.0,0,0,24,1,1,1,4.0,products/B040703.png,False
+Popping Boba,C010103,C010103,0,7.48 LBS /CAN,4 CANS/CASE,17.0,60.0,0,0,24,1,1,1,4.0,products/C010103.png,False
+Popping Boba,C010203,C010203,0,7.48 LBS /CAN,6 CANS/CASE,25.0,125.0,0,0,24,1,1,1,6.0,products/C010203.png,False
+Popping Boba,C010303,C010303,0,7.48 LBS /CAN,4 CANS/CASE,17.0,80.0,0,0,24,1,1,1,4.0,products/C010303.png,False
+Special Powder 特殊粉,C010503,C010503,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/C010503.png,False
+Sugar Syrup,C010603,C010603,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,0,0,24,1,1,1,4.0,products/C010603.png,False
+Sugar Syrup,Passion Fruit Pulp Topping 百香果果粒,C010703,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,0,0,24,1,1,1,4.0,products/C010703.png,False
+Sugar Syrup,C010803,C010803,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,0,0,24,1,1,1,4.0,products/C010803.png,False
+Sugar Syrup,C010903,C010903,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,10.0,100.0,0,0,24,1,1,1,4.0,products/C010903.png,False
+PP700ml雪克杯,G010103,G010103,0,,,15.0,15.0,0,0,12,1,1,1,1.0,products/G010103.png,False
+PP700ml雪克杯,G010203,G010203,0,,,18.0,18.0,0,0,12,1,1,1,1.0,products/G010203.png,False
+Tools 工具,G010303,G010303,0,,,3.5,3.5,0,0,12,1,1,1,1.0,products/G010303.png,False
+Tools 工具,G010403,G010403,0,,,5.0,5.0,0,0,12,1,1,1,1.0,products/G010403.png,False
+PP700ml雪克杯,G010503,G010503,0,,,20.0,20.0,0,0,12,1,1,1,1.0,products/G010503.png,False
+Tools 工具,G010603,G010603,0,,,4.0,4.0,0,0,12,1,1,1,1.0,products/G010603.png,False
+PP700ml雪克杯,G010703,G010703,0,,,4.0,4.0,0,0,12,1,1,1,1.0,products/G010703.png,False
+Tools 工具,G010803,G010803,0,,,1.0,1.0,0,0,12,1,1,1,1.0,products/G010803.png,False
+PP700ml雪克杯,Syrup Pump Topping Strainer 果汁壓頭,G010903,0,,,20.0,20.0,0,0,12,1,1,1,1.0,products/G010903.png,False
+Tools 工具,G011003,G011003,0,,,1.0,1.0,0,0,12,1,1,1,1.0,products/G011003.png,False
+Tools 工具,G011103,G011103,0,,,3.5,3.5,0,0,12,1,1,1,1.0,products/G011103.png,False
+PP700ml雪克杯,G011303,G011303,0,,,4.0,4.0,0,0,12,1,1,1,1.0,products/G011303.png,False
+PP700ml雪克杯,G011403,G011403,0,,,20.0,20.0,0,0,12,1,1,1,1.0,products/G011403.png,False
+Machinery 機器,H0103,H0103,0,,,1000.0,1000.0,0,0,12,1,1,1,1.0,products/H0103.png,False
+Machinery 機器,Cane Sugar Syrup Dispenser Machine 蔗糖定量機,H0203,0,,,1000.0,1000.0,0,0,12,1,1,1,1.0,products/H0203.png,False
+Machinery 機器,H0303,H0303,0,,,500.0,500.0,0,0,12,1,1,1,1.0,products/H0303.png,False
+Machinery 機器,H0403,H0403,0,,,650.0,650.0,0,0,12,1,1,1,1.0,products/H0403.png,False
+Machinery 機器,H0603,H0603,0,,,650.0,650.0,0,0,12,1,1,1,1.0,products/H0603.png,False
+Machinery 機器,H0803,H0803,0,,,500.0,500.0,0,0,12,1,1,1,1.0,products/H0803.png,False
+Machinery 機器,HO703,HO703,0,,,675.0,675.0,0,0,12,1,1,1,1.0,products/HO703.png,False
+Tropical Fruit Jam 果醬,J010103,J010103,0,6LBS/BOTTLE,4 BOTTLES/CASE,15.0,75.0,0,0,24,1,1,1,4.0,products/J010103.png,False
+Tropical Fruit Jam 果醬,Strawberry Jam 草莓醬,J010203,0,6LBS/BOTTLE,4 BOTTLES/CASE,15.0,75.0,0,0,24,1,1,1,4.0,products/J010203.png,False
+Tropical Fruit Jam 果醬,J010303,J010303,0,6LBS/BOTTLE,6 BOTTLES/CASE,15.0,75.0,0,0,24,1,1,1,6.0,products/J010303.png,False
+Tropical Fruit Jam 果醬,Golden Diamond Pineapple Jam 金鑽鳳梨醬,J010403,0,6LBS/BOTTLE,6 BOTTLES/CASE,15.0,75.0,0,0,24,1,1,1,6.0,products/J010403.png,False
+Pure Powder 純粉,Peach Jam 黃桃果醬,J010503,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,75.0,0,0,24,1,1,1,10.0,products/J010503.png,False
+Pure Powder 純粉,J010603,J010603,0,1.1 LBS /BAG,20 BAGS/CASE,12.0,75.0,0,0,24,1,1,1,20.0,products/J010603.png,False
+Pure Powder 純粉,Pink Peach Jam 粉桃果醬,J010703,0,1.1 LBS /BAG,20 BAGS/CASE,12.0,75.0,0,0,24,1,1,1,20.0,products/J010703.png,False
+Pure Powder 純粉,J010803,J010803,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,75.0,0,0,24,1,1,1,10.0,products/J010803.png,False
+Tropical Fruit Jam 果醬,J010903,J010903,0,1.1 LBS /BAG,20 BAGS/CASE,55.0,500.0,0,0,24,1,1,1,20.0,products/J010903.png,False
+Machinery 機器,L010103,L010103,0,,,40.0,40.0,0,0,12,1,1,1,1.0,products/L010103.png,False
+Machinery 機器,95 /90 PET 16 & 22oz Cold Cup Dome Lid 95/90 PET 冷飲杯凸蓋,L010203,0,,,45.0,50.0,0,0,12,1,1,1,1.0,products/L010203.png,False
+Machinery 機器,L010603,L010603,0,,,50.0,50.0,0,0,12,1,1,1,1.0,products/L010603.png,False
+Machinery 機器,L010703,L010703,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/L010703.png,False
+Machinery 機器,L011103,L011103,0,,,60.0,60.0,0,0,12,1,1,1,1.0,products/L011103.png,False
+Bag & Hand Carrier,L020102,L020102,0,,,45.0,45.0,0,0,12,1,1,1,1.0,products/L020102.png,False
+Bag & Hand Carrier,L020202,L020202,0,,,30.0,30.0,0,0,12,1,1,1,1.0,products/L020202.png,False
+Bag & Hand Carrier,L020302,L020302,0,,,25.0,25.0,0,0,12,1,1,1,1.0,products/L020302.png,False
+Bag & Hand Carrier,Four Cup Hand Carrier 四杯手提杯托,L020602,0,,,45.0,45.0,0,0,12,1,1,1,1.0,,False
+Special Powder 特殊粉,Popcorn Chicken Marinate Powder 鹽酥雞醃漬粉,N010103,0,2.2 LBS /BAG,10 BAGS/CASE,18.0,135.0,0,0,24,1,1,1,10.0,products/N010103.png,False
+Special Powder 特殊粉,Popcorn Chicken Pepper Salt Powder 鹽酥雞胡椒粉,N010203,0,2.2 LBS /BAG,10 BAGS/CASE,20.0,175.0,0,0,24,1,1,1,10.0,products/N010203.png,False
+Special Powder 特殊粉,N010302,N010302,0,22 LBS /BAG,2 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,2.0,products/N010302.png,False
+Special Powder 特殊粉,N010403,N010403,0,2.2 LBS /BAG,10 BAGS/CASE,18.0,135.0,0,0,24,1,1,1,10.0,products/N010403.png,False
+Pure Powder 純粉,P010303,P010303,0,2.2 LBS /BAG,10 BAGS/CASE,16.0,135.0,0,0,24,1,1,1,10.0,products/P010303.png,False
+Pure Powder 純粉,P010313,P010313,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,125.0,0,0,24,1,1,1,10.0,products/P010313.png,False
+Pure Powder 純粉,P020103,P020103,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P020103.png,False
+Pure Powder 純粉,P020203,P020203,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P020203.png,False
+Pure Powder 純粉,P020303,P020303,0,2.2 LBS /BAG,10 BAGS/CASE,16.0,135.0,0,0,24,1,1,1,10.0,products/P020303.png,False
+Pure Powder 純粉,P020403,P020403,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P020403.png,False
+Pure Powder 純粉,Honeydew Powder 哈密瓜粉,P020503,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,0,0,24,1,1,1,10.0,products/P020503.png,False
+Pure Powder 純粉,P020703,P020703,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,0,0,24,1,1,1,10.0,products/P020703.png,False
+Pure Powder 純粉,P020803,P020803,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P020803.png,False
+Special Powder 特殊粉,P020903,P020903,0,2.2 LBS /BAG,10 BAGS/CASE,6.0,55.0,0,0,24,1,1,1,10.0,products/P020903.png,False
+Pure Powder 純粉,P040203,P040203,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,0,0,24,1,1,1,10.0,products/P040203.png,False
+Pure Powder 純粉,P040303,P040303,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,0,0,24,1,1,1,10.0,products/P040303.png,False
+Pure Powder 純粉,Blue Mountain Coﬀee Powder 藍山咖啡粉,P040403,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,120.0,0,0,24,1,1,1,10.0,products/P040403.png,False
+Tapioca Boba,Premium Non-Dairy Premium 2.2 Medium Creamer 厚奶精粉 2.2 中珍珠,P050103,0,6.6 LBS /BAG,20 BAGS/CASE,8.0,140.0,0,0,10,1,1,1,20.0,products/P050103.png,False
+Tapioca Boba,P050203,P050203,0,6.6 LBS /BAG,20 BAGS/CASE,8.0,140.0,0,0,10,1,1,1,20.0,products/P050203.png,False
+Tapioca Boba,P050303,P050303,0,2.2 LBS /BAG,20 BAGS/CASE,8.0,135.0,0,0,24,1,1,1,20.0,products/P050303.png,False
+Special Powder 特殊粉,P060103,P060103,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P060103.png,False
+Special Powder 特殊粉,P060203,P060203,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P060203.png,False
+Special Powder 特殊粉,Caramel Pudding New Orleans Powder Marinate Powder 焦糖布丁粉 新奧爾良醃漬粉,P070103,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P070103.png,False
+Pure Powder 純粉,P070503,P070503,0,2.2 LBS /BAG,10 BAGS/CASE,45.0,400.0,0,0,24,1,1,1,10.0,products/P070503.png,False
+Pure Powder 純粉,P070703,P070703,0,2.2 LBS /BAG,10 BAGS/CASE,25.0,200.0,0,0,24,1,1,1,10.0,products/P070703.png,False
+Special Powder 特殊粉,Creme Brulee Powder 布蕾蛋糕粉,P070903,0,2.2 LBS /BAG,10 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,10.0,products/P070903.png,False
+Special Powder 特殊粉,P071003,P071003,0,22 LBS /BAG,2 BAGS/CASE,160.0,160.0,0,0,24,1,1,1,2.0,products/P071003.png,False
+Special Powder 特殊粉,P071102,P071102,0,22 LBS /BAG,2 BAGS/CASE,15.0,110.0,0,0,24,1,1,1,2.0,products/P071102.png,False
+Bag & Hand Carrier,PC010103,PC010103,0,,,40.0,145.0,0,0,12,1,1,1,1.0,products/PC010103.png,False
+Bag & Hand Carrier,PC010403,PC010403,0,,,40.0,145.0,0,0,12,1,1,1,1.0,products/PC010403.png,False
+Tools 工具,Q010103,Q010103,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/Q010103.png,False
+Tools 工具,Q010203,Q010203,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/Q010203.png,False
+Tools 工具,Individually Wrapped Black Large Straw Individually Wrapped Black Medium 黑色獨立包裝大吸管 长度 23cm,Q010303,0,,,45.0,45.0,0,0,12,1,1,1,1.0,products/Q010303.png,False
+Tools 工具,Q010403,Q010403,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/Q010403.png,False
+Tools 工具,QP010103,QP010103,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/QP010103.png,False
+Tools 工具,Individually Wrapped Paper White Individually Wrapped Paper White Large Medium Straw 白色紙質 獨立包裝中吸管,QP010203,0,,,65.0,65.0,0,0,12,1,1,1,1.0,products/QP010203.png,False
+Sugar Syrup 糖漿,S010103,S010103,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S010103.png,False
+Sugar Syrup 糖漿,S010203,S010203,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S010203.png,False
+Sugar Syrup 糖漿,S010303,S010303,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S010303.png,False
+Sugar Syrup 糖漿,S010403,S010403,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S010403.png,False
+Sugar Syrup 糖漿,S010503,S010503,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S010503.png,False
+Sugar Syrup 糖漿,S010603,S010603,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.25,50.0,0,0,24,1,1,1,4.0,products/S010603.png,False
+Sugar Syrup 糖漿,S010703,S010703,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S010703.png,False
+Sugar Syrup 糖漿,S010803,S010803,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S010803.png,False
+Sugar Syrup 糖漿,S010903,S010903,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S010903.png,False
+Sugar Syrup 糖漿,S011003,S011003,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011003.png,False
+Sugar Syrup 糖漿,S011103,S011103,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011103.png,False
+Sugar Syrup 糖漿,Kumquat Lemon Syrup 金桔檸檬汁,S011203,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011203.png,False
+Sugar Syrup 糖漿,S011303,S011303,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011303.png,False
+Sugar Syrup 糖漿,S011403,S011403,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011403.png,False
+Sugar Syrup 糖漿,S011503,S011503,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S011503.png,False
+Pulp Topping 果肉,Blueberry Syrup 藍莓汁,S011603,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011603.png,False
+Sugar Syrup 糖漿,Passion Fruit Rose Syrup Syrup Seedless 玫瑰汁 百香果汁(無籽),S011703,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011703.png,False
+Sugar Syrup 糖漿,S011704,S011704,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S011704.png,False
+Sugar Syrup 糖漿,S011803,S011803,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011803.png,False
+Sugar Syrup,S011903,S011903,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S011903.png,False
+Sugar Syrup 糖漿,S012003,S012003,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S012003.png,False
+Sugar Syrup 糖漿,S030103,S030103,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S030103.png,False
+Sugar Syrup 糖漿,Lychee Longan Syrup Honey Syrup 荔枝汁 龍眼蜂蜜,S030203,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S030203.png,False
+Sugar Syrup 糖漿,S030303,S030303,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,18.0,65.0,0,0,24,1,1,1,4.0,products/S030303.png,False
+Sugar Syrup,S030403,S030403,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S030403.png,False
+Sugar Syrup 糖漿,S030502,S030502,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/S030502.png,False
+Sugar Syrup 糖漿,Fructose 果糖 50LBS,S030702,0,,,50.0,50.0,0,0,12,1,1,1,1.0,products/S030702.png,False
+Sugar Syrup 糖漿,S030803,S030803,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S030803.png,False
+Sugar Syrup 糖漿,S030903,S030903,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,16.0,55.0,0,0,24,1,1,1,4.0,products/S030903.png,False
+Pulp Topping 果肉,S090103,S090103,0,5.5LBS/BOTTLE,4 BOTTLES/CASE,15.0,50.0,0,0,24,1,1,1,4.0,products/S090103.png,False
+默认分类,T010103,T010103,0,500G/BAG,10 BAGS/CASE,10.0,80.0,0,0,24,1,1,1,10.0,products/T010103.png,False
+默认分类,T010203,T010203,0,500G/BAG,10 BAGS/CASE,10.0,80.0,0,0,24,1,1,1,10.0,products/T010203.png,False
+默认分类,T010503,T010503,0,500G/BAG,10 BAGS/CASE,12.0,105.0,0,0,24,1,1,1,10.0,products/T010503.png,False
+默认分类,T010603,T010603,0,500G/BAG,10 BAGS/CASE,12.0,95.0,0,0,24,1,1,1,10.0,products/T010603.png,False
+Filtered Tea Bag,T010703,T010703,0,500G/BAG,10 BAGS/CASE,10.0,85.0,0,0,24,1,1,1,10.0,products/T010703.png,False
+Filtered Tea Bag,T020103,T020103,0,500G/BAG,10 BAGS/CASE,10.0,90.0,0,0,24,1,1,1,10.0,products/T020103.png,False
+Filtered Tea Bag,T020203,T020203,0,500G/BAG,10 BAGS/CASE,12.0,105.0,0,0,24,1,1,1,10.0,products/T020203.png,False
+Espresso Tea Bag 萃茶包,Earl Grey Espresso Black Tea Bag 伯爵紅茶萃茶包,T030103,0,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,0,0,24,1,1,1,500.0,products/T030103.png,False
+Filtered Tea Bag,Premium Jasmine Green Tea Leaves 茉莉綠茶葉,T030203,0,500G/BAG,10 BAGS/CASE,11.0,95.0,0,0,24,1,1,1,10.0,products/T030203.png,False
+Espresso Tea Bag 萃茶包,T030403,T030403,0,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,0,0,24,1,1,1,500.0,products/T030403.png,False
+Espresso Tea Bag 萃茶包,T030503,T030503,0,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,0,0,24,1,1,1,500.0,products/T030503.png,False
+Espresso Tea Bag 萃茶包,Osmanthus Espresso Oolong Tea Bag 桂花烏龍茶萃茶包,T030603,0,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,0,0,24,1,1,1,500.0,products/T030603.png,False
+Espresso Tea Bag 萃茶包,T030703,T030703,0,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,0,0,24,1,1,1,500.0,products/T030703.png,False
+Espresso Tea Bag 萃茶包,T030803,T030803,0,8G/50 TEA BAGS,500 TEA BAGS/CASE,15.0,130.0,0,0,24,1,1,1,500.0,products/T030803.png,False
+Machinery 機器,U010103,U010103,0,,,55.0,55.0,0,0,12,1,1,1,1.0,products/U010103.png,False
+Machinery 機器,U010203,U010203,0,,,65.0,65.0,0,0,12,1,1,1,1.0,products/U010203.png,False
+Machinery 機器,U010303,U010303,0,,,40.0,40.0,0,0,12,1,1,1,1.0,products/U010303.png,False
+Machinery 機器,U010403,U010403,0,,,80.0,80.0,0,0,12,1,1,1,1.0,products/U010403.png,False
+Machinery 機器,U010503,U010503,0,,,65.0,65.0,0,0,12,1,1,1,1.0,products/U010503.png,False
+Machinery 機器,90 PAPER Spring Artistic 22oz Hot / Cold Cup 90春季藝術霧面紙杯 Shaker Machine,U010603,0,,,60.0,60.0,0,0,12,1,1,1,1.0,products/U010603.png,False
+Machinery 機器,U010703,U010703,0,,,85.0,85.0,0,0,12,1,1,1,1.0,products/U010703.png,False
+Machinery 機器,U010803,U010803,0,,,80.0,80.0,0,0,12,1,1,1,1.0,products/U010803.png,False
+Machinery 機器,U010903,U010903,0,,,80.0,80.0,0,0,12,1,1,1,1.0,products/U010903.png,False
+Machinery 機器,U011003,U011003,0,,,80.0,80.0,0,0,12,1,1,1,1.0,products/U011003.png,False
+Machinery 機器,U011203,U011203,0,,,80.0,80.0,0,0,12,1,1,1,1.0,products/U011203.png,False
