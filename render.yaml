@@ -1,10 +1,9 @@
-# Render：部署后自动 migrate + 从仓库内 CSV 批量导入商品（无需在后台手动上传）
-# 若仅用 Dashboard 建服务，请在「Shell」或「Release Command」填：
-#   python manage.py migrate --noinput && python manage.py import_products_ready
+# Release 仅 migrate，避免 import_products_ready 在发布阶段长时间占库/超时导致 Deploying 卡住。
+# 商品数据请用后台 Product → Import 上传 data/products_import_ready.csv，或 Shell 手动跑 import_products_ready。
 services:
   - type: web
     name: tea-supply-web
     runtime: python
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: gunicorn tea_supply.wsgi:application --bind 0.0.0.0:$PORT
-    releaseCommand: python manage.py migrate --noinput && python manage.py import_products_ready
+    releaseCommand: python manage.py migrate --noinput

@@ -26,4 +26,4 @@ python manage.py import_products_ready
 ```
 
 - 后台商品 **Import**：`/admin/tea_supply/product/`（django-import-export）。
-- Render：`render.yaml` 的 `releaseCommand` 会在发布时执行 migrate + `import_products_ready`。
+- Render：`render.yaml` 的 `releaseCommand` 仅 `migrate`；商品 CSV 用后台 Import 或 Shell 执行 `import_products_ready`。
