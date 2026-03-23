@@ -21,6 +21,7 @@ OUT_CSV = BASE / "products_import_ready.csv"
 FAILURES = BASE / "pdf_import_failures.txt"
 PDF_DEFAULT = Path("/Users/tingtingfu/Desktop/2025 MOCHA目录-5月更新.pdf")
 
+# 与 tea_supply.models.Product / import_products_ready / 后台 CSV 一致：标准逗号分隔 CSV
 HEADER = [
     "category",
     "name",
@@ -29,10 +30,14 @@ HEADER = [
     "case_label",
     "price_single",
     "price_case",
+    "cost_price_single",
+    "cost_price_case",
     "shelf_life_months",
     "can_split_sale",
     "minimum_order_qty",
     "is_active",
+    "stock_quantity",
+    "units_per_case",
     "image",
 ]
 
@@ -74,6 +79,24 @@ SECTION_HEADERS = (
     "PC2oz",
     "PC Double",
 )
+
+
+def parse_units_per_case(case_label: str) -> float:
+    """从 CASE 行文案中解析「每箱件数」，供 units_per_case；缺省为 1。"""
+    if not case_label or not str(case_label).strip():
+        return 1.0
+    s = str(case_label).strip()
+    m = re.search(
+        r"(\d+(?:\.\d+)?)\s*(?:BAGS?|BOTTLES?|CANS?|BOXES?|PCS|PACKS?|UNITS?)/\s*CASE",
+        s,
+        re.I,
+    )
+    if m:
+        return float(m.group(1))
+    nums = re.findall(r"\d+(?:\.\d+)?", s)
+    if nums:
+        return float(nums[0])
+    return 1.0
 
 
 def parse_money_pair(s: str):
@@ -263,6 +286,84 @@ def save_image(doc: fitz.Document, xref: int, dest: Path) -> bool:
         return dest.is_file()
     except Exception:
         return False
+
+
+def _png_to_jpg(png_path: Path, jpg_path: Path) -> bool:
+    """将临时 PNG 转为 JPEG 并删除 PNG。"""
+    try:
+        from PIL import Image
+
+        im = Image.open(png_path).convert("RGB")
+        jpg_path.parent.mkdir(parents=True, exist_ok=True)
+        im.save(jpg_path, "JPEG", quality=88, optimize=True)
+        if jpg_path.is_file():
+            try:
+                png_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def export_pdf_product_images_jpg(
+    pdf_path: Path,
+    media_products: Path | None = None,
+) -> tuple[list[str], list[str]]:
+    """
+    按与 export_images_from_pdf 相同的 SKU 邻域逻辑切图，保存为 {media_products}/{sku}.jpg。
+    返回：
+      - success_skus：成功写出 jpg 的 SKU（去重、排序）
+      - pdf_skus_ordered：PDF 中按阅读顺序出现的 SKU（去重保序），用于对账
+    """
+    media_products = media_products or MEDIA_PRODUCTS
+    doc = fitz.open(str(pdf_path))
+    media_products.mkdir(parents=True, exist_ok=True)
+    entries, page_imgs, page_width, page_boundaries = _build_entry_index(doc)
+    plain = [e["text"] for e in entries]
+    sku_indices = [i for i, t in enumerate(plain) if SKU_ANY.search(t)]
+    written: set[str] = set()
+    pdf_order_unique: list[str] = []
+    seen_pdf: set[str] = set()
+
+    for sku_i in sku_indices:
+        m = SKU_ANY.search(plain[sku_i])
+        if not m:
+            continue
+        sku = m.group(1)
+        if sku not in seen_pdf:
+            seen_pdf.add(sku)
+            pdf_order_unique.append(sku)
+        sku_page = entries[sku_i]["page"]
+        sku_rect = entries[sku_i]["rect"]
+        pw = page_width.get(sku_page, 600)
+        boundaries = page_boundaries.get(sku_page, [0.0, pw + 1.0])
+        sku_mid = (sku_rect.x0 + sku_rect.x1) / 2
+        col_idx = sku_column_index(sku_mid, boundaries)
+        imgs = page_imgs.get(sku_page, [])
+        dest_jpg = media_products / f"{sku}.jpg"
+        tmp_png = media_products / f".__extract_{sku}.png"
+        page_obj = doc[sku_page - 1]
+        ok = False
+        try:
+            if export_product_image_clip(doc, page_obj, sku_rect, boundaries, col_idx, tmp_png):
+                ok = _png_to_jpg(tmp_png, dest_jpg)
+            else:
+                picked = pick_image_for_sku(sku_rect, imgs)
+                if picked:
+                    xref, _ = picked
+                    if save_image(doc, xref, tmp_png):
+                        ok = _png_to_jpg(tmp_png, dest_jpg)
+        finally:
+            try:
+                tmp_png.unlink(missing_ok=True)
+            except OSError:
+                pass
+        if ok:
+            written.add(sku)
+    doc.close()
+    return sorted(written), pdf_order_unique
 
 
 def parse_card_meta(lines: list[str]) -> dict:
@@ -560,9 +661,9 @@ def dedupe_cards(cards: list[dict]) -> list[dict]:
 
 
 def main():
-    args = [a for a in sys.argv[1:] if a != "--images-only"]
+    argv = [a for a in sys.argv[1:] if a not in ("--images-only", "--csv-only")]
     images_only = "--images-only" in sys.argv[1:]
-    pdf_path = Path(args[0]) if args else PDF_DEFAULT
+    pdf_path = Path(argv[0]) if argv else PDF_DEFAULT
     if not pdf_path.is_file():
         print(f"找不到 PDF: {pdf_path}", file=sys.stderr)
         sys.exit(1)
@@ -586,19 +687,24 @@ def main():
         w = csv.DictWriter(f, fieldnames=HEADER)
         w.writeheader()
         for c in sorted(final, key=lambda x: x["sku"]):
+            case_lbl = c.get("case_label") or ""
             w.writerow(
                 {
                     "category": c["category"],
                     "name": c["name"],
                     "sku": c["sku"],
                     "unit_label": c["unit_label"],
-                    "case_label": c["case_label"],
+                    "case_label": case_lbl,
                     "price_single": c["price_single"],
                     "price_case": c["price_case"],
+                    "cost_price_single": 0,
+                    "cost_price_case": 0,
                     "shelf_life_months": c.get("shelf_life_months") or 12,
                     "can_split_sale": 1,
                     "minimum_order_qty": 1,
                     "is_active": 1,
+                    "stock_quantity": 0,
+                    "units_per_case": parse_units_per_case(case_lbl),
                     "image": c.get("image") or "",
                 }
             )
@@ -615,6 +721,9 @@ def main():
     print(f"解析失败条数（无 PRICE 等）: {len(failures)}")
     print(f"CSV: {OUT_CSV}")
     print(f"失败列表: {FAILURES}")
+
+    if "--csv-only" in sys.argv[1:]:
+        return
 
     import subprocess
 
