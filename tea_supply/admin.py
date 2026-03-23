@@ -11,6 +11,7 @@ from .models import (
     Product,
     ProductCategory,
     StockLog,
+    UserRole,
 )
 from .resources import ProductCategoryResource, ProductResource
 
@@ -45,6 +46,7 @@ class CustomerAdmin(admin.ModelAdmin):
         "delivery_zone",
     )
     fields = (
+        "user",
         "name",
         "phone",
         "account_status",
@@ -58,6 +60,7 @@ class CustomerAdmin(admin.ModelAdmin):
         "note",
     )
     inlines = (CustomerProductPriceInline,)
+    autocomplete_fields = ("user",)
 
 
 @admin.register(Ingredient)
@@ -82,6 +85,9 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
     list_editable = ("sort_order", "is_active")
     search_fields = ("name",)
 
+    def has_module_permission(self, request):
+        return request.user.is_superuser
+
 
 @admin.register(Product)
 class ProductAdmin(ImportExportModelAdmin):
@@ -101,6 +107,9 @@ class ProductAdmin(ImportExportModelAdmin):
     )
     list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
+
+    def has_module_permission(self, request):
+        return request.user.is_superuser
 
     def image_preview(self, obj: Product):
         if not getattr(obj, "catalog_upload", None):
@@ -130,6 +139,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "customer",
+        "ordered_by",
         "guest_session_key",
         "workflow_status",
         "stock_deducted",
@@ -139,16 +149,50 @@ class OrderAdmin(admin.ModelAdmin):
         "profit",
         "created_at",
     )
-    search_fields = ("name", "customer__name", "delivery_phone", "store_name", "contact_name", "guest_session_key")
-    list_filter = ("workflow_status", "status", "stock_deducted", "created_at")
+    search_fields = (
+        "name",
+        "customer__name",
+        "ordered_by__username",
+        "delivery_phone",
+        "store_name",
+        "contact_name",
+        "guest_session_key",
+    )
+    list_filter = ("workflow_status", "status", "stock_deducted", "created_at", "customer", "ordered_by")
     list_editable = ("workflow_status", "status")
-    readonly_fields = ("stock_deducted", "total_revenue", "total_cost", "profit", "created_at", "guest_session_key")
+    readonly_fields = (
+        "stock_deducted",
+        "total_revenue",
+        "total_cost",
+        "profit",
+        "created_at",
+        "guest_session_key",
+        "ordered_by",
+    )
+
+    def has_view_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated and request.user.is_staff)
+
+    def has_change_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated and request.user.is_staff)
+
+    def has_delete_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated and request.user.is_superuser)
 
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ("order", "product", "quantity", "sale_type", "unit_price", "pricing_note", "total_revenue", "profit")
     search_fields = ("order__name", "product__name", "product__sku", "pricing_note")
+
+    def has_view_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated and request.user.is_staff)
+
+    def has_change_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated and request.user.is_staff)
+
+    def has_delete_permission(self, request, obj=None):
+        return bool(request.user.is_authenticated and request.user.is_superuser)
 
 
 @admin.register(StockLog)
@@ -164,3 +208,11 @@ class StockLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(UserRole)
+class UserRoleAdmin(admin.ModelAdmin):
+    list_display = ("user", "role")
+    list_filter = ("role",)
+    search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
+    autocomplete_fields = ("user",)

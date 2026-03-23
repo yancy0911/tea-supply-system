@@ -124,11 +124,15 @@
         <div style="font-weight: 800; font-size: 16px">奶茶供应系统</div>
         <div class="nav">
           <a href="/shop/">客户商城</a>
+          {% if user.is_authenticated and user.is_staff %}
           <a href="/">店员录单</a>
           <a href="/orders/">订单</a>
+          {% if user.is_superuser %}
           <a href="/inventory/">库存</a>
           <a href="/replenishment/">补货预警</a>
-          <a href="/vehicles/">装车</a>
+          <a href="/admin/">后台管理</a>
+          {% endif %}
+          {% endif %}
         </div>
         <div style="margin-left: auto">
           {% if user.is_authenticated %}

@@ -1,6 +1,7 @@
 import threading
 
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 from django.db import transaction, models
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
@@ -185,6 +186,15 @@ class Customer(models.Model):
         default=PaymentCycle.CASH,
         verbose_name="结算周期",
     )
+    user = models.OneToOneField(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="customer_profile",
+        verbose_name="登录账号",
+        help_text="统一账号体系：客户使用 Django User 登录商城。",
+    )
 
     def __str__(self):
         return self.name
@@ -248,6 +258,23 @@ class StockLog(models.Model):
         return f"{self.get_direction_display()} {self.quantity}"
 
 
+class UserRole(models.Model):
+    class Role(models.TextChoices):
+        OWNER = "owner", "老板"
+        STAFF = "staff", "员工"
+        CUSTOMER = "customer", "客户"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="role_profile")
+    role = models.CharField(max_length=16, choices=Role.choices, default=Role.CUSTOMER, verbose_name="角色")
+
+    class Meta:
+        verbose_name = "用户角色"
+        verbose_name_plural = "用户角色"
+
+    def __str__(self):
+        return f"{self.user.username}({self.get_role_display()})"
+
+
 class Order(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "待处理"
@@ -268,6 +295,15 @@ class Order(models.Model):
         null=True,
         blank=True,
         verbose_name="客户",
+    )
+    ordered_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders_created",
+        verbose_name="下单用户",
+        help_text="提交订单时绑定 request.user（客户前台/员工录单）。",
     )
     guest_session_key = models.CharField(
         max_length=40,

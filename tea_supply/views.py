@@ -4,6 +4,7 @@ import json
 import hashlib
 import secrets
 import time
+from functools import wraps
 from collections import defaultdict
 from datetime import timedelta
 
@@ -13,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Min, Q, Sum
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
@@ -26,6 +28,8 @@ from .models import (
     OrderItem,
     Product,
     ProductCategory,
+    UserRole,
+    deduct_stock_for_order,
     _stock_need_for_line,
     resolve_selling_unit_price,
 )
@@ -33,6 +37,44 @@ from .models import (
 
 def _unsettled_order_statuses():
     return (Order.Status.PENDING,)
+
+
+def _is_internal_user(user):
+    if not user.is_authenticated:
+        return False
+    rp = getattr(user, "role_profile", None)
+    if rp and rp.role in (UserRole.Role.OWNER, UserRole.Role.STAFF):
+        return True
+    return bool(user.is_staff)
+
+
+def _is_boss(user):
+    if not user.is_authenticated:
+        return False
+    rp = getattr(user, "role_profile", None)
+    if rp and rp.role == UserRole.Role.OWNER:
+        return True
+    return bool(user.is_superuser)
+
+
+def internal_user_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not _is_internal_user(request.user):
+            return HttpResponseForbidden("无权限访问内部页面")
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
+
+
+def boss_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not _is_boss(request.user):
+            return HttpResponseForbidden("仅老板可访问该页面")
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
 
 
 def unsettled_amount_for_customer(customer):
@@ -54,9 +96,6 @@ def _days_since_earliest_pending(earliest_created_at):
         dt = timezone.make_aware(dt, timezone.get_current_timezone())
     today = timezone.now().date()
     return max(0, (today - dt.date()).days)
-
-
-SHOP_SESSION_CUSTOMER_KEY = "shop_customer_id"
 
 
 def _make_order_submit_signature(*, prefix: str, customer_id: str, lines_json: str, extra=None):
@@ -220,6 +259,10 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             create_kwargs = {"confirmed": False}
             if customer_obj is not None:
                 create_kwargs["customer"] = customer_obj
+            if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
+                create_kwargs["ordered_by"] = request.user
+            elif customer_obj is not None and customer_obj.user_id:
+                create_kwargs["ordered_by_id"] = customer_obj.user_id
             if from_shop:
                 ts = timezone.now().strftime("%m%d%H%M")
                 if customer_obj is not None:
@@ -244,6 +287,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                     sale_type=v["sale_type"],
                     quantity=v["quantity"],
                 )
+            # 基础库存联动：下单成功即扣减，库存不足会抛错并整体回滚。
+            deduct_stock_for_order(order.id)
         return order
     except Exception as e:
         print(e)
@@ -251,20 +296,20 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
 
 def get_shop_customer(request):
-    cid = request.session.get(SHOP_SESSION_CUSTOMER_KEY)
-    if not cid:
+    u = getattr(request, "user", None)
+    if not u or not u.is_authenticated:
         return None
-    return Customer.objects.filter(pk=cid).first()
+    return Customer.objects.filter(user_id=u.id).first()
 
 
 def shop_order_permission(customer):
     """
     商城是否允许提交订单。
     返回 (can_order: bool, block_hint: str)；block_hint 在不可下单时用于按钮提示/弹窗。
-    未登录：允许以游客身份下单（基础价）；已登录：按账号状态。
+    仅已登录且绑定客户档案的用户可下单。
     """
     if not customer:
-        return True, ""
+        return False, "请先使用已开通的客户账号登录"
     reason = customer.shop_order_denial_reason()
     if reason:
         return False, reason
@@ -283,18 +328,26 @@ def _default_product_image_url():
 
 def _shop_product_row(customer, p):
     """客户商城商品 JSON 行（列表页 / 详情页共用）。"""
-    # 前台图片优先使用后台上传的 catalog_upload；
-    # 历史 CSV 的 `image` 字段不再参与展示，未上传则走默认占位图。
-    image_url = _default_product_image_url()
+    # 图片规则：
+    # 1) 后台上传图（catalog_upload）优先
+    # 2) 其次使用 image 字段（相对 media 路径）
+    # 3) 若 image 为空，自动回退 /media/products/{sku}.jpg
+    image_url = ""
+    image_path = (getattr(p, "image", None) or "").strip()
     has_image = False
     try:
         cu = getattr(p, "catalog_upload", None)
         if cu:
-            # ImageField 的 url 可能因文件不存在而抛错；这里做防御。
             image_url = cu.url
             has_image = True
     except Exception:
-        has_image = False
+        pass
+    if not image_url:
+        if image_path:
+            image_url = "/media/" + image_path.lstrip("/")
+            has_image = True
+        else:
+            image_url = f"/media/products/{p.sku}.jpg"
     base_s = float(p.price_single)
     base_c = float(p.price_case)
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
@@ -316,6 +369,7 @@ def _shop_product_row(customer, p):
         "sku": p.sku,
         "unit_label": (p.unit_label or "").strip() or "per unit",
         "case_label": (p.case_label or "").strip() or "per case",
+        "image": image_path,
         "price_single": base_s,
         "price_case": base_c,
         "base_single": base_s,
@@ -391,6 +445,7 @@ def _dunning_time_and_supply(amount, credit_limit, days_since_earliest):
 
 
 @login_required
+@internal_user_required
 def wholesale_order_entry(request):
     customers = Customer.objects.all().order_by("name")
     categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
@@ -491,7 +546,7 @@ def wholesale_order_entry(request):
 
 
 def shop_home(request):
-    """客户前台商城（/shop/）：商品与分类均来自数据库；定价随 session 客户身份变化。"""
+    """客户前台商城（/shop/）：商品与分类均来自数据库；定价随 request.user 客户身份变化。"""
     categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
     customer = get_shop_customer(request)
     products = (
@@ -525,51 +580,21 @@ def shop_home(request):
         "shop_unsettled": unsettled_amount_for_customer(customer) if customer else None,
         "shop_can_order": can_order,
         "shop_order_block_hint": order_hint,
+        "shop_logged_in": bool(customer),
         "missing_images": missing_images,
         "missing_prices": missing_prices,
     }
     return render(request, "shop/shop_home.html", ctx)
 
 
-@require_POST
+@require_GET
 def shop_login(request):
-    phone = (request.POST.get("phone") or "").strip()
-    if not phone:
-        messages.error(request, "请输入手机号")
-        return redirect("shop-home")
-    c = Customer.objects.filter(phone=phone).first()
-    if not c:
-        c = Customer.objects.create(
-            name=f"新客户-{phone}",
-            phone=phone,
-            address="（待完善）",
-            delivery_zone="（待分配）",
-            account_status=Customer.AccountStatus.PENDING,
-        )
-        request.session[SHOP_SESSION_CUSTOMER_KEY] = c.pk
-        request.session.modified = True
-        messages.info(
-            request,
-            "已用手机号创建账号，当前为「待审核」。审核通过后即可下单；可先浏览商品。",
-        )
-        messages.warning(request, "账号审核中，请联系店家开通采购权限")
-        return redirect("shop-home")
-    request.session[SHOP_SESSION_CUSTOMER_KEY] = c.pk
-    request.session.modified = True
-    if c.account_status == Customer.AccountStatus.PENDING:
-        messages.warning(request, "账号审核中，请联系店家开通采购权限")
-    elif c.account_status == Customer.AccountStatus.DISABLED:
-        messages.warning(request, "账号已禁用，无法下单。可浏览商品；如有疑问请联系店家。")
-    else:
-        messages.success(request, f"欢迎，{c.name}")
-    return redirect("shop-home")
+    return redirect("/login/?next=/shop/")
 
 
 @require_GET
 def shop_logout(request):
-    request.session.pop(SHOP_SESSION_CUSTOMER_KEY, None)
-    messages.info(request, "已退出客户登录")
-    return redirect("shop-home")
+    return redirect("/logout/?next=/shop/")
 
 
 @require_GET
@@ -621,24 +646,38 @@ def shop_product_detail(request, product_id):
 def shop_order_success(request, order_id):
     order = get_object_or_404(Order.objects.prefetch_related("items__product"), pk=order_id)
     customer = get_shop_customer(request)
-    if order.customer_id:
-        if not customer or order.customer_id != customer.pk:
-            messages.error(request, "无权查看该订单")
-            return redirect("shop-home")
-    else:
-        sk = request.session.session_key or ""
-        if not sk or (order.guest_session_key or "") != sk:
-            messages.error(request, "无权查看该订单")
-            return redirect("shop-home")
+    if not customer or order.customer_id != customer.pk:
+        messages.error(request, "无权查看该订单")
+        return redirect("shop-home")
+    if not request.user.is_authenticated or order.ordered_by_id != request.user.id:
+        messages.error(request, "无权查看该订单")
+        return redirect("shop-home")
     return render(request, "shop/shop_order_success.html", {"order": order})
+
+
+@require_GET
+def shop_orders(request):
+    customer = get_shop_customer(request)
+    if not customer:
+        messages.error(request, "请先登录客户账号查看订单")
+        return redirect("shop-home")
+    orders = (
+        Order.objects.filter(ordered_by_id=request.user.id, customer_id=customer.pk)
+        .prefetch_related("items__product")
+        .order_by("-created_at")
+    )
+    return render(
+        request,
+        "shop/shop_orders.html",
+        {"orders": orders, "shop_customer": customer},
+    )
 
 
 @require_POST
 def shop_submit_order(request):
-    if not request.session.session_key:
-        request.session.create()
-    session_key = request.session.session_key or ""
-
+    if not request.user.is_authenticated:
+        messages.error(request, "请先登录客户账号后再提交订单")
+        return redirect("/login/?next=/shop/")
     customer = get_shop_customer(request)
     can_order, hint = shop_order_permission(customer)
     if not can_order:
@@ -655,7 +694,7 @@ def shop_submit_order(request):
         "delivery_address": request.POST.get("delivery_address", ""),
         "order_note": request.POST.get("order_note", ""),
     }
-    sig_id = str(customer.pk) if customer else f"guest::{session_key}"
+    sig_id = str(customer.pk)
     sig = _make_order_submit_signature(
         prefix="shop",
         customer_id=sig_id,
@@ -682,14 +721,9 @@ def shop_submit_order(request):
             "delivery_address": request.POST.get("delivery_address", ""),
             "order_note": request.POST.get("order_note", ""),
         }
-        if customer:
-            order = submit_order_from_lines(
-                request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
-            )
-        else:
-            order = submit_order_from_lines(
-                request, None, lines, from_shop=True, shipping=shipping, guest_session_key=session_key or None
-            )
+        order = submit_order_from_lines(
+            request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
+        )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.success(request, "批发订单已提交")
         return redirect("shop-order-success", order_id=order.id)
@@ -772,6 +806,7 @@ def _replenishment_risk_and_action(stock, sold_30d, days_cover):
 
 
 @login_required
+@boss_required
 def replenishment_dashboard(request):
     """
     老板决策版补货预警：风险分级、排序、汇总、建议采购量（60 天需求 − 当前库存）。
@@ -866,6 +901,7 @@ def demo_landing(request):
 
 
 @login_required
+@boss_required
 def inventory_list(request):
     from .models import Ingredient
 
@@ -898,6 +934,7 @@ def inventory_list(request):
 
 
 @login_required
+@internal_user_required
 def orders_list(request):
     unsettled_items = OrderItem.objects.filter(order__status__in=_unsettled_order_statuses()).select_related(
         "order__customer", "product"
@@ -1051,6 +1088,7 @@ _MSG_SETTLED_RELEASE = (
 
 
 @login_required
+@internal_user_required
 def mark_order_paid(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     if order.status == Order.Status.PAID:
@@ -1063,6 +1101,7 @@ def mark_order_paid(request, order_id):
 
 
 @login_required
+@internal_user_required
 def order_status_update(request, order_id):
     if request.method == "POST":
         status = request.POST.get("status")

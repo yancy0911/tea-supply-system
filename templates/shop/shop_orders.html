@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>我的订单</title>
+    <style>
+      body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; background: #f3f4f6; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; }
+      .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+      .card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 1px 8px rgba(0,0,0,.06); margin-bottom: 12px; }
+      .muted { color: #6b7280; font-size: 13px; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 9px 6px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+      .badge { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; }
+      .wf { background: #e0f2fe; color: #0369a1; }
+      .st { background: #e5e7eb; color: #374151; }
+      a { color: #2563eb; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <h2 style="margin:0">我的订单</h2>
+        <a href="/shop/">返回商城</a>
+      </div>
+      {% if orders %}
+        {% for order in orders %}
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+              <div>
+                <div><strong>订单号 #{{ order.id }}</strong></div>
+                <div class="muted">创建时间：{{ order.created_at|date:"Y-m-d H:i" }}</div>
+              </div>
+              <div>
+                {% if order.workflow_status == "confirmed" %}
+                  <span class="badge wf">已确认</span>
+                {% elif order.workflow_status == "shipped" %}
+                  <span class="badge wf">已发货</span>
+                {% elif order.workflow_status == "completed" %}
+                  <span class="badge wf">完成</span>
+                {% else %}
+                  <span class="badge wf">待处理</span>
+                {% endif %}
+              </div>
+            </div>
+            <div style="margin-top:8px;">
+              <table>
+                <thead>
+                  <tr><th>商品</th><th>方式</th><th>数量</th><th>单价</th><th>小计</th></tr>
+                </thead>
+                <tbody>
+                  {% for it in order.items.all %}
+                    <tr>
+                      <td>{{ it.product.name }}</td>
+                      <td>{% if it.sale_type == "case" %}整箱{% else %}单品{% endif %}</td>
+                      <td>{{ it.quantity }}</td>
+                      <td>¥{{ it.unit_price|floatformat:2 }}</td>
+                      <td>¥{{ it.total_revenue|floatformat:2 }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div style="text-align:right;font-weight:700;margin-top:8px;">合计：¥{{ order.total_revenue|floatformat:2 }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="card muted">暂无订单。</div>
+      {% endif %}
+    </div>
+  </body>
+</html>

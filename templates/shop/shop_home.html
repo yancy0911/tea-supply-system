@@ -596,6 +596,9 @@
         <a href="#shop-cart-anchor" class="shop-cart-mini" id="cart-jump">
           🛒 购物车 <strong id="cart-badge">0</strong>
         </a>
+        {% if shop_logged_in %}
+          <a href="{% url 'shop-orders' %}" class="shop-cart-mini" style="text-decoration: none">我的订单</a>
+        {% endif %}
         <div class="shop-user">
           {% if shop_customer %}
             <span>您好，<strong>{{ shop_customer.name }}</strong></span>
@@ -611,12 +614,8 @@
             {% endif %}
             <a href="{% url 'shop-logout' %}">退出</a>
           {% else %}
-            <form method="post" action="{% url 'shop-login' %}">
-              {% csrf_token %}
-              <input type="text" name="phone" placeholder="手机号登录" maxlength="20" />
-              <button type="submit" class="btn-go">登录</button>
-            </form>
-            <span style="opacity: 0.75">登录后享 VIP 9 折 / 专属价</span>
+            <a href="/login/?next=/shop/" class="btn-go" style="text-decoration: none; text-align: center">客户登录</a>
+            <span style="opacity: 0.75">请使用老板创建的客户账号登录</span>
           {% endif %}
           <a href="/" style="margin-left: 8px; opacity: 0.8">店员入口 →</a>
         </div>
@@ -666,7 +665,7 @@
           购物车
           <span style="font-size: 12px; font-weight: 500; color: var(--muted)">
             {% if not shop_customer %}
-              （未登录可游客下单；登录享专属价）
+              （请先登录客户账号后下单）
             {% elif shop_can_order %}
               （已开通采购，可提交订单）
             {% else %}

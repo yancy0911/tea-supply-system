@@ -20,6 +20,11 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+# 后台管理仅老板（superuser）可进入；员工使用业务页面处理订单。
+admin.site.has_permission = lambda request: bool(
+    request.user.is_active and request.user.is_staff
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("main.urls")),
