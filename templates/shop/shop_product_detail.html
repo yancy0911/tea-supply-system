@@ -143,15 +143,6 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
-      a.btn-contact {
-        display: block;
-        text-align: center;
-        text-decoration: none;
-        background: linear-gradient(90deg, #334155, #475569);
-      }
-      a.btn-contact:hover {
-        filter: brightness(1.05);
-      }
       .hint {
         font-size: 12px;
         color: var(--muted);
@@ -234,14 +225,13 @@
           "分类：" +
           (p.category_name || "—") +
           "<br/>单位规格：" +
-          (p.unit_label || "per unit") +
+          (p.unit_label || "—") +
           "<br/>整箱规格：" +
-          (p.case_label || "per case");
+          (p.case_label || "—");
 
         var priceHtml = "";
         if (p.price_on_request) {
-          priceHtml =
-            '<span class="big-price">询价商品</span> <small style="color:#6b7280">Contact for quote</small>';
+          priceHtml = '<span class="big-price">请询价</span>';
         } else {
           priceHtml +=
             '<div><span class="big-price">¥' +
@@ -253,9 +243,7 @@
             '</span> <small style="color:#6b7280">整箱</small></div>';
         }
         document.getElementById("pprice").innerHTML = priceHtml;
-        document.getElementById("pnote").textContent = p.price_on_request
-          ? "{{ shop_contact_hint|default:''|escapejs }}"
-          : p.price_note || "";
+        document.getElementById("pnote").textContent = p.price_on_request ? "价格待定" : p.price_note || "";
 
         var canSingle = p.can_split_sale && p.can_quote_single;
         var canCase = p.can_quote_case;
@@ -270,32 +258,13 @@
             (!canSingle ? "checked" : "") +
             " /> 整箱</label>";
         }
-        if (!modeHtml) modeHtml = "<span style='color:#b45309'>询价 / 暂无标价</span>";
+        if (!modeHtml) modeHtml = "<span style='color:#b45309'>暂无标价</span>";
         document.getElementById("pmode").innerHTML = modeHtml;
 
         var minQ = Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01);
         var qIn = document.getElementById("pqty");
         qIn.value = minQ;
         qIn.min = minQ;
-
-        var padd = document.getElementById("padd");
-        var hintEl = document.querySelector(".hint");
-        if (p.price_on_request) {
-          document.getElementById("bminus").disabled = true;
-          document.getElementById("bplus").disabled = true;
-          qIn.disabled = true;
-          var href = {% if shop_contact_phone %}"tel:{{ shop_contact_phone }}"{% else %}"/shop/#shop-contact-bar"{% endif %};
-          var a = document.createElement("a");
-          a.href = href;
-          a.className = "btn btn-contact";
-          a.textContent = "联系下单 / Contact Us";
-          padd.parentNode.replaceChild(a, padd);
-          if (hintEl) hintEl.textContent = "{{ shop_contact_hint|default:''|escapejs }}";
-        } else if (shopLoggedIn && !shopCanOrder) {
-          padd.disabled = true;
-          padd.textContent = "加入购物车（账号未开通采购）";
-          if (hintEl) hintEl.textContent = shopOrderBlockHint || "审核通过后即可采购。";
-        }
 
         document.getElementById("bminus").onclick = function () {
           var v = parseFloat(qIn.value) || 0;
@@ -318,14 +287,9 @@
           return sale && sale.value === "case" ? "case" : "single";
         }
 
-        var paddEl = document.getElementById("padd");
-        if (paddEl) paddEl.onclick = function () {
-          if (shopLoggedIn && !shopCanOrder) {
-            alert(shopOrderBlockHint || "账号未开通采购，无法加购");
-            return;
-          }
+        document.getElementById("padd").onclick = function () {
           if (p.price_on_request) {
-            alert("该商品为询价商品，请使用「联系下单」");
+            alert("该商品需询价");
             return;
           }
           var st = saleType();

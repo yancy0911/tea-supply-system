@@ -18,14 +18,10 @@ HEADER = [
     "case_label",
     "price_single",
     "price_case",
-    "cost_price_single",
-    "cost_price_case",
     "shelf_life_months",
     "can_split_sale",
     "minimum_order_qty",
     "is_active",
-    "stock_quantity",
-    "units_per_case",
     "image",
 ]
 
@@ -56,23 +52,14 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "csv_path",
-            nargs="?",
-            default=None,
-            help="CSV 文件路径（可选；与 --path 二选一，如 /tmp/products.csv）",
-        )
-        parser.add_argument(
             "--path",
-            dest="path_opt",
             default=None,
             help="CSV path (default: <BASE_DIR>/data/products_import_ready.csv)",
         )
 
     def handle(self, *args, **opts):
         base = Path(settings.BASE_DIR)
-        path = opts["csv_path"] or opts["path_opt"] or str(
-            base / "data" / "products_import_ready.csv"
-        )
+        path = opts["path"] or str(base / "data" / "products_import_ready.csv")
         if not os.path.isfile(path):
             self.stderr.write(self.style.ERROR(f"文件不存在: {path}"))
             return
@@ -108,19 +95,14 @@ class Command(BaseCommand):
                 case_label = str(row.get("case_label") or "").strip()
                 price_single = _f(row.get("price_single"))
                 price_case = _f(row.get("price_case"))
-                # 不自动把整箱价抄成单品价：任一侧为 0 时由 Product.save 标记为询价商品
-                cost_single = _f(row.get("cost_price_single"))
-                cost_case = _f(row.get("cost_price_case"))
+                if price_case == 0 and price_single != 0:
+                    price_case = price_single
                 shelf = _i(row.get("shelf_life_months")) or 12
                 can_split = _bool(row.get("can_split_sale"))
                 min_q = _f(row.get("minimum_order_qty")) or 1.0
                 if min_q <= 0:
                     min_q = 1.0
                 is_active = _bool(row.get("is_active"))
-                stock_qty = _f(row.get("stock_quantity"))
-                units_case = _f(row.get("units_per_case"))
-                if units_case <= 0:
-                    units_case = 1.0
                 image_path = str(row.get("image") or "").strip()
 
                 with transaction.atomic():
@@ -139,14 +121,10 @@ class Command(BaseCommand):
                         "case_label": case_label,
                         "price_single": price_single,
                         "price_case": price_case,
-                        "cost_price_single": cost_single,
-                        "cost_price_case": cost_case,
                         "shelf_life_months": max(0, shelf),
                         "can_split_sale": can_split,
                         "minimum_order_qty": min_q,
                         "is_active": is_active,
-                        "stock_quantity": stock_qty,
-                        "units_per_case": units_case,
                         "image": image_path,
                     }
                     if product:
@@ -164,10 +142,7 @@ class Command(BaseCommand):
         self.stdout.write(f"新建商品: {created_n}")
         self.stdout.write(f"更新商品: {updated_n}")
         self.stdout.write(f"新建分类数: {len(created_cats)}（{', '.join(sorted(created_cats)) or '无'}）")
-        self.stdout.write(
-            "已用默认值（若 CSV 未写）: shelf_life_months 空→12；minimum_order_qty 空/非法→1；"
-            "单价或整箱价任一侧≤0→询价商品（price_on_request）"
-        )
+        self.stdout.write("已用默认值（若 CSV 未写）: shelf_life_months 空→12；minimum_order_qty 空/非法→1；整箱价空→同单品价")
         if skipped:
             self.stdout.write(self.style.WARNING("未导入或失败行:"))
             for ln, reason in skipped:

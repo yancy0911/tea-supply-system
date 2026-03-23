@@ -141,10 +141,6 @@ def submit_order_from_lines(customer_obj, lines, *, from_shop=False, shipping=No
         p = Product.objects.get(pk=pid)
         if not p.is_active:
             raise ValidationError(f"商品「{p.name}」已停用")
-        if getattr(p, "price_on_request", False):
-            raise ValidationError(
-                f"商品「{p.name}」为询价商品，无法在线下单，请联系业务员（Contact us to order）。"
-            )
         if sale_type == OrderItem.SaleType.SINGLE and not p.can_split_sale:
             raise ValidationError(f"商品「{p.name}」不可拆卖，请选择整箱")
         if qty < float(p.minimum_order_qty):
@@ -241,18 +237,12 @@ def _default_product_image_url():
 def _shop_product_row(customer, p):
     """客户商城商品 JSON 行（列表页 / 详情页共用）。"""
     img = (getattr(p, "image", None) or "").strip()
-    image_url = _default_product_image_url()
-    cu = getattr(p, "catalog_upload", None)
-    if cu and getattr(cu, "name", None):
-        try:
-            image_url = cu.url
-        except Exception:
-            image_url = _default_product_image_url()
-    elif img:
+    if img:
         image_url = "/media/" + img.lstrip("/")
+    else:
+        image_url = _default_product_image_url()
     base_s = float(p.price_single)
     base_c = float(p.price_case)
-    por = bool(getattr(p, "price_on_request", (base_s <= 0) or (base_c <= 0)))
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
     dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
     stock_disp = None
@@ -270,8 +260,8 @@ def _shop_product_row(customer, p):
         "category_name": p.category.name if p.category_id else "",
         "name": p.name,
         "sku": p.sku,
-        "unit_label": (getattr(p, "unit_label", None) or "").strip() or "per unit",
-        "case_label": (getattr(p, "case_label", None) or "").strip() or "per case",
+        "unit_label": (p.unit_label or "").strip() or "per unit",
+        "case_label": (p.case_label or "").strip() or "per case",
         "price_single": base_s,
         "price_case": base_c,
         "base_single": base_s,
@@ -287,9 +277,9 @@ def _shop_product_row(customer, p):
         "minimum_order_qty": float(p.minimum_order_qty),
         "image_url": image_url,
         "has_image": True,
-        "price_on_request": por,
-        "can_quote_single": base_s > 0 and not por,
-        "can_quote_case": base_c > 0 and not por,
+        "price_on_request": base_s <= 0 and base_c <= 0,
+        "can_quote_single": base_s > 0,
+        "can_quote_case": base_c > 0,
         "stock_quantity": stock_disp,
         "uses_ingredient_stock": bool(p.ingredient_id),
         "units_per_case": float(p.units_per_case),
@@ -456,9 +446,7 @@ def shop_home(request):
     missing_prices = []
     for p in products:
         row = _shop_product_row(customer, p)
-        if row["price_on_request"]:
-            row["default_mode"] = "single"
-        elif row["can_split_sale"] and row["can_quote_single"]:
+        if row["can_split_sale"] and row["can_quote_single"]:
             row["default_mode"] = "single"
         elif row["can_quote_case"]:
             row["default_mode"] = "case"
@@ -469,7 +457,7 @@ def shop_home(request):
         shop_items.append(row)
         if not row["has_image"]:
             missing_images.append({"sku": p.sku, "name": p.name})
-        if row["price_on_request"] and row["price_single"] <= 0 and row["price_case"] <= 0:
+        if row["price_on_request"]:
             missing_prices.append({"sku": p.sku, "name": p.name})
 
     can_order, order_hint = shop_order_permission(customer)
@@ -483,8 +471,6 @@ def shop_home(request):
         "shop_order_block_hint": order_hint,
         "missing_images": missing_images,
         "missing_prices": missing_prices,
-        "shop_contact_phone": getattr(settings, "SHOP_CONTACT_PHONE", ""),
-        "shop_contact_hint": getattr(settings, "SHOP_CONTACT_HINT", ""),
     }
     return render(request, "shop/shop_home.html", ctx)
 
@@ -553,8 +539,6 @@ def shop_checkout(request):
             "categories": categories,
             "shop_can_order": can_order,
             "shop_order_block_hint": order_hint,
-            "shop_contact_phone": getattr(settings, "SHOP_CONTACT_PHONE", ""),
-            "shop_contact_hint": getattr(settings, "SHOP_CONTACT_HINT", ""),
         },
     )
 
@@ -576,8 +560,6 @@ def shop_product_detail(request, product_id):
             "shop_customer": customer,
             "shop_can_order": can_order,
             "shop_order_block_hint": order_hint,
-            "shop_contact_phone": getattr(settings, "SHOP_CONTACT_PHONE", ""),
-            "shop_contact_hint": getattr(settings, "SHOP_CONTACT_HINT", ""),
         },
     )
 

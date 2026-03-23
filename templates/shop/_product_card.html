@@ -1,4 +1,4 @@
-{% comment %}单张商品卡片：product 为 _shop_product_row 字典；需传入 shop_can_order、shop_customer、shop_order_block_hint{% endcomment %}
+{% comment %}单张商品卡片：数据来自视图中的 product 字典（_shop_product_row）{% endcomment %}
 <div
   class="p-card"
   data-product-id="{{ product.id }}"
@@ -24,17 +24,16 @@
     </div>
     <div class="p-sku">SKU：{{ product.sku|default:"" }}</div>
     <div class="p-spec">
-      单位：{{ product.unit_label|default:"per unit" }}<br />
-      整箱：{{ product.case_label|default:"per case" }}
+      单位：{{ product.unit_label|default:"—" }}<br />
+      整箱：{{ product.case_label|default:"—" }}
     </div>
     {% if product.price_on_request %}
-      <div class="p-price-row"><span class="p-quote" style="width: 100%">询价商品 · 请联络下单</span></div>
-      <div><span class="p-note">Contact us for pricing</span></div>
+      <div class="p-price-row"><span class="p-quote" style="width: 100%">请询价</span></div>
     {% else %}
       <div class="p-price-row">
         <span class="p-price-col">
           {% if not product.can_quote_single %}
-            <span class="p-quote">单品 无标价</span>
+            <span class="p-quote">单品 请询价</span>
           {% elif product.strike_single %}
             <del class="p-base">¥{{ product.base_single|floatformat:2 }}</del>
             <span class="p-price-discount">¥{{ product.display_single|floatformat:2 }}</span> <small>单品</small>
@@ -44,7 +43,7 @@
         </span>
         <span class="p-price-col">
           {% if not product.can_quote_case %}
-            <span class="p-quote">整箱 无标价</span>
+            <span class="p-quote">整箱 请询价</span>
           {% elif product.strike_case %}
             <del class="p-base">¥{{ product.base_case|floatformat:2 }}</del>
             <span class="p-price-discount">¥{{ product.display_case|floatformat:2 }}</span> <small>整箱</small>
@@ -53,6 +52,10 @@
           {% endif %}
         </span>
       </div>
+    {% endif %}
+    {% if product.price_on_request %}
+      <div><span class="p-note">价格待定</span></div>
+    {% else %}
       <div>
         <span
           class="{% with n=product.price_note|default_if_none:'' %}{% if '专属' in n %}p-note ex{% elif 'VIP' in n or '等级' in n %}p-note vip{% else %}p-note{% endif %}{% endwith %}"
@@ -68,7 +71,7 @@
           name="mode-{{ product.id }}"
           value="single"
           {% if product.default_mode == "single" %}checked{% endif %}
-          {% if product.price_on_request or not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
+          {% if not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
         />
         单品</label
       >
@@ -78,33 +81,16 @@
           name="mode-{{ product.id }}"
           value="case"
           {% if product.default_mode == "case" %}checked{% endif %}
-          {% if product.price_on_request or not product.can_quote_case %}disabled{% endif %}
+          {% if not product.can_quote_case %}disabled{% endif %}
         />
         整箱</label
       >
     </div>
     <div class="p-qty-row">
-      <button type="button" data-act="minus" {% if product.price_on_request %}disabled{% endif %}>−</button>
-      <input type="number" min="0.01" step="0.01" value="{{ product.minimum_order_qty }}" {% if product.price_on_request %}disabled{% endif %} />
-      <button type="button" data-act="plus" {% if product.price_on_request %}disabled{% endif %}>+</button>
+      <button type="button" data-act="minus">−</button>
+      <input type="number" min="0.01" step="0.01" value="{{ product.minimum_order_qty }}" />
+      <button type="button" data-act="plus">+</button>
     </div>
-    {% if product.price_on_request %}
-      {% if shop_contact_phone %}
-        <a class="p-add p-contact" href="tel:{{ shop_contact_phone }}">联系下单 / Contact Us</a>
-      {% else %}
-        <a class="p-add p-contact" href="#shop-contact-bar">联系下单 / Contact Us</a>
-      {% endif %}
-    {% elif shop_customer and not shop_can_order %}
-      <button
-        type="button"
-        class="p-add"
-        disabled
-        title="{{ shop_order_block_hint|default:'当前无法下单' }}"
-      >
-        加入购物车
-      </button>
-    {% else %}
-      <button type="button" class="p-add" data-pid="{{ product.id }}">加入购物车</button>
-    {% endif %}
+    <button type="button" class="p-add" data-pid="{{ product.id }}" {% if product.price_on_request %}disabled{% endif %}>加入购物车</button>
   </div>
 </div>

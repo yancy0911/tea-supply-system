@@ -90,8 +90,6 @@ class ProductAdmin(ImportExportModelAdmin):
         "category",
         "name",
         "sku",
-        "price_on_request",
-        "catalog_upload",
         "image",
         "unit_label",
         "price_single",
@@ -99,9 +97,8 @@ class ProductAdmin(ImportExportModelAdmin):
         "stock_quantity",
         "is_active",
     )
-    list_filter = ("category", "is_active", "price_on_request")
+    list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
-    readonly_fields = ("price_on_request",)
 
 
 @admin.register(Order)
