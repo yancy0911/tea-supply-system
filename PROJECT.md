@@ -22,8 +22,12 @@
 
 ```bash
 ./.venv/bin/python manage.py migrate
-python manage.py import_products_ready
+# 端到端：规范化 CSV → 导入分类/商品 → 清洗字段 → 补图（对当前 DATABASE_URL / 本地 sqlite 生效）
+python manage.py bootstrap_full_shop
+# 仅重复清洗（已导过 CSV）
+python manage.py bootstrap_full_shop --skip-csv
 ```
 
 - 后台商品 **Import**：`/admin/tea_supply/product/`（django-import-export）。
-- Render：`render.yaml` 的 `releaseCommand` 仅 `migrate`；商品 CSV 用后台 Import 或 Shell 执行 `import_products_ready`。
+- **Render 生产库**：在 **Shell** 中执行 `python manage.py bootstrap_full_shop`（依赖仓库内 `data/products_import_ready.csv` 与环境变量 `DATABASE_URL`）。
+- `releaseCommand` 仍为 `migrate`；全量导入请在部署后 Shell 跑 `bootstrap_full_shop`。

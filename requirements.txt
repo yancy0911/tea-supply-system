@@ -16,6 +16,10 @@ typing_extensions==4.15.0
 gunicorn==23.0.0
 whitenoise==6.11.0
 
+# Render / Postgres（DATABASE_URL）
+dj-database-url==2.1.0
+psycopg2-binary==2.9.9
+
 # 图片处理（常用；若后续使用 ImageField/处理上传图建议保留）
 pillow==11.3.0
 packaging==26.0
