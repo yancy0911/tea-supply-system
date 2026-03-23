@@ -283,11 +283,18 @@ def _default_product_image_url():
 
 def _shop_product_row(customer, p):
     """客户商城商品 JSON 行（列表页 / 详情页共用）。"""
-    img = (getattr(p, "image", None) or "").strip()
-    if img:
-        image_url = "/media/" + img.lstrip("/")
-    else:
-        image_url = _default_product_image_url()
+    # 前台图片优先使用后台上传的 catalog_upload；
+    # 历史 CSV 的 `image` 字段不再参与展示，未上传则走默认占位图。
+    image_url = _default_product_image_url()
+    has_image = False
+    try:
+        cu = getattr(p, "catalog_upload", None)
+        if cu:
+            # ImageField 的 url 可能因文件不存在而抛错；这里做防御。
+            image_url = cu.url
+            has_image = True
+    except Exception:
+        has_image = False
     base_s = float(p.price_single)
     base_c = float(p.price_case)
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
@@ -323,7 +330,7 @@ def _shop_product_row(customer, p):
         "can_split_sale": p.can_split_sale,
         "minimum_order_qty": float(p.minimum_order_qty),
         "image_url": image_url,
-        "has_image": True,
+        "has_image": has_image,
         "price_on_request": base_s <= 0 and base_c <= 0,
         "can_quote_single": base_s > 0,
         "can_quote_case": base_c > 0,
@@ -506,8 +513,6 @@ def shop_home(request):
         else:
             row["default_mode"] = "single"
         shop_items.append(row)
-        if not row["has_image"]:
-            missing_images.append({"sku": p.sku, "name": p.name})
         if row["price_on_request"]:
             missing_prices.append({"sku": p.sku, "name": p.name})
 

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
+from django.utils.html import format_html
 
 from .models import (
     Customer,
@@ -86,11 +87,12 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
 class ProductAdmin(ImportExportModelAdmin):
     """list_editable 与 import_export 在部分环境下会导致 Import 按钮不显示，故不在列表内联编辑。"""
     resource_class = ProductResource
+    exclude = ("image",)
     list_display = (
         "category",
         "name",
         "sku",
-        "image",
+        "image_preview",
         "unit_label",
         "price_single",
         "price_case",
@@ -99,6 +101,17 @@ class ProductAdmin(ImportExportModelAdmin):
     )
     list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
+
+    def image_preview(self, obj: Product):
+        if not getattr(obj, "catalog_upload", None):
+            return "—"
+        try:
+            url = obj.catalog_upload.url
+            return format_html('<img src="{}" style="height:40px; width:auto; object-fit:contain;" />', url)
+        except Exception:
+            return "—"
+
+    image_preview.short_description = "图片"
 
 
 class OrderItemInline(admin.TabularInline):
