@@ -33,9 +33,11 @@ def _env_bool(name: str, default: bool) -> bool:
     return str(v).strip().lower() in ("1", "true", "yes", "on")
 
 
-# Railway 通常提供 RAILWAY_ENVIRONMENT；未显式设置 DJANGO_DEBUG 时，在 Railway 上默认关闭 DEBUG
+# Railway 通常提供 RAILWAY_ENVIRONMENT；Render 提供 RENDER / RENDER_EXTERNAL_URL
+# 未显式设置 DJANGO_DEBUG 时，在以上平台默认关闭 DEBUG（与 collectstatic + WhiteNoise 生产配置一致）
 _on_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_PROJECT_ID"))
-DEBUG = _env_bool("DJANGO_DEBUG", default=False if _on_railway else True)
+_on_render = bool(os.environ.get("RENDER") or os.environ.get("RENDER_EXTERNAL_URL"))
+DEBUG = _env_bool("DJANGO_DEBUG", default=False if (_on_railway or _on_render) else True)
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "").strip()
 if not SECRET_KEY:
