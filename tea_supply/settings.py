@@ -207,6 +207,14 @@ SHOP_CONTACT_HINT = (
     or "请联系业务员或致电门店确认价格与下单（Contact us to order）。"
 )
 
+# Payment (Stripe / Bank Transfer)
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "").strip()
+BANK_NAME = os.environ.get("BANK_NAME", "").strip()
+BANK_ACCOUNT_NAME = os.environ.get("BANK_ACCOUNT_NAME", "").strip()
+BANK_ACCOUNT_NUMBER = os.environ.get("BANK_ACCOUNT_NUMBER", "").strip()
+BANK_ROUTING_NUMBER = os.environ.get("BANK_ROUTING_NUMBER", "").strip()
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 

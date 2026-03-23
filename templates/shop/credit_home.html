@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>我的信用</title>
+    <style>
+      body { margin:0; background:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC",sans-serif; }
+      .wrap { max-width: 860px; margin: 24px auto; padding: 0 16px; }
+      .card { background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 14px rgba(0,0,0,.06); }
+      .row { display:grid; grid-template-columns: 160px 1fr; gap:8px; padding:9px 0; border-bottom:1px solid #eef2f7; }
+      .k { color:#6b7280; }
+      .v { font-weight:600; color:#111; }
+      a { color:#2563eb; text-decoration:none; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p><a href="/shop/">返回商城</a> · <a href="{% url 'credit-apply' %}">申请额度</a></p>
+      <div class="card">
+        <h2 style="margin-top:0">我的信用</h2>
+        <div class="row"><div class="k">客户等级</div><div class="v">{{ shop_customer.get_customer_level_display }}</div></div>
+        <div class="row"><div class="k">允许赊账</div><div class="v">{% if shop_customer.allow_credit %}是{% else %}否{% endif %}</div></div>
+        <div class="row"><div class="k">信用额度</div><div class="v">¥{{ shop_customer.credit_limit|floatformat:2 }}</div></div>
+        <div class="row"><div class="k">当前欠款</div><div class="v">¥{{ current_debt|floatformat:2 }}</div></div>
+        <div class="row"><div class="k">已用额度</div><div class="v">¥{{ used_credit|floatformat:2 }}</div></div>
+        <div class="row"><div class="k">剩余额度</div><div class="v">¥{{ remaining_credit|floatformat:2 }}</div></div>
+        <div class="row"><div class="k">结算周期</div><div class="v">{{ shop_customer.payment_cycle }}</div></div>
+        <div class="row"><div class="k">最近申请状态</div><div class="v">{% if latest_application %}{{ latest_application.get_status_display }}{% else %}暂无申请{% endif %}</div></div>
+        <div class="row" style="border-bottom:0"><div class="k">最近审批备注</div><div class="v">{% if latest_application %}{{ latest_application.review_note|default:'—' }}{% else %}—{% endif %}</div></div>
+      </div>
+    </div>
+  </body>
+</html>

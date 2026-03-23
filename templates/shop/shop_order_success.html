@@ -3,154 +3,125 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>订单已提交 #{{ order.id }}</title>
+    <title>下单成功 #{{ order.id }}</title>
     <style>
       body {
         margin: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
-        background: #f4f6f8;
+        background: #f3f4f6;
         min-height: 100vh;
-      }
-      .hero {
-        background: linear-gradient(135deg, #059669, #10b981);
-        color: #fff;
-        padding: 28px 20px;
-        text-align: center;
-      }
-      .hero h1 {
-        margin: 0 0 8px;
-        font-size: 22px;
-      }
-      .wrap {
-        max-width: 720px;
-        margin: -24px auto 40px;
-        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
       }
       .card {
+        width: 100%;
+        max-width: 560px;
         background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        padding: 26px 24px;
+        box-shadow: 0 14px 42px rgba(15, 23, 42, 0.12);
       }
-      .status {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 999px;
-        background: #fef3c7;
-        color: #92400e;
-        font-weight: 700;
+      .success {
+        margin: 0 0 16px;
+        text-align: center;
+        color: #16a34a;
+        font-size: 34px;
+        font-weight: 900;
+      }
+      .sub {
+        text-align: center;
+        color: #6b7280;
+        margin: 0 0 20px;
+        font-size: 14px;
+      }
+      .kv {
+        border: 1px solid #eef2f7;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 10px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 15px;
+        align-items: center;
+      }
+      .row:last-child {
+        border-bottom: none;
+      }
+      .row .k {
+        color: #6b7280;
         font-size: 13px;
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-        margin-top: 12px;
+      .row .v {
+        font-weight: 700;
       }
-      th,
-      td {
-        padding: 10px 8px;
-        border-bottom: 1px solid #f1f5f9;
-        text-align: left;
-      }
-      th {
-        color: #6b7280;
-        font-size: 12px;
+      .row .v.amount {
+        color: #dc2626;
+        font-size: 20px;
       }
       .actions {
         margin-top: 20px;
         display: flex;
         gap: 12px;
-        flex-wrap: wrap;
       }
       .actions a {
-        display: inline-block;
-        padding: 10px 18px;
-        border-radius: 10px;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 16px;
+        border-radius: 12px;
         text-decoration: none;
-        font-weight: 600;
+        font-weight: 800;
+        font-size: 15px;
       }
       .primary {
-        background: #ff5000;
+        background: linear-gradient(90deg, #ea580c, #ff5000);
         color: #fff;
       }
       .secondary {
-        background: #e5e7eb;
-        color: #111;
-      }
-      dl {
-        margin: 0;
-        font-size: 14px;
-        line-height: 1.8;
-      }
-      dt {
-        color: #6b7280;
-        font-size: 12px;
-      }
-      dd {
-        margin: 0 0 10px;
+        background: #eef2ff;
+        color: #3730a3;
       }
     </style>
   </head>
   <body>
-    <div class="hero">
-      <h1>订单提交成功</h1>
-      <p style="margin: 0; opacity: 0.95">订单号 #{{ order.id }}</p>
-      <p style="margin: 8px 0 0; opacity: 0.95; font-size: 15px; max-width: 520px; margin-left: auto; margin-right: auto">
-        批发订单已提交，商家会尽快联系您确认价格与发货。
-      </p>
-    </div>
-    <div class="wrap">
-      <div class="card">
-        <p>
-          <span class="status">{{ order.get_workflow_status_display }}</span>
-          <span style="margin-left: 10px; color: #6b7280; font-size: 13px">结算：{{ order.get_status_display }}</span>
-        </p>
-        <dl>
-          <dt>收货人</dt>
-          <dd>{{ order.contact_name|default:"—" }} · {{ order.delivery_phone|default:"—" }}</dd>
-          <dt>门店 / 公司</dt>
-          <dd>{{ order.store_name|default:"—" }}</dd>
-          <dt>配送地址</dt>
-          <dd>{{ order.delivery_address|default:"—" }}</dd>
-          {% if order.order_note %}
-            <dt>备注</dt>
-            <dd>{{ order.order_note }}</dd>
-          {% endif %}
-        </dl>
+    <div class="card">
+      <h1 class="success">✔ 下单成功</h1>
+      <p class="sub">批发订单已提交，商家会尽快联系您确认价格与发货。</p>
 
-        <h3 style="margin: 16px 0 8px; font-size: 15px">商品明细</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>商品</th>
-              <th>方式</th>
-              <th>数量</th>
-              <th>单价</th>
-              <th>小计</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in order.items.all %}
-              <tr>
-                <td>{{ item.product.name }}</td>
-                <td>{% if item.sale_type == "case" %}整箱{% else %}单品{% endif %}</td>
-                <td>{{ item.quantity }}</td>
-                <td>¥{{ item.unit_price|floatformat:2 }}</td>
-                <td>¥{{ item.total_revenue|floatformat:2 }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <p style="text-align: right; font-size: 18px; font-weight: 800; color: #ff5000; margin: 12px 0 0">合计：¥{{ order.total_revenue|floatformat:2 }}</p>
-
-        <div class="actions">
-          <a class="primary" href="{% url 'shop-home' %}">继续采购</a>
-          {% if order.customer_id %}
-            <a class="secondary" href="{% url 'shop-logout' %}">退出登录</a>
-          {% endif %}
+      <div class="kv">
+        <div class="row">
+          <div class="k">订单号</div>
+          <div class="v">#{{ order.id }}</div>
+        </div>
+        <div class="row">
+          <div class="k">总金额</div>
+          <div class="v amount">¥{{ order.total_revenue|floatformat:2 }}</div>
+        </div>
+        <div class="row">
+          <div class="k">支付方式</div>
+          <div class="v">{{ order.get_settlement_type_display }}</div>
+        </div>
+        <div class="row">
+          <div class="k">支付通道</div>
+          <div class="v">{{ order.get_payment_method_display }}</div>
+        </div>
+        <div class="row">
+          <div class="k">状态</div>
+          <div class="v">{% if order.workflow_status == "pending_confirm" %}待确认{% else %}已下单{% endif %} · {{ order.get_payment_status_display }}</div>
         </div>
       </div>
+
+        <div class="actions">
+          <a class="secondary" href="{% url 'my-orders' %}">查看订单</a>
+          <a class="primary" href="{% url 'shop-home' %}">继续购物</a>
+        </div>
     </div>
     <script>
       try {

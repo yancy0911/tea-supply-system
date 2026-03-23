@@ -206,6 +206,8 @@
             <th>创建时间</th>
             <th>履约</th>
             <th>结算</th>
+            <th>结算方式</th>
+            <th>收款状态</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -259,7 +261,25 @@
                 {% endif %}
               </td>
               <td>
+                {% if row.order.settlement_type == "credit" %}
+                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#fff7ed;color:#9a3412;">挂账</span>
+                {% else %}
+                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">现结</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.order.status == "paid" %}
+                  <span style="color:#15803d;font-weight:600;">已收款</span>
+                {% else %}
+                  <span style="color:#b45309;font-weight:600;">未收款</span>
+                {% endif %}
+              </td>
+              <td>
                 {% if row.order.status == "pending" %}
+                  {% if row.order.workflow_status != "confirmed" and row.order.workflow_status != "cancelled" %}
+                    <a href="{% url 'order-confirm' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">确认订单</a>
+                    <a href="{% url 'order-cancel' row.order.id %}" class="btn secondary" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">取消订单</a>
+                  {% endif %}
                   <a href="{% url 'order_paid' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">标记已收款</a>
                   <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">更新状态</a>
                 {% elif row.order.status == "paid" %}

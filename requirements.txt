@@ -27,3 +27,4 @@ packaging==26.0
 # PDF 工具（管理命令 / data 脚本会用到；运行时非必须但建议安装以便运维脚本一致）
 PyMuPDF==1.26.5
 pypdf==6.9.1
+stripe

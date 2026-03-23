@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>确认订单 — 奶茶原料批发商城</title>
+    <title>结算页 — 奶茶原料批发商城</title>
     {{ shop_products|json_script:"shop-products-data" }}
     <style>
       :root {
@@ -28,7 +28,7 @@
         padding: 12px 0;
       }
       .shop-top-inner {
-        max-width: 900px;
+        max-width: 1240px;
         margin: 0 auto;
         padding: 0 16px;
         display: flex;
@@ -49,18 +49,45 @@
         margin-left: auto;
       }
       .wrap {
-        max-width: 900px;
+        max-width: 1240px;
         margin: 0 auto;
-        padding: 20px 16px 48px;
+        padding: 24px 16px 56px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 20px;
+        align-items: start;
       }
       .card {
         background: var(--card);
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-        margin-bottom: 16px;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        margin-bottom: 20px;
       }
       .card h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+      .steps {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .step {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: #e5e7eb;
+        color: #374151;
+      }
+      .step.active {
+        background: #ffedd5;
+        color: #c2410c;
+        font-weight: 700;
+      }
+      .section-title {
         margin: 0 0 14px;
         font-size: 18px;
       }
@@ -71,6 +98,7 @@
         margin-bottom: 6px;
       }
       input,
+      select,
       textarea {
         width: 100%;
         padding: 10px 12px;
@@ -93,41 +121,74 @@
         }
       }
       .lines {
+        display: grid;
+        gap: 12px;
+      }
+      .line-card {
+        border: 1px solid #eef2f7;
+        border-radius: 12px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr) auto auto auto;
+        gap: 12px;
+        align-items: center;
+      }
+      .line-img {
+        width: 72px;
+        height: 72px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #e5e7eb;
+      }
+      .line-name {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .line-spec,
+      .line-meta {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      .line-col {
+        min-width: 74px;
+        text-align: right;
         font-size: 14px;
       }
-      .lines table {
-        width: 100%;
-        border-collapse: collapse;
+      .line-col .k {
+        display: block;
+        color: #9ca3af;
+        font-size: 11px;
+        margin-bottom: 2px;
       }
-      .lines th,
-      .lines td {
-        padding: 10px 8px;
-        border-bottom: 1px solid #f1f5f9;
-        text-align: left;
-      }
-      .lines th {
-        color: var(--muted);
-        font-weight: 600;
-        font-size: 12px;
+      .line-col .v {
+        font-weight: 700;
       }
       .sum {
         text-align: right;
-        font-size: 20px;
+        font-size: 34px;
         font-weight: 800;
-        color: var(--accent);
+        color: #dc2626;
         margin-top: 12px;
+        line-height: 1.1;
       }
       .btn {
         width: 100%;
-        padding: 14px;
+        padding: 16px;
         border: none;
         border-radius: 10px;
         background: linear-gradient(90deg, #ea580c, var(--accent));
         color: #fff;
-        font-size: 17px;
-        font-weight: 800;
+        font-size: 20px;
+        font-weight: 900;
         cursor: pointer;
         margin-top: 8px;
+        box-shadow: 0 10px 24px rgba(234, 88, 12, 0.28);
+      }
+      .btn.secondary {
+        background: #fff;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        box-shadow: none;
       }
       .btn:disabled {
         opacity: 0.45;
@@ -150,6 +211,65 @@
         color: #92400e;
         border: 1px solid #fde68a;
       }
+      .settle-box {
+        border: 1px solid #f1f5f9;
+        border-radius: 10px;
+        padding: 12px;
+        background: #fff7ed;
+      }
+      .settle-opt {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+      .settle-opt input {
+        width: auto;
+        margin: 0;
+      }
+      .summary-card {
+        position: sticky;
+        top: 18px;
+      }
+      .summary-list {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .summary-row .k {
+        color: #6b7280;
+      }
+      .summary-row .v {
+        font-weight: 700;
+      }
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .summary-card {
+          position: static;
+        }
+      }
+      @media (max-width: 760px) {
+        .line-card {
+          grid-template-columns: 56px minmax(0, 1fr);
+        }
+        .line-img {
+          width: 56px;
+          height: 56px;
+        }
+        .line-col {
+          text-align: left;
+          min-width: 0;
+        }
+      }
     </style>
   </head>
   <body>
@@ -169,50 +289,99 @@
     {% endif %}
 
     <div class="wrap">
+      <div class="steps">
+        <span class="step">购物车</span>
+        <span class="step active">确认订单</span>
+        <span class="step">完成</span>
+      </div>
       {% if shop_customer and shop_order_block_hint %}
         <div class="msg-banner">
           <div class="msg-warn">{{ shop_order_block_hint }}</div>
         </div>
       {% endif %}
-      <div class="card">
-        <h2>收货与配送信息</h2>
-        <form method="post" action="{% url 'shop-submit-order' %}" id="checkout-form">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="checkout" />
-          <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
-          <div class="row2">
-            <div>
-              <label for="contact_name">收货人 *</label>
-              <input id="contact_name" name="contact_name" required maxlength="100" autocomplete="name" />
+      <form method="post" action="{% url 'checkout-submit' %}" id="checkout-form">
+        <div class="layout">
+          <div>
+            <div class="card">
+              <h2 class="section-title">【1】订单商品</h2>
+              <div class="lines" id="lines-area">
+                <p style="color: var(--muted)">正在加载购物车…</p>
+              </div>
             </div>
-            <div>
-              <label for="delivery_phone">联系电话 *</label>
-              <input id="delivery_phone" name="delivery_phone" required maxlength="30" autocomplete="tel" />
-            </div>
-          </div>
-          <div style="margin-top: 12px">
-            <label for="store_name">门店名 / 公司名</label>
-            <input id="store_name" name="store_name" maxlength="200" placeholder="选填" />
-          </div>
-          <div style="margin-top: 12px">
-            <label for="delivery_address">配送地址 *</label>
-            <input id="delivery_address" name="delivery_address" required maxlength="500" autocomplete="street-address" />
-          </div>
-          <div style="margin-top: 12px">
-            <label for="order_note">备注</label>
-            <textarea id="order_note" name="order_note" maxlength="2000" placeholder="选填：到货时间、卸货点等"></textarea>
-          </div>
-        </form>
-      </div>
 
-      <div class="card">
-        <h2>订单明细</h2>
-        <div class="lines" id="lines-area">
-          <p style="color: var(--muted)">正在加载购物车…</p>
+            <div class="card">
+              <h2 class="section-title">【2】收货信息</h2>
+              {% csrf_token %}
+              <input type="hidden" name="next" value="checkout" />
+              <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
+              <input type="hidden" name="settlement_type" id="settlement-type-hidden" value="cash" />
+              <input type="hidden" name="payment_method" id="payment-method-hidden" value="stripe" />
+              <div class="row2">
+                <div>
+                  <label for="contact_name">姓名 *</label>
+                  <input id="contact_name" name="contact_name" required maxlength="100" autocomplete="name" />
+                </div>
+                <div>
+                  <label for="delivery_phone">电话 *</label>
+                  <input id="delivery_phone" name="delivery_phone" required maxlength="30" autocomplete="tel" />
+                </div>
+              </div>
+              <div style="margin-top: 12px">
+                <label for="delivery_address">地址 *</label>
+                <input id="delivery_address" name="delivery_address" required maxlength="500" autocomplete="street-address" />
+              </div>
+              <div style="margin-top: 12px">
+                <label for="store_name">门店 / 公司（可选）</label>
+                <input id="store_name" name="store_name" maxlength="200" placeholder="选填" />
+              </div>
+              <div style="margin-top: 12px">
+                <label for="order_note">备注（可选）</label>
+                <textarea id="order_note" name="order_note" maxlength="2000" placeholder="选填：到货时间、卸货点等"></textarea>
+              </div>
+              <div style="margin-top: 12px; display:none" id="transfer-reference-wrap">
+                <label for="transfer_reference">转账参考号（可选）</label>
+                <input id="transfer_reference" name="transfer_reference" maxlength="255" placeholder="如已转账可填写流水号" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card summary-card">
+            <h2 class="section-title">订单汇总</h2>
+            <div class="summary-list">
+              <div class="summary-row"><span class="k">商品种类数</span><span class="v" id="summary-kinds">0</span></div>
+              <div class="summary-row"><span class="k">商品总数量</span><span class="v" id="summary-qty">0</span></div>
+              <div class="summary-row"><span class="k">商品总金额</span><span class="v" id="goods-sum">¥0.00</span></div>
+            </div>
+            <div class="settle-box">
+              <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">结算方式</label>
+              <label class="settle-opt">
+                <input type="radio" name="summary-settlement-type" value="cash" checked />
+                现金
+              </label>
+              {% if shop_customer and shop_customer.allow_credit %}
+                <label class="settle-opt" style="margin-bottom: 0">
+                  <input type="radio" name="summary-settlement-type" value="credit" />
+                  挂账
+                </label>
+              {% endif %}
+            </div>
+            <div class="settle-box" style="margin-top: 12px">
+              <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">支付方式</label>
+              <label class="settle-opt">
+                <input type="radio" name="summary-payment-method" value="stripe" checked />
+                信用卡 / 借记卡（Stripe）
+              </label>
+              <label class="settle-opt" style="margin-bottom: 0">
+                <input type="radio" name="summary-payment-method" value="bank_transfer" />
+                银行转账
+              </label>
+            </div>
+            <div class="sum" id="order-sum">总计：¥0.00</div>
+            <button type="submit" class="btn" id="btn-place" disabled>确认下单并付款</button>
+            <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration:none;text-align:center">返回购物车</a>
+          </div>
         </div>
-        <div class="sum" id="order-sum">合计：¥0.00</div>
-        <button type="submit" form="checkout-form" class="btn" id="btn-place" disabled>提交订单</button>
-      </div>
+      </form>
     </div>
 
     <script>
@@ -255,7 +424,37 @@
         var sumEl = document.getElementById("order-sum");
         var hiddenJson = document.getElementById("cart-lines-json");
         var btn = document.getElementById("btn-place");
+        var goodsSumEl = document.getElementById("goods-sum");
+        var summaryKinds = document.getElementById("summary-kinds");
+        var summaryQty = document.getElementById("summary-qty");
+        var settlementHidden = document.getElementById("settlement-type-hidden");
+        var paymentHidden = document.getElementById("payment-method-hidden");
+        var transferReferenceWrap = document.getElementById("transfer-reference-wrap");
         var checkoutForm = document.getElementById("checkout-form");
+        var summarySettlementRadios = document.querySelectorAll('input[name="summary-settlement-type"]');
+        var summaryPaymentRadios = document.querySelectorAll('input[name="summary-payment-method"]');
+        summarySettlementRadios.forEach(function (radio) {
+          radio.addEventListener("change", function () {
+            if (radio.checked && settlementHidden) settlementHidden.value = radio.value;
+          });
+        });
+        function syncPaymentMethodUI() {
+          var selected = "stripe";
+          summaryPaymentRadios.forEach(function (radio) {
+            if (radio.checked) selected = radio.value;
+          });
+          if (paymentHidden) paymentHidden.value = selected;
+          if (selected === "bank_transfer") {
+            btn.textContent = "提交订单并查看转账信息";
+            if (transferReferenceWrap) transferReferenceWrap.style.display = "";
+          } else {
+            btn.textContent = "确认下单并付款";
+            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
+          }
+        }
+        summaryPaymentRadios.forEach(function (radio) {
+          radio.addEventListener("change", syncPaymentMethodUI);
+        });
         if (checkoutForm) {
           checkoutForm.addEventListener("submit", function (ev) {
             if (!shopCanOrder) {
@@ -269,39 +468,56 @@
           if (cart.length === 0) {
             linesArea.innerHTML =
               '<p style="color:#b45309;font-weight:600">购物车为空，请返回商城选购。</p><p><a href="/shop/">去选购</a></p>';
-            sumEl.textContent = "合计：¥0.00";
+            sumEl.textContent = "总计：¥0.00";
+            goodsSumEl.textContent = "¥0.00";
+            summaryKinds.textContent = "0";
+            summaryQty.textContent = "0";
             hiddenJson.value = "[]";
             btn.disabled = true;
             btn.title = "购物车为空";
             return;
           }
-          var html =
-            "<table><thead><tr><th>商品</th><th>规格</th><th>单价</th><th>数量</th><th>小计</th></tr></thead><tbody>";
           var sum = 0;
+          var qtyTotal = 0;
+          var html = "";
           cart.forEach(function (l) {
             var p = productById(l.product_id);
             var name = p ? p.name : l.name || "商品";
             var sku = p ? p.sku : l.sku || "";
             var spec = l.sale_type === "case" ? "整箱" : "单品（袋/件）";
+            var img = p && p.image_url ? p.image_url : "/static/images/default.png";
             sum += parseFloat(l.subtotal) || 0;
+            qtyTotal += parseFloat(l.quantity) || 0;
             html +=
-              "<tr><td>" +
+              '<div class="line-card">' +
+              '<img class="line-img" src="' +
+              img +
+              '" alt="' +
               name +
-              "<div style='font-size:12px;color:#6b7280'>SKU " +
-              sku +
-              "</div></td><td>" +
+              "\" onerror=\"this.src='/static/images/default.png'\" />" +
+              '<div><div class="line-name">' +
+              name +
+              '</div><div class="line-spec">' +
               spec +
-              "</td><td>¥" +
-              fmtMoney(l.unit_price) +
-              "</td><td>" +
+              '</div><div class="line-meta">SKU ' +
+              sku +
+              "</div></div>" +
+              '<div class="line-col"><span class="k">数量</span><span class="v">' +
               l.quantity +
-              "</td><td>¥" +
+              "</span></div>" +
+              '<div class="line-col"><span class="k">单价</span><span class="v">¥' +
+              fmtMoney(l.unit_price) +
+              '</span></div>' +
+              '<div class="line-col"><span class="k">小计</span><span class="v">¥' +
               fmtMoney(l.subtotal) +
-              "</td></tr>";
+              "</span></div>" +
+              "</div>";
           });
-          html += "</tbody></table>";
           linesArea.innerHTML = html;
-          sumEl.textContent = "合计：¥" + fmtMoney(sum);
+          goodsSumEl.textContent = "¥" + fmtMoney(sum);
+          summaryKinds.textContent = String(cart.length);
+          summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
+          sumEl.textContent = "总计：¥" + fmtMoney(sum);
           hiddenJson.value = JSON.stringify(
             cart.map(function (l) {
               return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
@@ -316,6 +532,7 @@
           }
         }
 
+        syncPaymentMethodUI();
         render();
       })();
     </script>

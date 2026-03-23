@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.db import transaction, models
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 # 防止「程序改库存」与「手工改库存」重复记流水
 _tls = threading.local()
@@ -152,6 +153,7 @@ class Customer(models.Model):
 
     name = models.CharField(max_length=100, verbose_name="客户名称")
     phone = models.CharField(max_length=30, verbose_name="电话")
+    shop_name = models.CharField(max_length=200, blank=True, default="", verbose_name="店名")
     account_status = models.CharField(
         max_length=16,
         choices=AccountStatus.choices,
@@ -179,6 +181,11 @@ class Customer(models.Model):
         default=0,
         verbose_name="信用额度",
         help_text="与等级联动自动更新（如 B=100、A=500、VIP=2000）；录单/结算后会覆盖手动修改。",
+    )
+    current_debt = models.FloatField(
+        default=0,
+        verbose_name="当前欠款",
+        help_text="挂账订单累计未收款金额；收款后自动减少，不低于 0。",
     )
     payment_cycle = models.CharField(
         max_length=20,
@@ -287,6 +294,19 @@ class Order(models.Model):
         SHIPPED = "shipped", "已发货"
         COMPLETED = "completed", "已完成"
         CANCELLED = "cancelled", "已取消"
+    class SettlementType(models.TextChoices):
+        CASH = "cash", "现结"
+        CREDIT = "credit", "挂账"
+
+    class PaymentMethod(models.TextChoices):
+        STRIPE = "stripe", "信用卡/借记卡"
+        BANK_TRANSFER = "bank_transfer", "银行转账"
+
+    class PaymentStatus(models.TextChoices):
+        UNPAID = "unpaid", "未支付"
+        PAID = "paid", "已支付"
+        FAILED = "failed", "支付失败"
+        PENDING_TRANSFER = "pending_transfer", "待转账确认"
 
     name = models.CharField(max_length=100, default="批发订单", verbose_name="订单名称")
     customer = models.ForeignKey(
@@ -324,6 +344,28 @@ class Order(models.Model):
         default=Status.PENDING,
         verbose_name="结算状态",
     )
+    settlement_type = models.CharField(
+        max_length=12,
+        choices=SettlementType.choices,
+        default=SettlementType.CASH,
+        verbose_name="结算方式",
+        help_text="cash=现结；credit=挂账（需客户开通赊账且不超额度）。",
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.STRIPE,
+        verbose_name="支付方式",
+    )
+    payment_status = models.CharField(
+        max_length=24,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.UNPAID,
+        verbose_name="支付状态",
+    )
+    stripe_session_id = models.CharField(max_length=255, blank=True, default="", verbose_name="Stripe Session ID")
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name="支付时间")
+    transfer_reference = models.CharField(max_length=255, blank=True, default="", verbose_name="转账参考号")
     workflow_status = models.CharField(
         max_length=24,
         choices=WorkflowStatus.choices,
@@ -340,12 +382,22 @@ class Order(models.Model):
         verbose_name="已扣库存",
         help_text="进入「备货中」时扣减；取消或退回待确认时恢复。勿手动改，除非清楚含义。",
     )
+    is_debt_counted = models.BooleanField(
+        default=False,
+        verbose_name="欠款已计入",
+        help_text="挂账订单进入已确认后计入欠款；用于防止重复累计。",
+    )
     total_revenue = models.FloatField(default=0, verbose_name="总收入")
     total_cost = models.FloatField(default=0, verbose_name="总成本")
     profit = models.FloatField(default=0, verbose_name="利润")
 
     def __str__(self):
         return self.name
+
+    @property
+    def total_amount(self):
+        """订单总金额语义字段（兼容前后台），映射到现有 total_revenue。"""
+        return float(self.total_revenue or 0.0)
 
 
 def _stock_need_for_line(order_item, product=None):
@@ -515,6 +567,7 @@ class OrderItem(models.Model):
         verbose_name="销售方式",
     )
     unit_price = models.FloatField(default=0, verbose_name="成交单价")
+    unit_cost = models.FloatField(default=0, verbose_name="成交单位成本")
     total_revenue = models.FloatField(default=0, verbose_name="行收入")
     total_cost = models.FloatField(default=0, verbose_name="行成本")
     profit = models.FloatField(default=0, verbose_name="行利润")
@@ -522,6 +575,19 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.order.name} - {self.product.name}"
+
+    @property
+    def line_total(self):
+        """行小计语义字段（兼容前后台），映射到现有 total_revenue。"""
+        return float(self.total_revenue or 0.0)
+
+    @property
+    def line_cost(self):
+        return float(self.total_cost or 0.0)
+
+    @property
+    def line_profit(self):
+        return float(self.profit or 0.0)
 
     def _apply_line_amounts(self, p, customer):
         if customer is None:
@@ -540,6 +606,7 @@ class OrderItem(models.Model):
             cpu = float(p.cost_price_case)
         else:
             cpu = float(p.cost_price_single)
+        self.unit_cost = cpu
         self.total_cost = q * cpu
         self.profit = self.total_revenue - self.total_cost
 
@@ -616,6 +683,50 @@ class OrderItem(models.Model):
                     _apply_need_to_inventory(p, need, add_back=True, order=order)
             super().delete(*args, **kwargs)
         recalculate_order_totals(oid)
+
+
+class CreditApplication(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "待审核"
+        APPROVED = "approved", "已通过"
+        REJECTED = "rejected", "已拒绝"
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="credit_applications", verbose_name="客户")
+    shop_name = models.CharField(max_length=200, blank=True, default="", verbose_name="店名")
+    contact_name = models.CharField(max_length=100, blank=True, default="", verbose_name="联系人")
+    phone = models.CharField(max_length=30, blank=True, default="", verbose_name="手机号")
+    monthly_purchase_estimate = models.FloatField(default=0, verbose_name="月采购额预估")
+    requested_credit_limit = models.FloatField(default=0, verbose_name="申请额度")
+    note = models.TextField(blank=True, default="", verbose_name="备注")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING, verbose_name="审核状态")
+    approved_credit_limit = models.FloatField(default=0, verbose_name="审批额度")
+    review_note = models.TextField(blank=True, default="", verbose_name="审批备注")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="申请时间")
+    reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name="审核时间")
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "信用额度申请"
+        verbose_name_plural = "信用额度申请"
+
+    def __str__(self):
+        return f"{self.customer.name} 额度申请 {self.get_status_display()}"
+
+    def save(self, *args, **kwargs):
+        is_reviewed = self.status in (self.Status.APPROVED, self.Status.REJECTED)
+        if is_reviewed and self.reviewed_at is None:
+            self.reviewed_at = timezone.now()
+        if not is_reviewed:
+            self.reviewed_at = None
+        super().save(*args, **kwargs)
+        if self.status == self.Status.APPROVED:
+            approved_limit = float(self.approved_credit_limit or 0)
+            if approved_limit <= 0:
+                approved_limit = float(self.requested_credit_limit or 0)
+            Customer.objects.filter(pk=self.customer_id).update(
+                allow_credit=True,
+                credit_limit=max(0.0, approved_limit),
+            )
 
 
 # 仅 VIP 享折扣；C/B/A 为原价（1.0）。商城与录单共用。
@@ -698,6 +809,10 @@ def update_customer_tier_from_spending(customer_id):
     level = level_from_total_spent(total)
     allow_credit, credit_limit = tier_limits_from_total_spent(total)
     customer.customer_level = level
+    # 若老板已人工审批开通赊账（allow_credit=True 且额度>0），不被消费等级规则覆盖。
+    if bool(customer.allow_credit) and float(customer.credit_limit or 0.0) > 0:
+        customer.save(update_fields=["customer_level"])
+        return
     customer.allow_credit = allow_credit
     customer.credit_limit = credit_limit
     customer.save(update_fields=["customer_level", "allow_credit", "credit_limit"])

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>申请信用额度</title>
+    <style>
+      body { margin: 0; background: #f3f4f6; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC",sans-serif; }
+      .wrap { max-width: 760px; margin: 24px auto; padding: 0 16px; }
+      .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 14px rgba(0,0,0,.06); }
+      label { display: block; margin: 10px 0 6px; font-size: 13px; color: #555; }
+      input, textarea { width: 100%; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 12px; }
+      textarea { min-height: 84px; }
+      .btn { margin-top: 14px; background: #ff5000; color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700; }
+      .muted { color: #6b7280; font-size: 13px; }
+      .msg { margin-bottom: 10px; color: #b91c1c; }
+      a { color: #2563eb; text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p><a href="/shop/">返回商城</a> · <a href="{% url 'credit-home' %}">我的信用</a></p>
+      <div class="card">
+        <h2 style="margin-top:0">信用额度申请</h2>
+        {% if messages %}
+          {% for message in messages %}
+            <div class="msg">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <label>店名</label>
+          <input type="text" name="shop_name" value="{{ shop_customer.shop_name }}" required />
+          <label>联系人</label>
+          <input type="text" name="contact_name" value="{{ shop_customer.name }}" required />
+          <label>手机号</label>
+          <input type="text" name="phone" value="{{ shop_customer.phone }}" required />
+          <label>月采购额预估</label>
+          <input type="number" step="0.01" min="0.01" name="monthly_purchase_estimate" required />
+          <label>申请额度</label>
+          <input type="number" step="0.01" min="0.01" name="requested_credit_limit" required />
+          <label>备注</label>
+          <textarea name="note" maxlength="2000" placeholder="补充说明"></textarea>
+          <button class="btn" type="submit">提交申请</button>
+        </form>
+        {% if latest_application %}
+          <p class="muted" style="margin-top:14px;">
+            最近申请：{{ latest_application.get_status_display }}（{{ latest_application.created_at|date:"Y-m-d H:i" }}）
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

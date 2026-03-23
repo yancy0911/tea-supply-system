@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>银行转账信息</title>
+    <style>
+      body { margin: 0; background: #f3f4f6; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC",sans-serif; }
+      .wrap { max-width: 760px; margin: 30px auto; padding: 0 16px; }
+      .card { background: #fff; border-radius: 14px; padding: 22px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+      .k { color: #6b7280; font-size: 13px; margin-top: 10px; }
+      .v { font-size: 16px; font-weight: 700; margin-top: 4px; }
+      .amt { color: #dc2626; font-size: 30px; font-weight: 900; margin: 8px 0 12px; }
+      .btn { display: inline-block; padding: 10px 14px; border-radius: 10px; text-decoration: none; margin-right: 8px; }
+      .btn.primary { background: #ff5000; color: #fff; }
+      .btn.secondary { background: #e5e7eb; color: #111; }
+      input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; box-sizing: border-box; }
+      button { margin-top: 10px; background: #2563eb; color: #fff; border: 0; padding: 10px 14px; border-radius: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h2 style="margin:0 0 10px">银行转账付款</h2>
+        <p style="margin:0;color:#6b7280">请按以下信息转账，并在备注中填写订单号 <strong>#{{ order.id }}</strong>。</p>
+        <div class="k">应转金额</div>
+        <div class="amt">¥{{ order.total_revenue|floatformat:2 }}</div>
+        <div class="k">银行名称</div>
+        <div class="v">{{ bank_info.bank_name|default:"未配置" }}</div>
+        <div class="k">Account Name</div>
+        <div class="v">{{ bank_info.account_name|default:"未配置" }}</div>
+        <div class="k">Account Number</div>
+        <div class="v">{{ bank_info.account_number|default:"未配置" }}</div>
+        <div class="k">Routing Number</div>
+        <div class="v">{{ bank_info.routing_number|default:"未配置" }}</div>
+
+        <form method="post" action="{% url 'update-transfer-reference' order.id %}" style="margin-top:14px">
+          {% csrf_token %}
+          <label class="k" for="transfer_reference">转账参考号（可选，建议填写）</label>
+          <input id="transfer_reference" name="transfer_reference" value="{{ order.transfer_reference }}" maxlength="255" />
+          <button type="submit">保存参考号</button>
+        </form>
+
+        <div style="margin-top: 16px">
+          <a class="btn secondary" href="{% url 'my-orders' %}">查看我的订单</a>
+          <a class="btn primary" href="{% url 'shop-home' %}">继续购物</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

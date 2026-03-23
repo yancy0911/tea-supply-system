@@ -127,6 +127,7 @@
           {% if user.is_authenticated and user.is_staff %}
           <a href="/">店员录单</a>
           <a href="/orders/">订单</a>
+          <a href="/reports/">报表</a>
           {% if user.is_superuser %}
           <a href="/inventory/">库存</a>
           <a href="/replenishment/">补货预警</a>
@@ -140,6 +141,7 @@
           <a class="btn secondary" href="/logout/">退出</a>
           {% else %}
           <a class="btn" href="/login/">登录</a>
+          <a class="btn secondary" href="/register/" style="margin-left: 8px">注册</a>
           {% endif %}
         </div>
       </div>
