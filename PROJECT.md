@@ -22,4 +22,8 @@
 
 ```bash
 ./.venv/bin/python manage.py migrate
+python manage.py import_products_ready
 ```
+
+- 后台商品 **Import**：`/admin/tea_supply/product/`（django-import-export）。
+- Render：`render.yaml` 的 `releaseCommand` 会在发布时执行 migrate + `import_products_ready`。
