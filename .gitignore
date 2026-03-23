@@ -10,7 +10,7 @@ env/
 
 # Django
 db.sqlite3
-media/
+# media/  # 已纳入版本库：商品图 media/products/
 staticfiles/
 
 # OS / IDE
