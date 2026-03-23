@@ -13,6 +13,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Count, F, Min, Q, Sum
@@ -629,47 +630,30 @@ def shop_home(request):
     return render(request, "shop/shop_home.html", ctx)
 
 
-@require_GET
-def shop_login(request):
-    return redirect("/login/?next=/shop/")
-
-
-@require_GET
-def shop_logout(request):
-    return redirect("/logout/?next=/shop/")
-
-
 def register_view(request):
+    """客户自助注册（最小实现）：创建 User + 绑定 Customer，登录后跳转商城。"""
     if request.user.is_authenticated:
         return redirect("/shop/")
     if request.method == "GET":
-        return render(request, "shop/register.html")
+        return render(request, "shop/register.html", {"error": ""})
 
     username = (request.POST.get("username") or "").strip()
     password = (request.POST.get("password") or "").strip()
-    confirm_password = (request.POST.get("confirm") or request.POST.get("confirm_password") or "").strip()
+    confirm = (request.POST.get("confirm") or "").strip()
 
-    if not username or not password or not confirm_password:
-        messages.error(request, "请完整填写用户名、密码和确认密码")
-        return render(request, "shop/register.html")
-    if len(password) < 6:
-        messages.error(request, "密码至少 6 位")
-        return render(request, "shop/register.html")
-    if password != confirm_password:
-        messages.error(request, "两次输入的密码不一致")
-        return render(request, "shop/register.html")
-    if Customer.objects.filter(phone=username).exists():
-        messages.error(request, "该用户名已注册，请直接登录")
-        return render(request, "shop/register.html")
-
-    from django.contrib.auth.models import User
-
+    if not username or not password or not confirm:
+        return render(
+            request,
+            "shop/register.html",
+            {"error": "请填写用户名、密码和确认密码"},
+        )
+    if password != confirm:
+        return render(request, "shop/register.html", {"error": "两次输入的密码不一致"})
     if User.objects.filter(username=username).exists():
-        messages.error(request, "该用户名已被占用，请更换后重试")
-        return render(request, "shop/register.html")
+        return render(request, "shop/register.html", {"error": "该用户名已存在，请换一个"})
 
     with transaction.atomic():
-        user = User.objects.create_user(username=username, password=password, first_name=username[:150])
+        user = User.objects.create_user(username=username, password=password)
         _ensure_customer_role(user)
         Customer.objects.create(
             user=user,
@@ -686,8 +670,17 @@ def register_view(request):
             account_status=Customer.AccountStatus.APPROVED,
         )
         auth_login(request, user)
-    messages.success(request, "注册成功，欢迎登录批发商城")
     return redirect("/shop/")
+
+
+@require_GET
+def shop_login(request):
+    return redirect("/login/?next=/shop/")
+
+
+@require_GET
+def shop_logout(request):
+    return redirect("/logout/?next=/shop/")
 
 
 def login_view(request):
