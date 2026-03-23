@@ -14,7 +14,6 @@ from tea_supply.views import (
     orders_list,
     profile_view,
     reports_dashboard,
-    register_view,
     replenishment_dashboard,
     bank_transfer_instructions,
     logout_view,
@@ -35,7 +34,6 @@ from tea_supply.views import (
 )
 
 urlpatterns = [
-    path("register/", register_view, name="register"),
     path("login/", login_view, name="login"),
     path("logout/", logout_view, name="logout"),
     path("profile/", profile_view, name="profile"),

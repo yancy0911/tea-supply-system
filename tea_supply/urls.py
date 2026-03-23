@@ -26,8 +26,10 @@ admin.site.has_permission = lambda request: bool(
 )
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    # 项目根级注册（必须在 include main.urls 之前，避免被其它规则吞掉）
     path("register/", register_view, name="register"),
+    path("shop/register/", register_view, name="shop-register"),
     path("", include("main.urls")),
 ]
 

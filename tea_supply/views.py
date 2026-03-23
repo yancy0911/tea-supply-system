@@ -641,13 +641,13 @@ def shop_logout(request):
 
 def register_view(request):
     if request.user.is_authenticated:
-        return redirect("shop-home")
+        return redirect("/shop/")
     if request.method == "GET":
         return render(request, "shop/register.html")
 
     username = (request.POST.get("username") or "").strip()
     password = (request.POST.get("password") or "").strip()
-    confirm_password = (request.POST.get("confirm_password") or request.POST.get("confirm") or "").strip()
+    confirm_password = (request.POST.get("confirm") or request.POST.get("confirm_password") or "").strip()
 
     if not username or not password or not confirm_password:
         messages.error(request, "请完整填写用户名、密码和确认密码")
@@ -687,7 +687,7 @@ def register_view(request):
         )
         auth_login(request, user)
     messages.success(request, "注册成功，欢迎登录批发商城")
-    return redirect("shop-home")
+    return redirect("/shop/")
 
 
 def login_view(request):
