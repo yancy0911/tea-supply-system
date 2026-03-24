@@ -76,7 +76,7 @@ class Command(BaseCommand):
                 try:
                     sku = str(row.get("sku") or "").strip()
                     name = str(row.get("name") or "").strip()
-                    category_name = str(row.get("category") or "").strip() or "默认分类"
+                    category_name = str(row.get("category") or "").strip() or "Default"
                     if not sku or not name:
                         skipped.append((line_no, "sku 或 name 为空"))
                         continue

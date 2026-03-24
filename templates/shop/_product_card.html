@@ -1,33 +1,41 @@
-{% comment %}Catalog product card — fixed UI English; names/units from DB{% endcomment %}
+{% comment %}Catalog product card — e-commerce layout; names/units from DB{% endcomment %}
 <div
-  class="catalog-card"
+  class="catalog-card ecom-card"
   data-product-id="{{ product.id }}"
   data-category-id="{% firstof product.category_id '' %}"
   data-pid="{{ product.id }}"
 >
-  <a class="catalog-card__media" href="{% url 'shop-product-detail' product.id %}">
-    {% if product.image_url %}
-      <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
-    {% else %}
-      <img
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f0f0f0' width='400' height='400'/%3E%3Ctext x='200' y='205' text-anchor='middle' fill='%23a3a3a3' font-size='14' font-family='system-ui,sans-serif'%3ENo image%3C/text%3E%3C/svg%3E"
-        alt="{{ product.name }}"
-        loading="lazy"
-        decoding="async"
-      />
-    {% endif %}
+  <a class="ecom-card__media catalog-card__media" href="{% url 'shop-product-detail' product.id %}">
+    <div class="ecom-card__media-inner">
+      {% if product.image_url %}
+        <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
+      {% else %}
+        <img
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Ctext x='200' y='205' text-anchor='middle' fill='%239ca3af' font-size='14' font-family='system-ui,sans-serif'%3ENo image%3C/text%3E%3C/svg%3E"
+          alt="{{ product.name }}"
+          loading="lazy"
+          decoding="async"
+        />
+      {% endif %}
+    </div>
   </a>
-  <div class="catalog-card__body">
-    <div class="catalog-card__meta">
-      <span class="catalog-card__badge">
-        {% if product.category_name %}
-          {% include "shop/_category_label_en.html" with name=product.category_name only %}
-        {% else %}
-          Default Category
+
+  <div class="catalog-card__body ecom-card__body">
+    <div class="ecom-card__meta">
+      {% if product.category_name %}
+        <span class="ecom-card__category-pill">{{ product.category_name }}</span>
+      {% endif %}
+      <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
+      <p class="ecom-card__sku catalog-card__sku">
+        <span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}
+      </p>
+      <div class="ecom-card__specs" aria-label="Unit specifications">
+        <span class="ecom-card__spec">{{ product.unit_label|default:"—" }}</span>
+        {% if product.case_label %}
+          <span class="ecom-card__spec-sep" aria-hidden="true">·</span>
+          <span class="ecom-card__spec">{{ product.case_label }}</span>
         {% endif %}
-      </span>
-      <a class="catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
-      <div class="catalog-card__sku"><span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}</div>
+      </div>
     </div>
 
     {% if product.price_on_request %}
@@ -35,9 +43,15 @@
         <span class="catalog-quote">Quote required — contact us for bag &amp; case pricing</span>
       </div>
     {% else %}
-      <div class="catalog-card__prices" aria-label="Unit pricing">
+      {% if product.strike_single or product.strike_case %}
+        <div class="ecom-card__discount-row" aria-label="Promotions">
+          <span class="catalog-discount-tag">Tier / member pricing</span>
+        </div>
+      {% endif %}
+
+      <div class="catalog-card__prices ecom-card__prices" aria-label="Unit pricing">
         <div class="price-block" data-price-type="bag">
-          <div class="price-block__label">Per Bag</div>
+          <div class="price-block__label">Per Bag Price</div>
           <div class="price-block__unit">{{ product.unit_label|default:"—" }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_single %}
@@ -53,7 +67,7 @@
           </div>
         </div>
         <div class="price-block" data-price-type="case">
-          <div class="price-block__label">Per Case</div>
+          <div class="price-block__label">Per Case Price</div>
           <div class="price-block__unit">{{ product.case_label|default:"—" }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_case %}
@@ -98,9 +112,10 @@
       {% endif %}
     </div>
 
-    <div class="catalog-card__buy">
-      <div class="catalog-segment" role="group" aria-label="Unit type">
-        <label class="catalog-segment__opt">
+    <div class="catalog-card__buy ecom-card__buy">
+      <div class="ecom-card__mode-label">Purchase as</div>
+      <div class="catalog-segment ecom-mode-toggle" role="group" aria-label="Unit type">
+        <label class="catalog-segment__opt ecom-mode-btn">
           <input
             type="radio"
             name="mode-{{ product.id }}"
@@ -108,9 +123,9 @@
             {% if product.default_mode == "single" %}checked{% endif %}
             {% if not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
           />
-          <span>Single</span>
+          <span class="ecom-mode-btn__text">Per Bag</span>
         </label>
-        <label class="catalog-segment__opt">
+        <label class="catalog-segment__opt ecom-mode-btn">
           <input
             type="radio"
             name="mode-{{ product.id }}"
@@ -118,18 +133,19 @@
             {% if product.default_mode == "case" %}checked{% endif %}
             {% if not product.can_quote_case %}disabled{% endif %}
           />
-          <span>Case</span>
+          <span class="ecom-mode-btn__text">Per Case</span>
         </label>
       </div>
-      <div class="catalog-card__actions">
-        <div class="qty-stepper">
-          <button type="button" data-act="minus" aria-label="Decrease">−</button>
+      <div class="ecom-card__qty-label">Quantity</div>
+      <div class="catalog-card__actions ecom-card__actions">
+        <div class="qty-stepper ecom-qty-stepper">
+          <button type="button" data-act="minus" aria-label="Decrease quantity">−</button>
           <input type="number" min="0.01" step="0.01" value="{{ product.minimum_order_qty }}" aria-label="Quantity" />
-          <button type="button" data-act="plus" aria-label="Increase">+</button>
+          <button type="button" data-act="plus" aria-label="Increase quantity">+</button>
         </div>
         <button
           type="button"
-          class="btn-add-cart"
+          class="btn-add-cart ecom-btn-add-cart"
           data-pid="{{ product.id }}"
           {% if shop_customer and not shop_can_order %}
             disabled
@@ -137,7 +153,9 @@
           {% elif product.price_on_request %}
             disabled
           {% endif %}
-        >Add to Cart</button>
+        >
+          Add to Cart
+        </button>
       </div>
     </div>
   </div>

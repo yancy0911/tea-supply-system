@@ -14,7 +14,7 @@ from django.db.models import Count
 
 from tea_supply.models import Product, ProductCategory
 
-DEFAULT_CAT_NAME = "默认分类"
+DEFAULT_CAT_NAME = "Default"
 EMPTY_UNIT = "per unit"
 EMPTY_CASE = "per case"
 

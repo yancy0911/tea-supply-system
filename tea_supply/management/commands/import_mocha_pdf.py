@@ -14,16 +14,16 @@ from django.db import transaction
 
 from tea_supply.models import Product, ProductCategory
 
-# 按优先级：更具体的规则在前
+# 按优先级：更具体的规则在前（名称与 tea_supply.category_names 标准英文一致）
 _CATEGORY_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
-    (("Tea Leaves", "Filtered Tea", "Espresso Tea", "Tea Bag"), "茶叶"),
-    (("Creamer",), "奶制品"),
-    (("Tropical Fruit Jam", "Fruit Jam", "Jam"), "果酱"),
-    (("Pulp Topping", "Pulp"), "果浆/配料"),
-    (("Sugar Syrup", "Tropical Fruit Syrup"), "糖浆"),
-    (("Pure Powder", "Special Powder", "Powder"), "粉类"),
-    (("Tapioca", "Popping Boba", "Agar Boba", "Jelly 椰果", "Jelly"), "小料"),
-    (("Canned Topping", "Canned"), "罐头辅料"),
+    (("Tea Leaves", "Filtered Tea", "Espresso Tea", "Tea Bag"), "Tea"),
+    (("Creamer",), "Dairy & creamer"),
+    (("Tropical Fruit Jam", "Fruit Jam", "Jam"), "Fruit Jam"),
+    (("Pulp Topping", "Pulp"), "Pulp & toppings"),
+    (("Sugar Syrup", "Tropical Fruit Syrup"), "Syrup"),
+    (("Pure Powder", "Special Powder", "Powder"), "Powders"),
+    (("Tapioca", "Popping Boba", "Agar Boba", "Jelly 椰果", "Jelly"), "Boba & toppings"),
+    (("Canned Topping", "Canned"), "Canned toppings"),
     (
         (
             "Machinery",
@@ -38,34 +38,34 @@ _CATEGORY_RULES: tuple[tuple[tuple[str, ...], str], ...] = (
             "Wrap",
             "Red Heart",
         ),
-        "包材/器具",
+        "Packaging & tools",
     ),
-    (("PP 1 Oz", "PP 530ml", "PP700ml", "PP 700ml", "PC2oz", "PC Double"), "包材/器具"),
+    (("PP 1 Oz", "PP 530ml", "PP700ml", "PP 700ml", "PC2oz", "PC Double"), "Packaging & tools"),
 )
 
 
 def _normalize_category_name(raw: str) -> str:
     s = re.sub(r"\s+", " ", (raw or "").strip())
     if not s:
-        return "未分类"
+        return "Default"
     up = s.upper()
-    for keys, zh in _CATEGORY_RULES:
+    for keys, label in _CATEGORY_RULES:
         for k in keys:
             if k.upper() in up or k.lower() in s.lower():
-                return zh
+                return label
     low = s.lower()
     if any(w in low for w in ("tea", "乌龙", "红茶", "绿茶")):
-        return "茶叶"
+        return "Tea"
     if "creamer" in low or "奶精" in s:
-        return "奶制品"
+        return "Dairy & creamer"
     if "syrup" in low:
-        return "糖浆"
+        return "Syrup"
     if "jam" in low:
-        return "果酱"
+        return "Fruit Jam"
     if "powder" in low:
-        return "粉类"
+        return "Powders"
     if "boba" in low or "tapioca" in low or "椰果" in s:
-        return "小料"
+        return "Boba & toppings"
     return s[:100] if len(s) <= 100 else s[:97] + "…"
 
 
@@ -96,16 +96,16 @@ def _parse_max_t_sku_number() -> int:
 
 # 新建分类时的排序（越小越靠前）
 _CATEGORY_SORT = {
-    "茶叶": 10,
-    "奶制品": 20,
-    "果酱": 30,
-    "果浆/配料": 35,
-    "糖浆": 40,
-    "粉类": 50,
-    "小料": 60,
-    "罐头辅料": 70,
-    "包材/器具": 80,
-    "未分类": 900,
+    "Tea": 10,
+    "Dairy & creamer": 20,
+    "Fruit Jam": 30,
+    "Pulp & toppings": 35,
+    "Syrup": 40,
+    "Powders": 50,
+    "Boba & toppings": 60,
+    "Canned toppings": 70,
+    "Packaging & tools": 80,
+    "Default": 900,
 }
 
 

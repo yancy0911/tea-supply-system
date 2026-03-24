@@ -73,7 +73,7 @@ class Command(BaseCommand):
                 if not row or not any(str(v or "").strip() for v in row.values()):
                     continue
                 try:
-                    cat_name = str(row.get("category") or "").strip() or "默认分类"
+                    cat_name = str(row.get("category") or "").strip() or "Default"
                     name = str(row.get("name") or "").strip()
                     sku = str(row.get("sku") or "").strip()
                     if not name or not sku:

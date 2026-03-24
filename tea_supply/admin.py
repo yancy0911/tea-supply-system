@@ -1,6 +1,5 @@
 import logging
 import csv
-import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import admin
@@ -31,109 +30,18 @@ from .models import (
 )
 from .money_utils import money_float
 from .resources import ProductCategoryResource, ProductResource
+from .category_names import normalize_product_field_to_english
 
 logger = logging.getLogger(__name__)
 
-# Admin data sync: Chinese → English (longer phrases first for substring replacement).
-CATEGORY_KEYWORD_REPLACEMENTS = (
-    ("雪克杯", "Shaker Cup"),
-    ("雪克", "Shaker Cup"),
-    ("木薯波巴", "Tapioca Boba"),
-    ("默认分类", "Default"),
-    ("爆爆珠", "Popping Boba"),
-    ("椰果", "Coconut Jelly"),
-    ("果酱", "Fruit Jam"),
-    ("特殊粉", "Special Powder"),
-    ("糖浆", "Syrup"),
-    ("工具", "Tools"),
-    ("机器", "Machinery"),
-    ("果肉", "Pulp Topping"),
-    ("纯粉", "Pure Powder"),
-    ("茶包", "Tea Bag"),
-)
 
-# 整箱 before 箱; 单品/袋 for labels inside name or unit fields.
-LABEL_PHRASE_REPLACEMENTS = (
-    ("整箱", "Case"),
-    ("单品", "Single"),
-    ("袋", "Bag"),
-    ("箱", "Case"),
-)
-
-CJK_RE = re.compile(r"[\u4e00-\u9fff]+")
-
-
-def _collapse_spaces(s: str) -> str:
-    return re.sub(r"\s+", " ", (s or "").strip())
-
-
-def _dedupe_consecutive_words(s: str) -> str:
-    parts = s.split()
-    if not parts:
-        return ""
-    out = [parts[0]]
-    for p in parts[1:]:
-        if p.lower() != out[-1].lower():
-            out.append(p)
-    return " ".join(out)
-
-
-def normalize_category_name_to_english(raw: str) -> str:
-    """Map known Chinese category phrases, strip leftover CJK, collapse spaces."""
-    s = raw or ""
-    for zh, en in CATEGORY_KEYWORD_REPLACEMENTS:
-        s = s.replace(zh, f" {en} ")
-    s = CJK_RE.sub("", s)
-    s = _collapse_spaces(s)
-    return _dedupe_consecutive_words(s)
-
-
-def normalize_product_field_to_english(raw: str, *, apply_label_phrases: bool) -> str:
-    """Strip CJK; optionally map 单品/整箱/袋/箱 before stripping."""
-    s = raw or ""
-    if apply_label_phrases:
-        for zh, en in LABEL_PHRASE_REPLACEMENTS:
-            s = s.replace(zh, en)
-    s = CJK_RE.sub("", s)
-    return _collapse_spaces(s)
-
-
-@admin.action(description="Convert categories to English")
-def normalize_categories_to_english(modeladmin, request, queryset):
-    """Batch-normalize ProductCategory.name to English (admin-only data sync)."""
-    updated = 0
-    for cat in queryset:
-        new_name = normalize_category_name_to_english(cat.name or "")
-        if not new_name:
-            modeladmin.message_user(
-                request,
-                f"Skipped category id={cat.pk}: result would be empty.",
-                level=messages.WARNING,
-            )
-            continue
-        if new_name == (cat.name or "").strip():
-            continue
-        if (
-            ProductCategory.objects.filter(name=new_name)
-            .exclude(pk=cat.pk)
-            .exists()
-        ):
-            modeladmin.message_user(
-                request,
-                f"Skipped “{cat.name}”: another category already uses “{new_name}”.",
-                level=messages.WARNING,
-            )
-            continue
-        cat.name = new_name
-        cat.save(update_fields=["name"])
-        updated += 1
-    if updated:
-        messages.success(request, "Data normalized to English successfully")
-    else:
-        messages.info(request, "No category names were changed.")
-
-
-normalize_categories_to_english.short_description = "Convert categories to English"
+def _admin_fmt_money(value) -> str:
+    """Two-decimal money display; coerces str/SafeString/Decimal via money_float."""
+    try:
+        v = 0 if value in (None, "") else value
+        return f"{float(money_float(v)):.2f}"
+    except (TypeError, ValueError, InvalidOperation):
+        return "0.00"
 
 
 @admin.action(description="Clean products to English (names & unit labels)")
@@ -304,15 +212,15 @@ class CustomerAdmin(admin.ModelAdmin):
 
     @admin.display(description="当前欠款", ordering="current_debt")
     def current_debt_display(self, obj):
-        return f"{money_float(obj.current_debt or 0):.2f}"
+        return _admin_fmt_money(obj.current_debt)
 
     @admin.display(description="信用额度", ordering="credit_limit")
     def credit_limit_display(self, obj):
-        return f"{money_float(obj.credit_limit or 0):.2f}"
+        return _admin_fmt_money(obj.credit_limit)
 
     @admin.display(description="起送金额", ordering="minimum_order_amount")
     def minimum_order_amount_display(self, obj):
-        return f"{money_float(obj.minimum_order_amount or 0):.2f}"
+        return _admin_fmt_money(obj.minimum_order_amount)
 
     @admin.display(description="风险状态")
     def risk_status_display(self, obj):
@@ -348,9 +256,6 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
     list_display = ("name", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
     search_fields = ("name",)
-    # Callable registration (reliable); string "normalize_categories_to_english" only resolves
-    # to methods on this class, not module-level functions.
-    actions = [normalize_categories_to_english]
 
     def has_module_permission(self, request):
         return request.user.is_superuser
@@ -457,7 +362,7 @@ class ProductAdmin(ImportExportModelAdmin):
         if cost is None or float(cost) <= 0:
             return "-"
         profit = money_float(float(obj.price_single or 0.0) - float(cost or 0.0))
-        return f"{profit:.2f}"
+        return f"{float(profit):.2f}"
 
     @admin.display(description="单品利润率", ordering="price_single")
     def profit_rate_single_display(self, obj: Product):
@@ -467,7 +372,7 @@ class ProductAdmin(ImportExportModelAdmin):
             return "-"
         profit = float(obj.price_single or 0.0) - float(cost or 0.0)
         rate = (profit / price) * 100.0
-        return f"{rate:.2f}%"
+        return f"{float(rate):.2f}%"
 
     @admin.display(description="整箱利润", ordering="price_case")
     def profit_case_display(self, obj: Product):
@@ -476,7 +381,7 @@ class ProductAdmin(ImportExportModelAdmin):
         if cost is None or float(cost) <= 0 or price is None or float(price) <= 0:
             return "-"
         profit = money_float(float(price or 0.0) - float(cost or 0.0))
-        return f"{profit:.2f}"
+        return f"{float(profit):.2f}"
 
     @admin.display(description="整箱利润率", ordering="price_case")
     def profit_rate_case_display(self, obj: Product):
@@ -486,7 +391,7 @@ class ProductAdmin(ImportExportModelAdmin):
             return "-"
         profit = float(obj.price_case or 0.0) - float(cost or 0.0)
         rate = (profit / price) * 100.0
-        return f"{rate:.2f}%"
+        return f"{float(rate):.2f}%"
 
 
 class OrderItemInline(admin.TabularInline):
@@ -674,12 +579,12 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.display(description="总收入", ordering="total_revenue")
     def total_revenue_display(self, obj):
-        return f"{money_float(obj.total_revenue or 0):.2f}"
+        return _admin_fmt_money(obj.total_revenue)
 
     @admin.display(description="总成本")
     def calc_total_cost_display(self, obj):
         _, total_cost, _, _ = self._calc_order_cost_profit(obj)
-        return f"{total_cost:.2f}"
+        return f"{float(total_cost):.2f}"
 
     @admin.display(description="总利润")
     def calc_profit_display(self, obj):
@@ -690,7 +595,11 @@ class OrderAdmin(admin.ModelAdmin):
             color = "#b91c1c"  # red
         else:
             color = "#6b7280"  # gray
-        return format_html('<span style="color:{};font-weight:700;">{:.2f}</span>', color, total_profit)
+        return format_html(
+            '<span style="color:{};font-weight:700;">{}</span>',
+            color,
+            f"{float(total_profit):.2f}",
+        )
 
     @admin.display(description="利润率")
     def profit_rate_display(self, obj):
@@ -703,7 +612,11 @@ class OrderAdmin(admin.ModelAdmin):
             color = "#ea580c"  # orange
         else:
             color = "#b91c1c"  # red
-        return format_html('<span style="color:{};font-weight:700;">{:.2f}%</span>', color, rate)
+        return format_html(
+            '<span style="color:{};font-weight:700;">{}%</span>',
+            color,
+            f"{float(rate):.2f}",
+        )
 
 
 @admin.register(OrderItem)
@@ -724,23 +637,23 @@ class OrderItemAdmin(admin.ModelAdmin):
 
     @admin.display(description="成交单价", ordering="unit_price")
     def unit_price_display(self, obj):
-        return f"{money_float(obj.unit_price or 0):.2f}"
+        return _admin_fmt_money(obj.unit_price)
 
     @admin.display(description="单位成本", ordering="unit_cost")
     def unit_cost_display(self, obj):
-        return f"{money_float(obj.unit_cost or 0):.2f}"
+        return _admin_fmt_money(obj.unit_cost)
 
     @admin.display(description="行收入", ordering="total_revenue")
     def total_revenue_display(self, obj):
-        return f"{money_float(obj.total_revenue or 0):.2f}"
+        return _admin_fmt_money(obj.total_revenue)
 
     @admin.display(description="行成本", ordering="total_cost")
     def total_cost_display(self, obj):
-        return f"{money_float(obj.total_cost or 0):.2f}"
+        return _admin_fmt_money(obj.total_cost)
 
     @admin.display(description="行利润", ordering="profit")
     def profit_display(self, obj):
-        return f"{money_float(obj.profit or 0):.2f}"
+        return _admin_fmt_money(obj.profit)
 
     def has_view_permission(self, request, obj=None):
         return bool(request.user.is_authenticated and request.user.is_staff)
