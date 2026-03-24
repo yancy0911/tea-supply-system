@@ -34,15 +34,12 @@ class CustomerAdmin(admin.ModelAdmin):
         "phone",
         "current_debt",
         "account_status",
-        "customer_level",
+        "level",
         "allow_credit",
         "credit_limit",
         "minimum_order_amount",
-        "is_active",
-        "payment_cycle",
-        "delivery_zone",
-        "is_monthly_settlement",
     )
+    list_display_links = ("shop_name", "name")
     search_fields = ("name", "contact_name", "phone", "address", "delivery_zone")
     list_filter = (
         "account_status",
