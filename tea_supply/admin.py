@@ -30,21 +30,25 @@ class CustomerAdmin(admin.ModelAdmin):
     list_display = (
         "shop_name",
         "name",
+        "contact_name",
         "phone",
         "current_debt",
         "account_status",
         "customer_level",
         "allow_credit",
         "credit_limit",
+        "minimum_order_amount",
+        "is_active",
         "payment_cycle",
         "delivery_zone",
         "is_monthly_settlement",
     )
-    search_fields = ("name", "phone", "address", "delivery_zone")
+    search_fields = ("name", "contact_name", "phone", "address", "delivery_zone")
     list_filter = (
         "account_status",
         "customer_level",
         "allow_credit",
+        "is_active",
         "payment_cycle",
         "is_monthly_settlement",
         "delivery_zone",
@@ -53,6 +57,7 @@ class CustomerAdmin(admin.ModelAdmin):
         "user",
         "shop_name",
         "name",
+        "contact_name",
         "phone",
         "account_status",
         "address",
@@ -61,6 +66,8 @@ class CustomerAdmin(admin.ModelAdmin):
         "allow_credit",
         "credit_limit",
         "current_debt",
+        "minimum_order_amount",
+        "is_active",
         "payment_cycle",
         "is_monthly_settlement",
         "note",

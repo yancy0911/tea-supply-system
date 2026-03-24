@@ -152,6 +152,13 @@ class Customer(models.Model):
         MONTH = "月结", "月结"
 
     name = models.CharField(max_length=100, verbose_name="客户名称")
+    contact_name = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        verbose_name="联系人",
+        help_text="可与客户名称不同；前台可自助修改。",
+    )
     phone = models.CharField(max_length=30, verbose_name="电话")
     shop_name = models.CharField(max_length=200, blank=True, default="", verbose_name="店名")
     account_status = models.CharField(
@@ -187,6 +194,16 @@ class Customer(models.Model):
         verbose_name="当前欠款",
         help_text="挂账订单累计未收款金额；收款后自动减少，不低于 0。",
     )
+    minimum_order_amount = models.FloatField(
+        default=0,
+        verbose_name="起送金额",
+        help_text="商城/录单起送门槛（元）；0 表示不设门槛。",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="客户档案启用",
+        help_text="关闭后该客户无法在商城下单（与「商城账号状态」独立，供运营停用档案）。",
+    )
     payment_cycle = models.CharField(
         max_length=20,
         choices=PaymentCycle.choices,
@@ -212,7 +229,14 @@ class Customer(models.Model):
             return "账号审核中，请联系店家开通采购权限"
         if self.account_status == self.AccountStatus.DISABLED:
             return "账号已禁用，无法下单，请联系店家"
+        if not self.is_active:
+            return "客户档案已停用，无法下单，请联系店家"
         return ""
+
+    @property
+    def level(self):
+        """与 customer_level 同义（兼容「等级」字段命名）。"""
+        return self.customer_level
 
 
 class StockLog(models.Model):

@@ -15,14 +15,14 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Min, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import (
     CUSTOMER_TIER_DISCOUNT,
@@ -334,11 +334,48 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         raise
 
 
+def ensure_customer_profile(user):
+    """
+    为已登录商城用户补建 Customer（不覆盖已有记录）。
+    staff/superuser 不自动创建，避免污染内部账号；若已手动绑定则返回该档案。
+    """
+    if not user.is_authenticated:
+        return None
+    existing = Customer.objects.filter(user_id=user.id).first()
+    if existing:
+        return existing
+    if user.is_staff or user.is_superuser:
+        return None
+    username = (user.username or "").strip() or f"user{user.pk}"
+    defaults = {
+        "name": username[:100],
+        "contact_name": username[:100],
+        "phone": username[:30],
+        "shop_name": username[:200],
+        "address": "待完善",
+        "delivery_zone": "待分配",
+        "customer_level": Customer.Level.C,
+        "allow_credit": False,
+        "credit_limit": 0.0,
+        "current_debt": 0.0,
+        "minimum_order_amount": 0.0,
+        "payment_cycle": Customer.PaymentCycle.CASH,
+        "account_status": Customer.AccountStatus.APPROVED,
+        "is_active": True,
+    }
+    try:
+        with transaction.atomic():
+            customer, _created = Customer.objects.get_or_create(user=user, defaults=defaults)
+        return customer
+    except IntegrityError:
+        return Customer.objects.filter(user_id=user.id).first()
+
+
 def get_shop_customer(request):
     u = getattr(request, "user", None)
     if not u or not u.is_authenticated:
         return None
-    return Customer.objects.filter(user_id=u.id).first()
+    return ensure_customer_profile(u)
 
 
 def _ensure_customer_role(user):
@@ -658,16 +695,19 @@ def register_view(request):
         Customer.objects.create(
             user=user,
             name=username[:100],
+            contact_name=username[:100],
             phone=username[:30],
-            shop_name=f"{username}的店"[:200],
+            shop_name=username[:200],
             address="待完善",
             delivery_zone="待分配",
             customer_level=Customer.Level.C,
             allow_credit=False,
             credit_limit=0.0,
             current_debt=0.0,
+            minimum_order_amount=0.0,
             payment_cycle=Customer.PaymentCycle.CASH,
             account_status=Customer.AccountStatus.APPROVED,
+            is_active=True,
         )
         auth_login(request, user)
     return redirect("/shop/")
@@ -697,6 +737,8 @@ def login_view(request):
         return render(request, "shop/login.html")
     auth_login(request, user)
     _ensure_customer_role(user)
+    if not (user.is_staff or user.is_superuser):
+        ensure_customer_profile(user)
     next_url = (request.POST.get("next") or "").strip()
     if next_url:
         return redirect(next_url)
@@ -710,11 +752,19 @@ def logout_view(request):
 
 
 @login_required
+@require_http_methods(["GET", "POST"])
 def profile_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        messages.info(request, "当前账号无商城客户档案（店员/管理员请在后台管理客户）")
         return redirect("shop-home")
+    if request.method == "POST":
+        customer.contact_name = (request.POST.get("contact_name") or customer.contact_name or customer.name)[:100]
+        customer.phone = (request.POST.get("phone") or customer.phone)[:30]
+        customer.address = (request.POST.get("address") or customer.address)[:255]
+        customer.save(update_fields=["contact_name", "phone", "address"])
+        messages.success(request, "已保存")
+        return redirect("profile")
     current_debt = float(customer.current_debt or 0.0)
     return render(
         request,
@@ -727,7 +777,7 @@ def profile_view(request):
 def my_orders_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        messages.info(request, "当前账号无商城客户档案")
         return redirect("shop-home")
     orders = (
         Order.objects.filter(ordered_by_id=request.user.id, customer_id=customer.pk)
@@ -745,7 +795,7 @@ def my_orders_view(request):
 def credit_apply_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        messages.info(request, "当前账号无商城客户档案")
         return redirect("shop-home")
     if request.method == "GET":
         latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
@@ -764,7 +814,7 @@ def credit_apply_view(request):
     CreditApplication.objects.create(
         customer=customer,
         shop_name=(request.POST.get("shop_name") or customer.shop_name or "")[:200],
-        contact_name=(request.POST.get("contact_name") or customer.name or "")[:100],
+        contact_name=(request.POST.get("contact_name") or customer.contact_name or customer.name or "")[:100],
         phone=(request.POST.get("phone") or customer.phone or "")[:30],
         monthly_purchase_estimate=monthly_purchase_estimate,
         requested_credit_limit=requested_credit_limit,
@@ -779,7 +829,7 @@ def credit_apply_view(request):
 def credit_home_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.error(request, "当前账号未绑定客户档案，请联系管理员")
+        messages.info(request, "当前账号无商城客户档案")
         return redirect("shop-home")
     current_debt = float(customer.current_debt or 0.0)
     latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
