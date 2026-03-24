@@ -282,9 +282,23 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             source = str(price_info.get("source") or "")
             if source == "custom":
                 final_pricing_note = "客户专属价"
+            print(
+                "PROFIT_DEBUG",
+                {
+                    "product": p.name,
+                    "sale_type": sale_type,
+                    "unit_price": str(final_unit_price),
+                    "cost_single": str(getattr(p, "cost_price_single", None)),
+                    "cost_case": str(getattr(p, "cost_price_case", None)),
+                },
+            )
             cost_unit_price = money_dec(
                 p.cost_price_case if sale_type == OrderItem.SaleType.CASE else p.cost_price_single
             )
+            if sale_type == OrderItem.SaleType.SINGLE and cost_unit_price <= money_dec(0):
+                raise ValidationError("该商品未设置单品成本价，暂时无法下单")
+            if sale_type == OrderItem.SaleType.CASE and cost_unit_price <= money_dec(0):
+                raise ValidationError("该商品未设置整箱成本价，暂时无法下单")
             unit_profit = money_q2(final_unit_price - cost_unit_price)
             if unit_profit < money_dec(0):
                 risk_msg = (
@@ -1626,6 +1640,13 @@ def reports_dashboard(request):
         .filter(profit__lt=0)
         .count()
     )
+    missing_cost_q = Q(cost_price_single__lte=0) | Q(cost_price_case__lte=0)
+    missing_cost_products = list(
+        Product.objects.filter(missing_cost_q)
+        .values("id", "name", "sku", "cost_price_single", "cost_price_case")
+        .order_by("sku", "id")[:10]
+    )
+    missing_cost_product_count = Product.objects.filter(missing_cost_q).count()
 
     def _annotate_value_money(rows):
         return [{**r, "value": money_float(r["value"])} for r in rows]
@@ -1645,6 +1666,8 @@ def reports_dashboard(request):
         "product_profit_top": _annotate_value_money(product_profit_top),
         "abnormal_profit_order_count": int(abnormal_profit_order_count),
         "negative_profit_orders": negative_profit_orders,
+        "missing_cost_product_count": int(missing_cost_product_count),
+        "missing_cost_products": missing_cost_products,
     }
     return render(request, "reports_basic.html", context)
 

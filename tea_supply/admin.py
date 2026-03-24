@@ -1,6 +1,8 @@
 import logging
 
 from django.contrib import admin
+from django import forms
+from django.core.exceptions import ValidationError
 from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 from django.utils import timezone
@@ -22,6 +24,22 @@ from .money_utils import money_float
 from .resources import ProductCategoryResource, ProductResource
 
 logger = logging.getLogger(__name__)
+
+
+class ProductAdminForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        cs = cleaned.get("cost_price_single")
+        cc = cleaned.get("cost_price_case")
+        if cs is None or float(cs) <= 0:
+            raise ValidationError("单品成本价必须大于 0，未填写或为 0 时禁止保存。")
+        if cc is None or float(cc) <= 0:
+            raise ValidationError("整箱成本价必须大于 0，未填写或为 0 时禁止保存。")
+        return cleaned
 
 
 class CustomerProductPriceInline(admin.TabularInline):
@@ -132,6 +150,7 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
 class ProductAdmin(ImportExportModelAdmin):
     """list_editable 与 import_export 在部分环境下会导致 Import 按钮不显示，故不在列表内联编辑。"""
     resource_class = ProductResource
+    form = ProductAdminForm
     exclude = ("image",)
     list_display = (
         "category",

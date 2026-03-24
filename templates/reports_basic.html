@@ -11,6 +11,7 @@
     <div class="card"><div class="label">本月销售额</div><div class="value">{{ kpi_month_sales|floatformat:2 }}</div></div>
     <div class="card"><div class="label">本月利润</div><div class="value">{{ kpi_month_profit|floatformat:2 }}</div></div>
     <div class="card"><div class="label">异常利润订单数</div><div class="value" style="color:#b91c1c">{{ abnormal_profit_order_count }}</div></div>
+    <div class="card"><div class="label">未设置成本价商品数</div><div class="value" style="color:#b91c1c">{{ missing_cost_product_count }}</div></div>
   </div>
 
   <div class="row">
@@ -115,6 +116,25 @@
           </tr>
         {% empty %}
           <tr><td colspan="6" class="muted">暂无异常利润订单</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top: 12px">
+    <h3 style="margin-top: 0">未设置成本价商品（TOP10）</h3>
+    <table class="table">
+      <thead><tr><th>商品</th><th>SKU</th><th>单品成本</th><th>整箱成本</th></tr></thead>
+      <tbody>
+        {% for p in missing_cost_products %}
+          <tr>
+            <td>{{ p.name }}</td>
+            <td>{{ p.sku }}</td>
+            <td>{{ p.cost_price_single|floatformat:2 }}</td>
+            <td>{{ p.cost_price_case|floatformat:2 }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="muted">暂无缺失成本价商品</td></tr>
         {% endfor %}
       </tbody>
     </table>
