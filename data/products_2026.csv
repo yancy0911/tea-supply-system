@@ -1,0 +1,161 @@
+﻿sku,name,category,price_single,price_case,unit,spec,image_url
+B010103,B010103,Tapioca Boba,5.0,75.0,2.2 LBS /BAG,20 BAGS/CASE,/media/products/B010103.png
+B010203,B010203,Tapioca Boba,10.0,50.0,6.6 LBS /BAG,20 BAGS/CASE,/media/products/B010203.png
+B010303,B010303,Tapioca Boba,5.0,75.0,2.2 LBS /BAG,20 BAGS/CASE,/media/products/B010303.png
+B020103,B020103,Popping Boba 爆爆珠,6.0,55.0,2.2 LBS /BAG,12 BAGS/CASE,/media/products/B020103.png
+B020203,B020203,Popping Boba 爆爆珠,6.0,55.0,2.2 LBS /BAG,12 BAGS/CASE,/media/products/B020203.png
+B030103,Mango Popping Boba 芒果爆爆珠,Popping Boba 爆爆珠,20.0,65.0,2.2 LBS /BAG,12 BAGS/CASE,/media/products/B030103.png
+B030203,B030203,Popping Boba 爆爆珠,20.0,65.0,7.48 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B030203.png
+B030303,B030303,Popping Boba,20.0,65.0,7.48 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B030303.png
+B030403,B030403,Popping Boba,20.0,65.0,7.48 LBS /BOTTLE,6 CANS/CASE,/media/products/B030403.png
+B030503,Peach Popping Boba 水蜜桃爆爆珠,Popping Boba,20.0,65.0,7.48 LBS /BOTTLE,6 CANS/CASE,/media/products/B030503.png
+B030603,B030603,Popping Boba,20.0,65.0,7.48 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B030603.png
+B030702,B030702,Popping Boba,20.0,65.0,7.48 LBS /BOTTLE,6 CANS/CASE,/media/products/B030702.png
+B030802,Boba 奇异果爆爆珠,Popping Boba,20.0,65.0,7.48 LBS /BOTTLE,6 CANS/CASE,/media/products/B030802.png
+B040103,B040103,Jelly 椰果,20.0,65.0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B040103.png
+B040203,鳳梨椰果,Jelly 椰果,25.0,75.0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B040203.png
+B040303,B040303,Jelly 椰果,20.0,65.0,8.47 LBS /BOTTLE,2 BAGS/CASE,/media/products/B040303.png
+B040403,Mango Star Jelly 芒果星鑽椰果,Jelly 椰果,25.0,75.0,8.47 LBS /BOTTLE,2 BAGS/CASE,/media/products/B040403.png
+B040503,B040503,Jelly 椰果,25.0,75.0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B040503.png
+B040603,Coﬀee Jelly 咖啡椰果,Jelly 椰果,20.0,70.0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B040603.png
+B040703,B040703,Jelly 椰果,20.0,65.0,8.47 LBS /BOTTLE,4 BOTTLES/CASE,/media/products/B040703.png
+C010103,C010103,Popping Boba,17.0,60.0,7.48 LBS /CAN,4 CANS/CASE,/media/products/C010103.png
+C010203,C010203,Popping Boba,25.0,125.0,7.48 LBS /CAN,6 CANS/CASE,/media/products/C010203.png
+C010303,C010303,Popping Boba,17.0,80.0,7.48 LBS /CAN,4 CANS/CASE,/media/products/C010303.png
+C010503,Grass Jelly Powder 仙草粉,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/C010503.png
+C010603,C010603,Pulp Topping 果肉,10.0,100.0,850G/CAN,12 CANS/CASE,/media/products/C010603.png
+C010703,C010703,Pulp Topping 果肉,10.0,100.0,850G/CAN,12 CANS/CASE,/media/products/C010703.png
+C010803,C010803,Pulp Topping 果肉,10.0,100.0,850G/CAN,12 CANS/CASE,/media/products/C010803.png
+C010903,C010903,Pulp Topping 果肉,10.0,100.0,850G/CAN,12 CANS/CASE,/media/products/C010903.png
+G010103,G010103,PP700ml雪克杯,15.0,15.0,,,/media/products/G010103.png
+G010203,G010203,PP700ml雪克杯,20.0,20.0,,,/media/products/G010203.png
+G010403,G010403,Individually Wrap Straw 吸管,5.0,5.0,,,/media/products/G010403.png
+G010503,G010503,PP700ml雪克杯,20.0,20.0,,,/media/products/G010503.png
+G010603,G010603,Individually Wrap Straw 吸管,4.0,4.0,,,/media/products/G010603.png
+G010703,G010703,PP700ml雪克杯,3.0,3.0,,,/media/products/G010703.png
+G010803,G010803,Individually Wrap Straw 吸管,1.0,1.0,,,/media/products/G010803.png
+G010903,G010903,PP700ml雪克杯,3.0,3.0,,,/media/products/G010903.png
+G011003,G011003,Individually Wrap Straw 吸管,1.0,1.0,,,/media/products/G011003.png
+G011103,G011103,Individually Wrap Straw 吸管,20.0,20.0,,,/media/products/G011103.png
+G011303,G011303,PP700ml雪克杯,4.0,4.0,,,/media/products/G011303.png
+G011403,G011403,PP700ml雪克杯,20.0,20.0,,,/media/products/G011403.png
+H0103,H0103,Machinery 機器,1000.0,1000.0,,,/media/products/H0103.png
+H0203,Cane Sugar Syrup Dispenser Machine 蔗糖定量機,Machinery 機器,1000.0,1000.0,,,/media/products/H0203.png
+H0303,H0303,Machinery 機器,500.0,500.0,,,/media/products/H0303.png
+H0403,H0403,Machinery 機器,650.0,650.0,,,/media/products/H0403.png
+H0603,H0603,Machinery 機器,650.0,650.0,,,/media/products/H0603.png
+H0803,Machine 雪克奶泡機,Machinery 機器,500.0,500.0,,,/media/products/H0803.png
+HO703,HO703,Machinery 機器,675.0,675.0,,,/media/products/HO703.png
+J010103,J010103,Pulp Topping 果肉,15.0,75.0,6 LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010103.png
+J010203,Strawberry Jam 草莓醬,Pulp Topping 果肉,15.0,75.0,6LBS/BOTTLE,4 BOTTLES/CASE,/media/products/J010203.png
+J010303,J010303,Pulp Topping 果肉,15.0,75.0,6LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010303.png
+J010403,J010403,Pulp Topping 果肉,15.0,75.0,6LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010403.png
+J010503,J010503,Pure Powder 純粉,15.0,75.0,6LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010503.png
+J010603,J010603,Pure Powder 純粉,15.0,75.0,6 LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010603.png
+J010703,Pink Peach Jam 粉桃果醬,Pure Powder 純粉,15.0,75.0,6LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010703.png
+J010803,J010803,Pure Powder 純粉,15.0,75.0,6LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010803.png
+J010903,J010903,Pure Powder 純粉,15.0,75.0,6LBS/BOTTLE,6 BOTTLES/CASE,/media/products/J010903.png
+L010103,L010103,Machinery 機器,40.0,40.0,,,/media/products/L010103.png
+L010203,95 /90 PET 16 & 22oz Cold Cup Dome Lid 95/90 PET 冷飲杯凸蓋,Machinery 機器,45.0,50.0,,,/media/products/L010203.png
+L010603,L010603,Machinery 機器,50.0,50.0,,,/media/products/L010603.png
+L010703,L010703,Machinery 機器,55.0,55.0,,,/media/products/L010703.png
+L011103,L011103,Machinery 機器,55.0,55.0,,,/media/products/L011103.png
+L020102,L020102,Bag & Hand Carrier,45.0,45.0,,,/media/products/L020102.png
+L020202,LDPE Blank Two Cup Bag 透明兩杯袋,Bag & Hand Carrier,30.0,30.0,,,/media/products/L020202.png
+L020302,L020302,Bag & Hand Carrier,25.0,25.0,,,/media/products/L020302.png
+L020702,L020702,Tapioca Boba,5.0,45.0,2.2 LBS /BAG,20 BAGS/CASE,/media/products/L020702.png
+N010103,Popcorn Chicken Marinate Powder 鹽酥雞醃漬粉,Special Powder 特殊粉,18.0,135.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/N010103.png
+N010203,Popcorn Chicken Brown Sugar Pepper Salt Powder 鹽酥雞胡椒粉,Special Powder 特殊粉,20.0,175.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/N010203.png
+N010302,N010302,Special Powder 特殊粉,55.0,55.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/N010302.png
+N010403,N010403,Special Powder 特殊粉,18.0,135.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/N010403.png
+P010303,P010303,Pure Powder 純粉,16.0,135.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P010303.png
+P010313,P010313,Pure Powder 純粉,15.0,125.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P010313.png
+P020103,P020103,Pure Powder 純粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020103.png
+P020203,P020203,Pure Powder 純粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020203.png
+P020303,P020303,Pure Powder 純粉,16.0,135.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020303.png
+P020403,P020403,Pure Powder 純粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020403.png
+P020503,Honeydew Powder 哈密瓜粉,Pure Powder 純粉,15.0,120.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020503.png
+P020703,P020703,Pure Powder 純粉,15.0,120.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020703.png
+P020803,P020803,Pure Powder 純粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020803.png
+P020903,P020903,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P020903.png
+P040203,P040203,Pure Powder 純粉,15.0,120.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P040203.png
+P040303,P040303,Pure Powder 純粉,15.0,120.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P040303.png
+P040403,Blue Mountain Coﬀee Powder 藍山咖啡粉,Pure Powder 純粉,15.0,120.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P040403.png
+P050103,Premium Creamer Premium 2.2 Medium 厚奶精粉 2.2 中珍珠,Tapioca Boba,8.0,130.0,6.6 LBS /BAG,20 BAGS/CASE,/media/products/P050103.png
+P050203,P050203,Tapioca Boba,5.0,45.0,2.2 LBS /BAG,20 BAGS/CASE,/media/products/P050203.png
+P050303,P050303,Tapioca Boba,8.0,135.0,2.2 LBS /BAG,20 BAGS/CASE,/media/products/P050303.png
+P060103,P060103,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P060103.png
+P060203,P060203,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P060203.png
+P070103,Caramel Pudding Creme Brulee Powder 焦糖布丁粉,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P070103.png
+P070503,日式純抹茶粉,Pure Powder 純粉,45.0,400.0,2.2 LBS /BAG,6 BOTTLES/CASE,/media/products/P070503.png
+P070703,P070703,Pure Powder 純粉,25.0,200.0,2.2 LBS /BAG,6 BOTTLES/CASE,/media/products/P070703.png
+P070903,P070903,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P070903.png
+P071003,P071003,Jelly 椰果,155.0,155.0,22 LBS /BAG,2 BAGS/CASE,/media/products/P071003.png
+P071102,P071102,Special Powder 特殊粉,15.0,110.0,2.2 LBS /BAG,10 BAGS/CASE,/media/products/P071102.png
+P071203,P071203,Jelly 椰果,140.0,140.0,22 LBS /BAG,2 BAGS/CASE,/media/products/P071203.png
+P071403,Powder 鸡蛋仔预拌粉,Jelly 椰果,155.0,155.0,22 LBS /BAG,2 BAGS/CASE,/media/products/P071403.png
+PC010103,PC010103,Bag & Hand Carrier,40.0,195.0,,,/media/products/PC010103.png
+PC010403,PC010403,Bag & Hand Carrier,40.0,145.0,,,/media/products/PC010403.png
+Q010103,Q010103,Individually Wrap Straw 吸管,45.0,45.0,,,/media/products/Q010103.png
+Q010203,Q010203,Individually Wrap Straw 吸管,55.0,55.0,,,/media/products/Q010203.png
+Q010303,Individually Wrapped Black Large Straw Individually Wrapped Black Medium 黑色獨立包裝大吸管 长度 23cm,Individually Wrap Straw 吸管,45.0,45.0,,,/media/products/Q010303.png
+Q010403,Q010403,Individually Wrap Straw 吸管,55.0,55.0,,,/media/products/Q010403.png
+S010103,S010103,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010103.png
+S010203,S010203,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010203.png
+S010303,S010303,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010303.png
+S010403,S010403,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010403.png
+S010503,S010503,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010503.png
+S010603,S010603,Tropical Fruit Syrup 果汁,15.25,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010603.png
+S010703,S010703,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010703.png
+S010803,S010803,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010803.png
+S010903,S010903,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S010903.png
+S011003,S011003,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011003.png
+S011103,S011103,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011103.png
+S011203,Kumquat Lemon Syrup 金桔檸檬汁,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011203.png
+S011303,S011303,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011303.png
+S011403,S011403,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011403.png
+S011503,S011503,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011503.png
+S011603,Blueberry Syrup 藍莓汁,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011603.png
+S011703,Passion Fruit Rose Syrup Syrup Seedless 玫瑰汁 百香果汁(無籽),Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011703.png
+S011704,S011704,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011704.png
+S011803,S011803,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011803.png
+S011903,S011903,Sugar Syrup,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S011903.png
+S012003,S012003,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S012003.png
+S012202,S012202,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S012202.png
+S012302,S012302,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S012302.png
+S030103,S030103,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S030103.png
+S030203,Lychee Longan Syrup Honey Syrup 荔枝汁 龍眼蜂蜜,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S030203.png
+S030303,Mango Taro Syrup 宇香蜜 芒果汁,Tropical Fruit Syrup 果汁,18.0,65.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S030303.png
+S030403,Ginger Brown 黑糖薑母,Sugar Syrup,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S030403.png
+S030502,S030502,Sugar Syrup 糖漿,55.0,55.0,,,/media/products/S030502.png
+S030702,Fructose 果糖 50LBS,Sugar Syrup 糖漿,50.0,50.0,,,/media/products/S030702.png
+S030803,S030803,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S030803.png
+S030903,S030903,Tropical Fruit Syrup 果汁,16.0,55.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S030903.png
+S090103,S090103,Tropical Fruit Syrup 果汁,15.0,50.0,5.5LBS/BOTTLE,4 BOTTLES/CASE,/media/products/S090103.png
+T010103,T010103,默认分类,10.0,80.0,500G/BAG,10 BAGS/CASE,/media/products/T010103.png
+T010203,T010203,默认分类,10.0,80.0,500G/BAG,10 BAGS/CASE,/media/products/T010203.png
+T010503,Four Seasons Spring Phoenix Oolong Tea Leaves Oolong Tea Leaves 四季春烏龍茶葉 鸭屎香烏龍茶葉,默认分类,12.0,105.0,300G/BAG,10 BAGS/CASE,/media/products/T010503.png
+T010603,T010603,默认分类,12.0,95.0,300G/BAG,10 BAGS/CASE,/media/products/T010603.png
+T010703,T010703,默认分类,10.0,85.0,500G/BAG,10 BAGS/CASE,/media/products/T010703.png
+T010803,T010803,默认分类,8.0,60.0,300G/BAG,10 BAGS/CASE,/media/products/T010803.png
+T010903,T010903,默认分类,10.0,85.0,500G/BAG,10 BAGS/CASE,/media/products/T010903.png
+T011003,T011003,默认分类,8.0,60.0,300G/BAG,10 BAGS/CASE,/media/products/T011003.png
+T020103,T020103,Filtered Tea Bag,10.0,90.0,500G/BAG,10 BAGS/CASE,/media/products/T020103.png
+T020203,T020203,Filtered Tea Bag,12.0,105.0,500G/BAG,10 BAGS/CASE,/media/products/T020203.png
+T030103,Earl Grey Espresso Black Tea Bag 伯爵紅茶萃茶包,Espresso Tea Bag 萃茶包,15.0,130.0,8G/50 TEA BAGS,500 TEA BAGS/CASE,/media/products/T030103.png
+T030203,T030203,默认分类,11.0,95.0,500G/BAG,10 BAGS/CASE,/media/products/T030203.png
+T030403,T030403,Espresso Tea Bag 萃茶包,15.0,130.0,8G/50 TEA BAGS,500 TEA BAGS/CASE,/media/products/T030403.png
+T030503,T030503,Filtered Tea Bag,15.0,130.0,500G/BAG,10 BAGS/CASE,/media/products/T030503.png
+T030603,T030603,Espresso Tea Bag 萃茶包,15.0,130.0,8G/50 TEA BAGS,500 TEA BAGS/CASE,/media/products/T030603.png
+T030703,T030703,Espresso Tea Bag 萃茶包,15.0,130.0,8G/50 TEA BAGS,500 TEA BAGS/CASE,/media/products/T030703.png
+T030803,White Peach Espresso Four Seasons Springs Espresso Oolong Tea Bag 蜜桃青烏龍茶萃茶包,Filtered Tea Bag,15.0,130.0,500G/BAG,10 BAGS/CASE,/media/products/T030803.png
+U010103,U010103,Machinery 機器,55.0,55.0,,,/media/products/U010103.png
+U010203,U010203,Machinery 機器,85.0,85.0,,,/media/products/U010203.png
+U010303,U010303,Machinery 機器,60.0,60.0,,,/media/products/U010303.png
+U010403,U010403,Machinery 機器,75.0,75.0,,,/media/products/U010403.png
+U010503,U010503,Machinery 機器,60.0,60.0,,,/media/products/U010503.png
+U010703,U010703,Machinery 機器,55.0,55.0,,,/media/products/U010703.png
+U010803,U010803,Machinery 機器,75.0,75.0,,,/media/products/U010803.png
+U010903,U010903,Machinery 機器,60.0,60.0,,,/media/products/U010903.png
+U011003,90mm 22oz Double Wall Paper Cup 中空厚纸杯 Shaker Machine,Machinery 機器,40.0,40.0,,,/media/products/U011003.png
+U011203,U011203,Machinery 機器,75.0,75.0,,,/media/products/U011203.png

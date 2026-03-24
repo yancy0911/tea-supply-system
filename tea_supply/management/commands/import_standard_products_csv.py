@@ -48,14 +48,14 @@ class Command(BaseCommand):
         parser.add_argument(
             "--path",
             default=None,
-            help="CSV path (default: ~/Desktop/2026_MOCHA_标准商品表.csv)",
+            help="CSV path (default: <BASE_DIR>/data/products_2026.csv)",
         )
 
     def handle(self, *args, **opts):
-        default_path = Path.home() / "Desktop" / "2026_MOCHA_标准商品表.csv"
+        default_path = Path(settings.BASE_DIR) / "data" / "products_2026.csv"
         path = Path(opts["path"] or default_path)
         if not path.is_file():
-            self.stderr.write(self.style.ERROR(f"CSV 不存在: {path}"))
+            self.stderr.write(self.style.ERROR(f"CSV 不存在: {path}（请先放置 data/products_2026.csv）"))
             return
 
         created = 0
