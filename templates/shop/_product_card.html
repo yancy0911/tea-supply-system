@@ -64,6 +64,18 @@
         </span>
       </div>
     {% endif %}
+    <div style="margin-top:6px; font-size:12px; color:#6b7280;">
+      {% if product.stock_enabled %}
+        库存 {{ product.current_stock|floatformat:2 }}
+        {% if product.is_out_of_stock %}
+          <span style="color:#dc2626; font-weight:700;">· 缺货</span>
+        {% elif product.is_low_stock %}
+          <span style="color:#b45309; font-weight:700;">· 低库存提醒</span>
+        {% endif %}
+      {% else %}
+        库存不限
+      {% endif %}
+    </div>
     <div class="p-mode">
       <label
         ><input

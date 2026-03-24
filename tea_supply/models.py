@@ -57,6 +57,21 @@ class Product(models.Model):
         verbose_name="可售库存",
         help_text="未关联原材料时按此库存扣减；关联原材料则以原材料库存为准。",
     )
+    current_stock = models.FloatField(
+        default=100,
+        verbose_name="当前库存",
+        help_text="稳版统一库存（默认假库存 100），用于商城下单校验与扣减。",
+    )
+    safety_stock = models.FloatField(
+        default=10,
+        verbose_name="安全库存",
+        help_text="低于或等于该值时前台显示低库存提醒。",
+    )
+    stock_enabled = models.BooleanField(
+        default=True,
+        verbose_name="启用库存校验",
+        help_text="关闭后允许忽略库存校验继续下单。",
+    )
     unit_label = models.CharField(max_length=120, blank=True, default="", verbose_name="单位规格")
     case_label = models.CharField(max_length=120, blank=True, default="", verbose_name="整箱规格")
     price_single = models.FloatField(default=0, verbose_name="单品价")
@@ -327,6 +342,29 @@ class StockLog(models.Model):
         return f"{self.get_direction_display()} {self.quantity}"
 
 
+class InventoryLog(models.Model):
+    class ChangeType(models.TextChoices):
+        IN = "in", "入库"
+        OUT = "out", "出库"
+        ADJUST = "adjust", "调整"
+
+    product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name="inventory_logs", verbose_name="商品")
+    change_type = models.CharField(max_length=12, choices=ChangeType.choices, verbose_name="变动类型")
+    quantity = models.FloatField(default=0, verbose_name="变动数量")
+    before_stock = models.FloatField(default=0, verbose_name="变动前库存")
+    after_stock = models.FloatField(default=0, verbose_name="变动后库存")
+    note = models.CharField(max_length=240, blank=True, default="", verbose_name="备注")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="时间")
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "库存流水（稳版）"
+        verbose_name_plural = "库存流水（稳版）"
+
+    def __str__(self):
+        return f"{self.product.sku} {self.get_change_type_display()} {self.quantity:g}"
+
+
 class UserRole(models.Model):
     class Role(models.TextChoices):
         OWNER = "owner", "老板"
@@ -499,7 +537,7 @@ def recalculate_order_totals(order_id):
 
 
 def assert_order_fits_available_stock(order_id):
-    """未扣库存订单：按商品汇总需求量，校验不超过当前库存（下单/改明细时用）。"""
+    """未扣库存订单：按商品汇总需求量，校验不超过 current_stock（stock_enabled=True 时）。"""
     order = Order.objects.filter(pk=order_id).first()
     if not order or order.stock_deducted:
         return
@@ -512,17 +550,11 @@ def assert_order_fits_available_stock(order_id):
         if need <= 0:
             continue
         p = Product.objects.get(pk=pid)
-        if p.ingredient_id:
-            ing = Ingredient.objects.get(pk=p.ingredient_id)
-            if float(ing.stock) < need:
-                raise ValidationError(
-                    f"商品「{p.name}」库存不足：本单需 {need:g}，当前可售 {float(ing.stock):g}"
-                )
-        else:
-            if float(p.stock_quantity) < need:
-                raise ValidationError(
-                    f"商品「{p.name}」库存不足：本单需 {need:g}，当前可售 {float(p.stock_quantity):g}"
-                )
+        if not bool(getattr(p, "stock_enabled", True)):
+            continue
+        cur = float(getattr(p, "current_stock", 0.0))
+        if cur < need:
+            raise ValidationError(f"商品「{p.name}」库存不足：本单需 {need:g}，当前可售 {cur:g}")
 
 
 def _write_stock_log(product, need, *, add_back, order=None, remark=""):
@@ -546,6 +578,18 @@ def _write_stock_log(product, need, *, add_back, order=None, remark=""):
     )
 
 
+def _write_inventory_log(product, qty, before_stock, after_stock, *, add_back=False, remark=""):
+    ctype = InventoryLog.ChangeType.IN if add_back else InventoryLog.ChangeType.OUT
+    InventoryLog.objects.create(
+        product=product,
+        change_type=ctype,
+        quantity=float(qty),
+        before_stock=float(before_stock),
+        after_stock=float(after_stock),
+        note=(remark or ("订单回库" if add_back else "订单扣减"))[:240],
+    )
+
+
 def _apply_need_to_inventory(product, need, *, add_back=False, order=None):
     """
     add_back=False：从库存扣减 need；add_back=True：加回 need。
@@ -555,34 +599,27 @@ def _apply_need_to_inventory(product, need, *, add_back=False, order=None):
         return
     _apply_depth_inc()
     try:
+        # 稳版统一库存：按 Product.current_stock 扣减/回补。
         # 浮点库存可能出现极小精度误差；这里做防负库存的兜底处理。
         eps = 1e-9
-        if product.ingredient_id:
-            ing = Ingredient.objects.select_for_update().get(pk=product.ingredient_id)
-            cur = float(ing.stock)
-            if add_back:
-                new_stock = cur + need
-            else:
-                if cur + eps < need:
-                    raise ValidationError(
-                        f"库存不足：商品「{product.name}」（原材料 {ing.name}）现有 {cur:g}，本次需 {need:g}"
-                    )
-                new_stock = cur - need
-            ing.stock = max(0.0, float(new_stock))
-            ing.save(update_fields=["stock"])
+        p2 = Product.objects.select_for_update().get(pk=product.pk)
+        cur = float(p2.current_stock or 0.0)
+        if add_back:
+            new_stock = cur + need
         else:
-            p2 = Product.objects.select_for_update().get(pk=product.pk)
-            cur = float(p2.stock_quantity)
-            if add_back:
-                new_stock = cur + need
-            else:
-                if cur + eps < need:
-                    raise ValidationError(
-                        f"库存不足：商品「{product.name}」现有 {cur:g}，本次需 {need:g}"
-                    )
-                new_stock = cur - need
-            p2.stock_quantity = max(0.0, float(new_stock))
-            p2.save(update_fields=["stock_quantity"])
+            if bool(p2.stock_enabled) and cur + eps < need:
+                raise ValidationError(f"库存不足：商品「{product.name}」现有 {cur:g}，本次需 {need:g}")
+            new_stock = cur - need
+        p2.current_stock = max(0.0, float(new_stock))
+        p2.save(update_fields=["current_stock"])
+        _write_inventory_log(
+            p2,
+            qty=need,
+            before_stock=cur,
+            after_stock=float(p2.current_stock),
+            add_back=add_back,
+            remark=("订单回库" if add_back else "订单扣减"),
+        )
         _write_stock_log(product, need, add_back=add_back, order=order)
     finally:
         _apply_depth_dec()

@@ -276,19 +276,11 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if need <= 0:
                 continue
             p = Product.objects.get(pk=pid)
-            if p.ingredient_id:
-                ing = Ingredient.objects.filter(pk=p.ingredient_id).first()
-                cur = float(ing.stock) if ing else 0.0
-                if cur < need:
-                    raise ValidationError(
-                        f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
-                    )
-            else:
-                cur = float(p.stock_quantity or 0)
-                if cur < need:
-                    raise ValidationError(
-                        f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量"
-                    )
+            if not bool(getattr(p, "stock_enabled", True)):
+                continue
+            cur = float(getattr(p, "current_stock", 0.0))
+            if cur < need:
+                raise ValidationError(f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量")
 
         if settlement_type == Order.SettlementType.CREDIT:
             if customer_obj is None:
@@ -469,15 +461,9 @@ def _shop_product_row(customer, p):
     base_c = float(p.price_case)
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
     dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
-    stock_disp = None
-    if p.ingredient_id:
-        try:
-            ing = p.ingredient
-            stock_disp = float(ing.stock)
-        except Exception:
-            stock_disp = None
-    else:
-        stock_disp = float(p.stock_quantity)
+    stock_disp = float(getattr(p, "current_stock", 0.0))
+    safety = float(getattr(p, "safety_stock", 10.0))
+    enabled = bool(getattr(p, "stock_enabled", True))
     row = {
         "id": p.id,
         "category_id": int(p.category_id) if p.category_id else None,
@@ -506,6 +492,11 @@ def _shop_product_row(customer, p):
         "can_quote_single": base_s > 0,
         "can_quote_case": base_c > 0,
         "stock_quantity": stock_disp,
+        "current_stock": stock_disp,
+        "safety_stock": safety,
+        "stock_enabled": enabled,
+        "is_out_of_stock": enabled and stock_disp <= 0,
+        "is_low_stock": enabled and stock_disp > 0 and stock_disp <= safety,
         "uses_ingredient_stock": bool(p.ingredient_id),
         "units_per_case": float(p.units_per_case),
     }

@@ -227,7 +227,14 @@
           "<br/>单位规格：" +
           (p.unit_label || "—") +
           "<br/>整箱规格：" +
-          (p.case_label || "—");
+          (p.case_label || "—") +
+          "<br/>库存：" +
+          (p.stock_enabled ? fmtMoney(p.current_stock) : "不限") +
+          (p.stock_enabled && p.current_stock <= 0
+            ? "（缺货）"
+            : p.stock_enabled && p.current_stock <= (parseFloat(p.safety_stock) || 0)
+              ? "（低库存提醒）"
+              : "");
 
         var priceHtml = "";
         if (p.price_on_request) {

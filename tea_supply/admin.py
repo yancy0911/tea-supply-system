@@ -8,6 +8,7 @@ from .models import (
     Customer,
     CustomerProductPrice,
     Ingredient,
+    InventoryLog,
     Order,
     OrderItem,
     Product,
@@ -112,6 +113,9 @@ class ProductAdmin(ImportExportModelAdmin):
         "unit_label",
         "price_single",
         "price_case",
+        "current_stock",
+        "safety_stock",
+        "stock_enabled",
         "stock_quantity",
         "is_active",
     )
@@ -277,6 +281,20 @@ class StockLogAdmin(admin.ModelAdmin):
     search_fields = ("product__sku", "product__name", "ingredient__name", "remark")
     readonly_fields = ("created_at", "direction", "quantity", "product", "ingredient", "order", "remark")
     date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(InventoryLog)
+class InventoryLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "product", "change_type", "quantity", "before_stock", "after_stock", "note")
+    list_filter = ("change_type", "created_at")
+    search_fields = ("product__sku", "product__name", "note")
+    readonly_fields = ("created_at", "product", "change_type", "quantity", "before_stock", "after_stock", "note")
 
     def has_add_permission(self, request):
         return False
