@@ -194,7 +194,7 @@ class Customer(models.Model):
         choices=Level.choices,
         default=Level.C,
         verbose_name="客户等级（VIP）",
-        help_text="商城/录单：专属价优先；否则按统一等级折扣（VIP×0.90、A×0.95、B×0.98、C×1.00）乘基础价。可手动改等级；订单也会按消费自动重算等级。",
+        help_text="商城/录单：专属价优先；否则按统一等级折扣（VIP×0.85、A×0.90、B×0.95、C×1.00）乘基础价。可手动改等级；订单也会按消费自动重算等级。",
     )
     allow_credit = models.BooleanField(
         default=False,
@@ -955,8 +955,8 @@ def resolve_product_price_for_customer(product, customer, sale_type):
             "base_price": original,
             "original_price": original,
             "final_price": original,
-            "pricing_note": "原价（登录后查看客户价）",
-            "discount_source": "基础价",
+            "pricing_note": "原价",
+            "discount_source": "原价",
         }
 
     cp = (

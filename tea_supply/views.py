@@ -471,7 +471,7 @@ def _shop_product_row(customer, p):
     enabled = bool(getattr(p, "stock_enabled", True))
     price_note = (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s)
     if customer is None:
-        price_note = "原价（登录后查看客户价）"
+        price_note = "原价"
     row = {
         "id": p.id,
         "category_id": int(p.category_id) if p.category_id else None,
