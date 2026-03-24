@@ -26,6 +26,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .money_utils import money_dec, money_float, money_q2
+from tea_supply.utils.pricing import resolve_product_price_for_customer
 from .models import (
     CUSTOMER_LEVEL_DISCOUNT_RATES,
     CreditApplication,
@@ -265,12 +266,28 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if qty < float(p.minimum_order_qty):
                 raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
 
-            unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)
+            price_info = resolve_product_price_for_customer(
+                product=p,
+                customer=customer_obj,
+                sale_type=sale_type,
+            )
+            assert price_info["source"] in ["custom", "tier", "base"]
+            unit_price = money_dec(price_info["final_price"])
             if money_float(unit_price) <= 0:
                 raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
-            line_amt = money_q2(money_dec(qty) * money_dec(unit_price))
+            line_amt = money_q2(money_dec(qty) * unit_price)
             order_total += line_amt
-            validated.append({"product_id": pid, "sale_type": sale_type, "quantity": qty})
+            validated.append(
+                {
+                    "product_id": pid,
+                    "sale_type": sale_type,
+                    "quantity": qty,
+                    "unit_price": unit_price,
+                    "subtotal": line_amt,
+                    "pricing_note": str(price_info.get("pricing_note") or ""),
+                    "source": str(price_info.get("source") or ""),
+                }
+            )
 
         needs = defaultdict(float)
         for v in validated:
@@ -350,11 +367,23 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
             # 3) 明细只写 OrderItem（不重复建 Order）
             for v in validated:
+                print(
+                    "🔥定价命中：",
+                    {
+                        "product": v["product_id"],
+                        "customer": customer_locked.id if customer_locked else None,
+                        "source": v["source"],
+                        "price": str(v["unit_price"]),
+                    },
+                )
                 OrderItem.objects.create(
                     order=order,
                     product_id=v["product_id"],
                     sale_type=v["sale_type"],
                     quantity=v["quantity"],
+                    unit_price=money_float(v["unit_price"]),
+                    total_revenue=money_float(v["subtotal"]),
+                    pricing_note=(v["pricing_note"] or "")[:64],
                 )
 
             # 4) 统一重算总金额：order.total_amount = sum(order_items.line_total)
