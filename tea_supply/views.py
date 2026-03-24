@@ -38,6 +38,7 @@ from .models import (
     deduct_stock_for_order,
     recalculate_order_totals,
     _stock_need_for_line,
+    resolve_product_price_for_customer,
     resolve_selling_unit_price,
 )
 
@@ -878,6 +879,14 @@ def shop_checkout(request):
         .order_by("category__sort_order", "category_id", "name")
     )
     shop_items = [_shop_product_row(customer, p) for p in products]
+    # 调试：与 resolve_product_price_for_customer 一致（User 无 customer 属性时用 customer_profile）
+    if products:
+        p0 = products[0]
+        cust = getattr(request.user, "customer", None)
+        if cust is None and request.user.is_authenticated:
+            cust = getattr(request.user, "customer_profile", None)
+        res = resolve_product_price_for_customer(p0, cust, "single")
+        print("CHECKOUT价格:", p0.id, res["final_price"])
     return render(
         request,
         "shop/shop_checkout.html",

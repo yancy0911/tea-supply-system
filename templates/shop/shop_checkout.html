@@ -491,7 +491,18 @@
             var sku = p ? p.sku : l.sku || "";
             var spec = l.sale_type === "case" ? "整箱" : "单品（袋/件）";
             var img = p && p.image_url ? p.image_url : "/static/images/default.png";
-            sum += parseFloat(l.subtotal) || 0;
+            // 结算页必须用内嵌 PRODUCTS（已含专属价/等级价），勿用 localStorage 里旧单价
+            var unit = parseFloat(l.unit_price) || 0;
+            var sub = parseFloat(l.subtotal) || 0;
+            if (p && !p.price_on_request) {
+              unit =
+                l.sale_type === "case"
+                  ? parseFloat(p.display_case)
+                  : parseFloat(p.display_single);
+              if (isNaN(unit)) unit = 0;
+              sub = unit * (parseFloat(l.quantity) || 0);
+            }
+            sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
             html +=
               '<div class="line-card">' +
@@ -511,10 +522,10 @@
               l.quantity +
               "</span></div>" +
               '<div class="line-col"><span class="k">单价</span><span class="v">¥' +
-              fmtMoney(l.unit_price) +
+              fmtMoney(unit) +
               '</span></div>' +
               '<div class="line-col"><span class="k">小计</span><span class="v">¥' +
-              fmtMoney(l.subtotal) +
+              fmtMoney(sub) +
               "</span></div>" +
               "</div>";
           });
