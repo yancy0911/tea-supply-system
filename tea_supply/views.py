@@ -25,6 +25,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from .money_utils import money_dec, money_float, money_q2
 from .models import (
     CUSTOMER_LEVEL_DISCOUNT_RATES,
     CreditApplication,
@@ -39,7 +40,6 @@ from .models import (
     deduct_stock_for_order,
     recalculate_order_totals,
     _stock_need_for_line,
-    resolve_product_price_for_customer,
     resolve_selling_unit_price,
 )
 
@@ -237,10 +237,10 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if customer_obj.is_blocked:
                 raise ValidationError("客户已超额度，已暂停下单")
 
-        current_unsettled = float(customer_obj.current_debt) if customer_obj else 0.0
-        credit_limit = float(customer_obj.credit_limit) if customer_obj else 0.0
+        current_unsettled = money_float(customer_obj.current_debt) if customer_obj else 0.0
+        credit_limit = money_float(customer_obj.credit_limit) if customer_obj else 0.0
 
-        order_total = 0.0
+        order_total = money_dec(0)
         validated = []
         for raw in lines:
             if raw.get("product_id") is None:
@@ -266,9 +266,9 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
 
             unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)
-            if float(unit_price) <= 0:
+            if money_float(unit_price) <= 0:
                 raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
-            line_amt = qty * float(unit_price)
+            line_amt = money_q2(money_dec(qty) * money_dec(unit_price))
             order_total += line_amt
             validated.append({"product_id": pid, "sale_type": sale_type, "quantity": qty})
 
@@ -296,7 +296,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 raise ValidationError("超出信用额度，无法下单")
             if current_unsettled >= credit_limit:
                 raise ValidationError("超出信用额度，无法下单")
-            if current_unsettled + order_total > credit_limit:
+            if money_dec(current_unsettled) + order_total > money_dec(credit_limit):
                 raise ValidationError("超出信用额度，无法下单")
 
         with transaction.atomic():
@@ -462,8 +462,8 @@ def _shop_product_row(customer, p):
             has_image = True
         else:
             image_url = f"/media/products/{p.sku}.jpg"
-    base_s = float(p.price_single)
-    base_c = float(p.price_case)
+    base_s = money_float(p.price_single)
+    base_c = money_float(p.price_case)
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
     dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
     stock_disp = float(getattr(p, "current_stock", 0.0))
@@ -482,10 +482,10 @@ def _shop_product_row(customer, p):
         "price_case": base_c,
         "base_single": base_s,
         "base_case": base_c,
-        "display_single": float(ds),
-        "display_case": float(dc),
-        "strike_single": abs(float(ds) - base_s) > 1e-6,
-        "strike_case": abs(float(dc) - base_c) > 1e-6,
+        "display_single": money_float(ds),
+        "display_case": money_float(dc),
+        "strike_single": abs(money_float(ds) - base_s) > 1e-6,
+        "strike_case": abs(money_float(dc) - base_c) > 1e-6,
         "price_note": (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s),
         "price_note_single": note_s,
         "price_note_case": note_c,
@@ -799,7 +799,7 @@ def profile_view(request):
         customer.save(update_fields=["contact_name", "phone", "address"])
         messages.success(request, "已保存")
         return redirect("profile")
-    current_debt = float(customer.current_debt or 0.0)
+    current_debt = money_float(customer.current_debt or 0.0)
     return render(
         request,
         "shop/profile.html",
@@ -865,7 +865,7 @@ def credit_home_view(request):
     if not customer:
         messages.info(request, "当前账号无商城客户档案")
         return redirect("shop-home")
-    current_debt = float(customer.current_debt or 0.0)
+    current_debt = money_float(customer.current_debt or 0.0)
     latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
     return render(
         request,
@@ -874,7 +874,9 @@ def credit_home_view(request):
             "shop_customer": customer,
             "current_debt": current_debt,
             "used_credit": current_debt,
-            "remaining_credit": max(0.0, float(customer.credit_limit or 0.0) - current_debt),
+            "remaining_credit": money_float(
+                max(money_dec(0), money_dec(customer.credit_limit or 0.0) - money_dec(current_debt))
+            ),
             "latest_application": latest,
         },
     )
@@ -893,14 +895,6 @@ def shop_checkout(request):
         .order_by("category__sort_order", "category_id", "name")
     )
     shop_items = [_shop_product_row(customer, p) for p in products]
-    # 调试：与 resolve_product_price_for_customer 一致（User 无 customer 属性时用 customer_profile）
-    if products:
-        p0 = products[0]
-        cust = getattr(request.user, "customer", None)
-        if cust is None and request.user.is_authenticated:
-            cust = getattr(request.user, "customer_profile", None)
-        res = resolve_product_price_for_customer(p0, cust, "single")
-        print("CHECKOUT价格:", p0.id, res["final_price"])
     return render(
         request,
         "shop/shop_checkout.html",
@@ -912,8 +906,8 @@ def shop_checkout(request):
             "shop_order_block_hint": order_hint,
             "tier_rules_banner": tier_rules_banner_text(),
             "credit_allow": bool(customer and customer.allow_credit),
-            "credit_limit": float(customer.credit_limit or 0.0) if customer else 0.0,
-            "current_debt": float(customer.current_debt or 0.0) if customer else 0.0,
+            "credit_limit": money_float(customer.credit_limit or 0.0) if customer else 0.0,
+            "current_debt": money_float(customer.current_debt or 0.0) if customer else 0.0,
         },
     )
 
@@ -1254,9 +1248,9 @@ def orders_list(request):
         "order__customer", "product"
     )
 
-    amount_by_customer_id = defaultdict(float)
+    amount_by_customer_id = defaultdict(lambda: money_dec(0))
     for item in unsettled_items:
-        amount_by_customer_id[item.order.customer_id] += float(item.total_revenue)
+        amount_by_customer_id[item.order.customer_id] += money_dec(item.total_revenue)
 
     customer_ids = [k for k in amount_by_customer_id.keys() if k is not None]
     customers_map = {c.id: c for c in Customer.objects.filter(pk__in=customer_ids)}
@@ -1275,15 +1269,15 @@ def orders_list(request):
         else:
             cust = customers_map[cid]
             name = cust.name
-            credit_limit = float(cust.credit_limit)
+            credit_limit = money_float(cust.credit_limit)
             tier_label = cust.get_customer_level_display()
         days = _days_since_earliest_pending(earliest_map.get(cid))
-        ds = _dunning_time_and_supply(amount, credit_limit, days)
+        ds = _dunning_time_and_supply(money_float(amount), credit_limit, days)
         customer_debts.append(
             {
                 "name": name,
                 "tier": tier_label,
-                "amount": amount,
+                "amount": money_float(amount),
                 "credit_limit": credit_limit,
                 "no_limit": ds["no_limit"],
                 "dunning_status": ds["dunning_status"],
@@ -1333,9 +1327,9 @@ def orders_list(request):
         tp=Sum("profit"),
     )
     today_stats = {
-        "revenue": float(today_agg["tr"] or 0),
-        "cost": float(today_agg["tc"] or 0),
-        "profit": float(today_agg["tp"] or 0),
+        "revenue": money_float(today_agg["tr"] or 0),
+        "cost": money_float(today_agg["tc"] or 0),
+        "profit": money_float(today_agg["tp"] or 0),
     }
 
     order_rows = []
@@ -1354,9 +1348,9 @@ def orders_list(request):
                 "item_count": item_count,
                 "items_text": f"{item_count} items" if item_count else "0 items",
                 "product_preview": preview,
-                "amount": float(order.total_revenue or 0.0),
-                "cost": float(order.total_cost or 0.0),
-                "profit": float(order.profit or 0.0),
+                "amount": money_float(order.total_revenue or 0.0),
+                "cost": money_float(order.total_cost or 0.0),
+                "profit": money_float(order.profit or 0.0),
             }
         )
 
@@ -1414,6 +1408,15 @@ def customer_insights_dashboard(request):
         )
         .order_by("-total_profit")[:10]
     )
+    profit_top = [
+        {
+            **r,
+            "total_sales": money_float(r["total_sales"]),
+            "total_cost": money_float(r["total_cost"]),
+            "total_profit": money_float(r["total_profit"]),
+        }
+        for r in profit_top
+    ]
 
     sales_top = list(
         valid_order_base.values("customer_id", "customer__name")
@@ -1423,11 +1426,12 @@ def customer_insights_dashboard(request):
         )
         .order_by("-total_sales")[:10]
     )
+    sales_top = [{**r, "total_sales": money_float(r["total_sales"])} for r in sales_top]
 
     debt_top = []
     for c in Customer.objects.all().order_by("-current_debt")[:10]:
-        debt = float(c.current_debt or 0)
-        limit = float(c.credit_limit or 0)
+        debt = money_float(c.current_debt or 0)
+        limit = money_float(c.credit_limit or 0)
         ratio_pct = (debt / limit * 100.0) if limit > 0 else None
         debt_top.append(
             {
@@ -1448,8 +1452,8 @@ def customer_insights_dashboard(request):
         risk_rows.append(
             {
                 "name": c.name,
-                "current_debt": float(c.current_debt or 0),
-                "credit_limit": float(c.credit_limit or 0),
+                "current_debt": money_float(c.current_debt or 0),
+                "credit_limit": money_float(c.credit_limit or 0),
                 "risk_status": _customer_risk_status_label(c),
             }
         )
@@ -1535,19 +1539,22 @@ def reports_dashboard(request):
         product_base.annotate(value=Coalesce(Sum("profit"), 0.0)).order_by("-value")[:10]
     )
 
+    def _annotate_value_money(rows):
+        return [{**r, "value": money_float(r["value"])} for r in rows]
+
     context = {
-        "kpi_today_sales": float(today_agg["sales"] or 0.0),
-        "kpi_today_profit": float(today_agg["profit"] or 0.0),
+        "kpi_today_sales": money_float(today_agg["sales"] or 0.0),
+        "kpi_today_profit": money_float(today_agg["profit"] or 0.0),
         "kpi_pending_confirm_count": int(pending_confirm_count),
-        "kpi_confirmed_unpaid_amount": float(confirmed_unpaid_amount or 0.0),
-        "kpi_month_sales": float(month_agg["sales"] or 0.0),
-        "kpi_month_profit": float(month_agg["profit"] or 0.0),
-        "customer_sales_top": list(customer_sales_top),
-        "customer_profit_top": list(customer_profit_top),
-        "customer_debt_top": list(customer_debt_top),
-        "product_qty_top": list(product_qty_top),
-        "product_sales_top": list(product_sales_top),
-        "product_profit_top": list(product_profit_top),
+        "kpi_confirmed_unpaid_amount": money_float(confirmed_unpaid_amount or 0.0),
+        "kpi_month_sales": money_float(month_agg["sales"] or 0.0),
+        "kpi_month_profit": money_float(month_agg["profit"] or 0.0),
+        "customer_sales_top": _annotate_value_money(customer_sales_top),
+        "customer_profit_top": _annotate_value_money(customer_profit_top),
+        "customer_debt_top": _annotate_value_money(customer_debt_top),
+        "product_qty_top": _annotate_value_money(product_qty_top),
+        "product_sales_top": _annotate_value_money(product_sales_top),
+        "product_profit_top": _annotate_value_money(product_profit_top),
     }
     return render(request, "reports_basic.html", context)
 
@@ -1567,14 +1574,14 @@ def _increase_debt_on_confirm(order):
     ):
         return
     cust = Customer.objects.select_for_update().get(pk=order.customer_id)
-    latest_debt = float(cust.current_debt or 0.0)
-    latest_limit = float(cust.credit_limit or 0.0)
-    order_amt = float(order.total_revenue or 0.0)
+    latest_debt = money_dec(cust.current_debt or 0.0)
+    latest_limit = money_dec(cust.credit_limit or 0.0)
+    order_amt = money_dec(order.total_revenue or 0.0)
     if latest_debt >= latest_limit:
         raise ValidationError("额度已用完，无法继续挂账下单")
     if latest_debt + order_amt > latest_limit:
         raise ValidationError("本次挂账将超出信用额度，无法确认订单")
-    cust.current_debt = max(0.0, latest_debt + order_amt)
+    cust.current_debt = money_float(max(money_dec(0), latest_debt + order_amt))
     cust.save(update_fields=["current_debt"])
     order.is_debt_counted = True
     order.save(update_fields=["is_debt_counted"])
@@ -1589,8 +1596,8 @@ def _decrease_debt_if_counted(order):
     ):
         return
     cust = Customer.objects.select_for_update().get(pk=order.customer_id)
-    new_debt = float(cust.current_debt or 0.0) - float(order.total_revenue or 0.0)
-    cust.current_debt = max(0.0, new_debt)
+    new_debt = money_q2(money_dec(cust.current_debt or 0.0) - money_dec(order.total_revenue or 0.0))
+    cust.current_debt = money_float(max(money_dec(0), new_debt))
     cust.save(update_fields=["current_debt"])
     order.is_debt_counted = False
     order.save(update_fields=["is_debt_counted"])

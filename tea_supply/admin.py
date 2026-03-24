@@ -18,6 +18,7 @@ from .models import (
     StockLog,
     UserRole,
 )
+from .money_utils import money_float
 from .resources import ProductCategoryResource, ProductResource
 
 logger = logging.getLogger(__name__)
@@ -37,13 +38,13 @@ class CustomerAdmin(admin.ModelAdmin):
         "name",
         "contact_name",
         "phone",
-        "current_debt",
-        "credit_limit",
+        "current_debt_display",
+        "credit_limit_display",
         "is_blocked_display",
         "account_status",
         "level",
         "allow_credit",
-        "minimum_order_amount",
+        "minimum_order_amount_display",
     )
     list_display_links = ("shop_name", "name")
     search_fields = ("name", "contact_name", "phone", "address", "delivery_zone")
@@ -79,6 +80,18 @@ class CustomerAdmin(admin.ModelAdmin):
     )
     inlines = (CustomerProductPriceInline,)
     autocomplete_fields = ("user",)
+
+    @admin.display(description="当前欠款", ordering="current_debt")
+    def current_debt_display(self, obj):
+        return f"{money_float(obj.current_debt or 0):.2f}"
+
+    @admin.display(description="信用额度", ordering="credit_limit")
+    def credit_limit_display(self, obj):
+        return f"{money_float(obj.credit_limit or 0):.2f}"
+
+    @admin.display(description="起送金额", ordering="minimum_order_amount")
+    def minimum_order_amount_display(self, obj):
+        return f"{money_float(obj.minimum_order_amount or 0):.2f}"
 
     @admin.display(description="停单", ordering="is_blocked")
     def is_blocked_display(self, obj):
@@ -304,23 +317,17 @@ class OrderAdmin(admin.ModelAdmin):
             raise
         logger.info("OrderAdmin.save_model order_id=%s save() completed", obj.pk)
 
+    @admin.display(description="总收入", ordering="total_revenue")
     def total_revenue_display(self, obj):
-        return float(obj.total_revenue or 0.0)
+        return f"{money_float(obj.total_revenue or 0):.2f}"
 
-    total_revenue_display.short_description = "总收入"
-    total_revenue_display.admin_order_field = "total_revenue"
-
+    @admin.display(description="总成本", ordering="total_cost")
     def total_cost_display(self, obj):
-        return float(obj.total_cost or 0.0)
+        return f"{money_float(obj.total_cost or 0):.2f}"
 
-    total_cost_display.short_description = "总成本"
-    total_cost_display.admin_order_field = "total_cost"
-
+    @admin.display(description="利润", ordering="profit")
     def profit_display(self, obj):
-        return float(obj.profit or 0.0)
-
-    profit_display.short_description = "利润"
-    profit_display.admin_order_field = "profit"
+        return f"{money_float(obj.profit or 0):.2f}"
 
 
 @admin.register(OrderItem)
@@ -330,14 +337,34 @@ class OrderItemAdmin(admin.ModelAdmin):
         "product",
         "quantity",
         "sale_type",
-        "unit_price",
-        "unit_cost",
+        "unit_price_display",
+        "unit_cost_display",
         "pricing_note",
-        "total_revenue",
-        "total_cost",
-        "profit",
+        "total_revenue_display",
+        "total_cost_display",
+        "profit_display",
     )
     search_fields = ("order__name", "product__name", "product__sku", "pricing_note")
+
+    @admin.display(description="成交单价", ordering="unit_price")
+    def unit_price_display(self, obj):
+        return f"{money_float(obj.unit_price or 0):.2f}"
+
+    @admin.display(description="单位成本", ordering="unit_cost")
+    def unit_cost_display(self, obj):
+        return f"{money_float(obj.unit_cost or 0):.2f}"
+
+    @admin.display(description="行收入", ordering="total_revenue")
+    def total_revenue_display(self, obj):
+        return f"{money_float(obj.total_revenue or 0):.2f}"
+
+    @admin.display(description="行成本", ordering="total_cost")
+    def total_cost_display(self, obj):
+        return f"{money_float(obj.total_cost or 0):.2f}"
+
+    @admin.display(description="行利润", ordering="profit")
+    def profit_display(self, obj):
+        return f"{money_float(obj.profit or 0):.2f}"
 
     def has_view_permission(self, request, obj=None):
         return bool(request.user.is_authenticated and request.user.is_staff)

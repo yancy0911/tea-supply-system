@@ -4,15 +4,15 @@
   <div class="card-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr))">
     <div class="card">
       <div class="label">今日总收入</div>
-      <div class="value" style="color: #15803d">{{ today_stats.revenue }}</div>
+      <div class="value" style="color: #15803d">{{ today_stats.revenue|floatformat:2 }}</div>
     </div>
     <div class="card">
       <div class="label">今日总成本</div>
-      <div class="value" style="color: #b45309">{{ today_stats.cost }}</div>
+      <div class="value" style="color: #b45309">{{ today_stats.cost|floatformat:2 }}</div>
     </div>
     <div class="card">
       <div class="label">今日总利润</div>
-      <div class="value" style="color: #2563eb">{{ today_stats.profit }}</div>
+      <div class="value" style="color: #2563eb">{{ today_stats.profit|floatformat:2 }}</div>
     </div>
   </div>
 
@@ -45,13 +45,13 @@
                   style="color: #dc2626; font-weight: 600"
                 {% endif %}
               >
-                {{ row.amount }}
+                {{ row.amount|floatformat:2 }}
               </td>
               <td>
                 {% if row.no_limit %}
                   <span class="muted">无授信</span>
                 {% else %}
-                  {{ row.credit_limit }}
+                  {{ row.credit_limit|floatformat:2 }}
                 {% endif %}
               </td>
               <td>
@@ -223,10 +223,10 @@
                 <div style="font-weight:600">{{ row.items_text }}</div>
                 <div class="muted" style="font-size:12px">{{ row.product_preview }}</div>
               </td>
-              <td style="font-weight: 600">{{ row.amount }}</td>
-              <td>{{ row.cost }}</td>
+              <td style="font-weight: 600">{{ row.amount|floatformat:2 }}</td>
+              <td>{{ row.cost|floatformat:2 }}</td>
               <td>
-                <span style="font-weight: 600; color: #2563eb">{{ row.profit }}</span>
+                <span style="font-weight: 600; color: #2563eb">{{ row.profit|floatformat:2 }}</span>
               </td>
               <td>{{ row.order.created_at|date:"Y-m-d H:i:s" }}</td>
               <td>

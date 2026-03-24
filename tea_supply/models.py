@@ -7,6 +7,8 @@ from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from .money_utils import money_dec, money_float, money_q2
+
 # 防止「程序改库存」与「手工改库存」重复记流水
 _tls = threading.local()
 
@@ -571,16 +573,16 @@ def recalculate_order_totals(order_id):
     order = Order.objects.filter(pk=order_id).first()
     if not order:
         return
-    total_revenue = 0.0
-    total_cost = 0.0
+    tr = money_dec(0)
+    tc = money_dec(0)
     for item in order.items.select_related("product").all():
-        total_revenue += float(item.total_revenue)
-        total_cost += float(item.total_cost)
-    profit = total_revenue - total_cost
+        tr += money_dec(item.total_revenue)
+        tc += money_dec(item.total_cost)
+    profit = money_q2(tr - tc)
     Order.objects.filter(pk=order_id).update(
-        total_revenue=total_revenue,
-        total_cost=total_cost,
-        profit=profit,
+        total_revenue=money_float(tr),
+        total_cost=money_float(tc),
+        profit=money_float(profit),
     )
 
 
@@ -756,31 +758,37 @@ class OrderItem(models.Model):
             and str(old_item.sale_type) == str(self.sale_type)
         )
         if frozen:
-            self.unit_price = float(old_item.unit_price)
+            self.unit_price = money_float(old_item.unit_price)
             self.pricing_note = (old_item.pricing_note or "")[:64]
-            q = float(self.quantity)
-            self.total_revenue = q * self.unit_price
+            q = money_dec(self.quantity)
+            up = money_dec(self.unit_price)
+            tr = money_q2(q * up)
             if self.sale_type == self.SaleType.CASE:
-                cpu = float(p.cost_price_case)
+                cpu = money_dec(p.cost_price_case)
             else:
-                cpu = float(p.cost_price_single)
-            self.unit_cost = cpu
-            self.total_cost = q * cpu
-            self.profit = self.total_revenue - self.total_cost
+                cpu = money_dec(p.cost_price_single)
+            tc = money_q2(q * cpu)
+            self.unit_cost = money_float(cpu)
+            self.total_revenue = money_float(tr)
+            self.total_cost = money_float(tc)
+            self.profit = money_float(money_q2(tr - tc))
             return
 
         unit_price, pricing_note = resolve_selling_unit_price(customer, p, self.sale_type)
-        self.unit_price = float(unit_price)
+        self.unit_price = money_float(unit_price)
         self.pricing_note = pricing_note
-        q = float(self.quantity)
-        self.total_revenue = q * self.unit_price
+        q = money_dec(self.quantity)
+        up = money_dec(self.unit_price)
+        tr = money_q2(q * up)
         if self.sale_type == self.SaleType.CASE:
-            cpu = float(p.cost_price_case)
+            cpu = money_dec(p.cost_price_case)
         else:
-            cpu = float(p.cost_price_single)
-        self.unit_cost = cpu
-        self.total_cost = q * cpu
-        self.profit = self.total_revenue - self.total_cost
+            cpu = money_dec(p.cost_price_single)
+        tc = money_q2(q * cpu)
+        self.unit_cost = money_float(cpu)
+        self.total_revenue = money_float(tr)
+        self.total_cost = money_float(tc)
+        self.profit = money_float(money_q2(tr - tc))
 
     def save(self, *args, **kwargs):
         if self.quantity <= 0:
@@ -932,7 +940,7 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     返回 dict: original_price, final_price, discount_source（写入明细 pricing_note）
     """
     is_case = str(sale_type) == "case"
-    original = float(product.price_case if is_case else product.price_single)
+    original = money_float(product.price_case if is_case else product.price_single)
     kind_label = "整箱" if is_case else "单品"
 
     if customer is None:
@@ -948,7 +956,7 @@ def resolve_product_price_for_customer(product, customer, sale_type):
         .first()
     )
     if cp:
-        ex = float(cp.custom_price_case if is_case else cp.custom_price_single)
+        ex = money_float(cp.custom_price_case if is_case else cp.custom_price_single)
         if ex > 0:
             return {
                 "original_price": original,
@@ -959,7 +967,7 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     tier = customer.customer_level
     sr, cr = _discount_rates_for_level(tier)
     rate = cr if is_case else sr
-    final = original * rate
+    final = money_float(money_q2(money_dec(original) * money_dec(rate)))
     note = _format_discount_source(tier, rate, kind_label)
     return {
         "original_price": original,
@@ -974,14 +982,14 @@ def resolve_selling_unit_price(customer, product, sale_type):
     note = res["discount_source"]
     if len(note) > 64:
         note = note[:64]
-    return float(res["final_price"]), note
+    return money_float(res["final_price"]), note
 
 
 def total_spent_for_customer(customer):
-    total = 0.0
+    total = money_dec(0)
     for item in OrderItem.objects.filter(order__customer=customer).select_related("product"):
-        total += float(item.total_revenue)
-    return total
+        total += money_dec(item.total_revenue)
+    return money_float(total)
 
 
 def level_from_total_spent(total_spent):
