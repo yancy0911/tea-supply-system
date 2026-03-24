@@ -25,9 +25,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import (
-    CUSTOMER_TIER_DISCOUNT,
     CreditApplication,
     Customer,
+    CustomerLevelPriceRule,
     CustomerProductPrice,
     Ingredient,
     Order,
@@ -40,6 +40,34 @@ from .models import (
     _stock_need_for_line,
     resolve_selling_unit_price,
 )
+
+
+def tier_discount_map_for_wholesale():
+    """录单页 JS：等级 -> {single, case} 折扣率；缺省 1.0（原价）。"""
+    out = {code: {"single": 1.0, "case": 1.0} for code, _ in Customer.Level.choices}
+    for r in CustomerLevelPriceRule.objects.filter(is_active=True):
+        out[r.level] = {
+            "single": float(r.single_discount_rate),
+            "case": float(r.case_discount_rate),
+        }
+    return out
+
+
+def tier_rules_banner_text():
+    """商城页眉小字：C/B/A 等级价说明（来自规则表）。"""
+    parts = []
+    for lvl in ["C", "B", "A"]:
+        rule = CustomerLevelPriceRule.objects.filter(level=lvl, is_active=True).first()
+        rs = float(rule.single_discount_rate) if rule else 1.0
+        rc = float(rule.case_discount_rate) if rule else 1.0
+        if abs(rs - rc) < 1e-9:
+            if abs(rs - 1.0) < 1e-9:
+                parts.append(f"{lvl}原价")
+            else:
+                parts.append(f"{lvl}{int(round(rs * 100))}折")
+        else:
+            parts.append(f"{lvl}单{int(round(rs * 100))}折·箱{int(round(rc * 100))}折")
+    return " · ".join(parts)
 
 
 def _unsettled_order_statuses():
@@ -618,7 +646,7 @@ def wholesale_order_entry(request):
         "products": products,
         "products_data": products_data,
         "products_json": json.dumps(products_data, ensure_ascii=False),
-        "tier_discounts_json": json.dumps({k: float(v) for k, v in CUSTOMER_TIER_DISCOUNT.items()}, ensure_ascii=False),
+        "tier_discounts_json": json.dumps(tier_discount_map_for_wholesale(), ensure_ascii=False),
         "exclusive_prices_json": json.dumps(exclusive_map, ensure_ascii=False),
         "today_order_count": Order.objects.count(),
     }
@@ -663,6 +691,7 @@ def shop_home(request):
         "shop_logged_in": bool(getattr(request, "user", None) and request.user.is_authenticated),
         "missing_images": missing_images,
         "missing_prices": missing_prices,
+        "tier_rules_banner": tier_rules_banner_text(),
     }
     return render(request, "shop/shop_home.html", ctx)
 
@@ -868,6 +897,7 @@ def shop_checkout(request):
             "categories": categories,
             "shop_can_order": can_order,
             "shop_order_block_hint": order_hint,
+            "tier_rules_banner": tier_rules_banner_text(),
         },
     )
 

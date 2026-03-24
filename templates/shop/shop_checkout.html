@@ -279,6 +279,11 @@
         <a href="{% url 'shop-home' %}">← 返回商品列表</a>
       </div>
     </header>
+    {% if tier_rules_banner %}
+      <p style="max-width: 1240px; margin: 6px auto 0; padding: 0 16px; font-size: 12px; color: var(--muted); text-align: center">
+        等级价参考：{{ tier_rules_banner }}
+      </p>
+    {% endif %}
 
     {% if messages %}
       <div class="wrap msg-banner">

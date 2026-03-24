@@ -177,7 +177,7 @@ class Customer(models.Model):
         choices=Level.choices,
         default=Level.C,
         verbose_name="客户等级（VIP）",
-        help_text="商城/录单：专属价优先；仅 VIP 享 9 折，其余等级按原价。可在此手动改等级；订单也会按消费自动重算等级。",
+        help_text="商城/录单：专属价优先；否则按「等级折扣规则」表对基础价打折。可手动改等级；订单也会按消费自动重算等级。",
     )
     allow_credit = models.BooleanField(
         default=False,
@@ -237,6 +237,35 @@ class Customer(models.Model):
     def level(self):
         """与 customer_level 同义（兼容「等级」字段命名）。"""
         return self.customer_level
+
+
+class CustomerLevelPriceRule(models.Model):
+    """按客户等级配置单品/整箱折扣率（相对商品基础价）；规则为空或缺失等级时按原价。"""
+
+    level = models.CharField(
+        max_length=10,
+        choices=Customer.Level.choices,
+        unique=True,
+        verbose_name="等级",
+    )
+    single_discount_rate = models.FloatField(
+        default=1.0,
+        verbose_name="单品折扣率",
+        help_text="成交价 = 单品基础价 × 本系数；1.0 为原价。",
+    )
+    case_discount_rate = models.FloatField(
+        default=1.0,
+        verbose_name="整箱折扣率",
+        help_text="成交价 = 整箱基础价 × 本系数；1.0 为原价。",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="启用")
+
+    class Meta:
+        verbose_name = "等级折扣规则"
+        verbose_name_plural = "等级折扣规则"
+
+    def __str__(self):
+        return f"{self.level} 单×{self.single_discount_rate} 箱×{self.case_discount_rate}"
 
 
 class StockLog(models.Model):
@@ -613,7 +642,27 @@ class OrderItem(models.Model):
     def line_profit(self):
         return float(self.profit or 0.0)
 
-    def _apply_line_amounts(self, p, customer):
+    def _apply_line_amounts(self, p, customer, *, old_item=None):
+        """新建行按当前规则计价；已存在行在商品/销售方式不变时冻结单价与折扣说明（仅数量变则重算行金额）。"""
+        frozen = (
+            old_item is not None
+            and old_item.product_id == self.product_id
+            and str(old_item.sale_type) == str(self.sale_type)
+        )
+        if frozen:
+            self.unit_price = float(old_item.unit_price)
+            self.pricing_note = (old_item.pricing_note or "")[:64]
+            q = float(self.quantity)
+            self.total_revenue = q * self.unit_price
+            if self.sale_type == self.SaleType.CASE:
+                cpu = float(p.cost_price_case)
+            else:
+                cpu = float(p.cost_price_single)
+            self.unit_cost = cpu
+            self.total_cost = q * cpu
+            self.profit = self.total_revenue - self.total_cost
+            return
+
         if customer is None:
             if self.sale_type == self.SaleType.CASE:
                 self.unit_price = float(p.price_case)
@@ -644,6 +693,14 @@ class OrderItem(models.Model):
             order = Order.objects.select_related("customer").get(pk=self.order_id)
             customer = order.customer if order.customer_id else None
 
+            old_item = None
+            if not creating:
+                old_item = (
+                    OrderItem.objects.select_for_update()
+                    .select_related("product")
+                    .get(pk=self.pk)
+                )
+
             p = Product.objects.select_for_update().get(pk=self.product_id)
             if not p.is_active:
                 raise ValidationError("该商品已停用，无法下单")
@@ -652,7 +709,7 @@ class OrderItem(models.Model):
             if float(self.quantity) < float(p.minimum_order_qty):
                 raise ValidationError(f"数量不能低于起订量 {p.minimum_order_qty}")
 
-            self._apply_line_amounts(p, customer)
+            self._apply_line_amounts(p, customer, old_item=old_item)
 
             if order.stock_deducted:
                 if creating:
@@ -662,11 +719,6 @@ class OrderItem(models.Model):
                     recalculate_order_totals(self.order_id)
                     return
 
-                old_item = (
-                    OrderItem.objects.select_for_update()
-                    .select_related("product")
-                    .get(pk=self.pk)
-                )
                 old_need = _stock_need_for_line(old_item, old_item.product)
                 new_need = _stock_need_for_line(self, p)
 
@@ -753,27 +805,38 @@ class CreditApplication(models.Model):
             )
 
 
-# 仅 VIP 享折扣；C/B/A 为原价（1.0）。商城与录单共用。
-CUSTOMER_TIER_DISCOUNT = {
-    Customer.Level.C: 1.0,
-    Customer.Level.B: 1.0,
-    Customer.Level.A: 1.0,
-    Customer.Level.VIP: 0.90,
-}
+def _discount_rates_for_level(level_key):
+    """返回 (单品率, 整箱率)；无规则或表为空时均为 1.0。"""
+    rule = CustomerLevelPriceRule.objects.filter(level=level_key, is_active=True).first()
+    if not rule:
+        return 1.0, 1.0
+    return float(rule.single_discount_rate), float(rule.case_discount_rate)
 
 
-def resolve_selling_unit_price(customer, product, sale_type):
+def _format_discount_source(level_key, rate, kind_label):
+    """kind_label: 单品 / 整箱"""
+    if abs(rate - 1.0) < 1e-9:
+        return f"{level_key}级原价（{kind_label}）"
+    zhe = int(round(rate * 100))
+    return f"{level_key}级{zhe}折（{kind_label}）"
+
+
+def resolve_product_price_for_customer(product, customer, sale_type):
     """
-    未登录/无客户：基础价。
-    有客户：专属价（>0）优先 → 否则 VIP 9 折 → 否则原价。
+    统一价格解析（商城/录单/订单明细共用）。
+    sale_type: OrderItem.SaleType 或 'single' / 'case'
+    返回 dict: original_price, final_price, discount_source（写入明细 pricing_note）
     """
-    if sale_type == OrderItem.SaleType.CASE:
-        base = float(product.price_case)
-    else:
-        base = float(product.price_single)
+    is_case = str(sale_type) == "case"
+    original = float(product.price_case if is_case else product.price_single)
+    kind_label = "整箱" if is_case else "单品"
 
     if customer is None:
-        return base, "基础价"
+        return {
+            "original_price": original,
+            "final_price": original,
+            "discount_source": "基础价",
+        }
 
     cp = (
         CustomerProductPrice.objects.filter(customer=customer, product=product, is_active=True)
@@ -781,23 +844,33 @@ def resolve_selling_unit_price(customer, product, sale_type):
         .first()
     )
     if cp:
-        if sale_type == OrderItem.SaleType.CASE:
-            ex = float(cp.custom_price_case)
-        else:
-            ex = float(cp.custom_price_single)
+        ex = float(cp.custom_price_case if is_case else cp.custom_price_single)
         if ex > 0:
-            return ex, "专属价"
+            return {
+                "original_price": original,
+                "final_price": ex,
+                "discount_source": "专属价",
+            }
+
     tier = customer.customer_level
-    d = float(CUSTOMER_TIER_DISCOUNT.get(tier, 1.0))
-    if sale_type == OrderItem.SaleType.CASE:
-        price = float(product.price_case) * d
-    else:
-        price = float(product.price_single) * d
-    if abs(d - 1.0) < 1e-9:
-        note = "原价"
-    else:
-        note = "VIP 9折"
-    return price, note
+    sr, cr = _discount_rates_for_level(tier)
+    rate = cr if is_case else sr
+    final = original * rate
+    note = _format_discount_source(tier, rate, kind_label)
+    return {
+        "original_price": original,
+        "final_price": final,
+        "discount_source": note,
+    }
+
+
+def resolve_selling_unit_price(customer, product, sale_type):
+    """兼容旧接口：(成交价, 定价说明)。"""
+    res = resolve_product_price_for_customer(product, customer, sale_type)
+    note = res["discount_source"]
+    if len(note) > 64:
+        note = note[:64]
+    return float(res["final_price"]), note
 
 
 def total_spent_for_customer(customer):

@@ -6,6 +6,7 @@ from django.utils import timezone
 from .models import (
     CreditApplication,
     Customer,
+    CustomerLevelPriceRule,
     CustomerProductPrice,
     Ingredient,
     Order,
@@ -23,6 +24,13 @@ class CustomerProductPriceInline(admin.TabularInline):
     extra = 0
     autocomplete_fields = ("product",)
     fields = ("product", "custom_price_single", "custom_price_case", "is_active")
+
+
+@admin.register(CustomerLevelPriceRule)
+class CustomerLevelPriceRuleAdmin(admin.ModelAdmin):
+    list_display = ("level", "single_discount_rate", "case_discount_rate", "is_active")
+    list_filter = ("is_active", "level")
+    ordering = ("level",)
 
 
 @admin.register(Customer)

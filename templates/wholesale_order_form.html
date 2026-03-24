@@ -242,16 +242,23 @@
         return r ? r.value : "single";
       }
 
-      function getTierDiscountRate(level) {
+      function getTierDiscountRate(level, isCase) {
         if (level == null || level === "") level = "C";
-        var d = TIER_DISCOUNTS[level];
-        return d != null && !isNaN(parseFloat(d)) ? parseFloat(d) : 1;
+        var row = TIER_DISCOUNTS[level];
+        if (row == null) return 1;
+        if (typeof row === "number") {
+          var dn = parseFloat(row);
+          return !isNaN(dn) ? dn : 1;
+        }
+        var key = isCase ? "case" : "single";
+        var v = row[key];
+        return v != null && !isNaN(parseFloat(v)) ? parseFloat(v) : 1;
       }
 
       /**
-       * 折扣规则（与后端 resolve_selling_unit_price 一致）：
+       * 折扣规则（与后端 resolve_product_price_for_customer / resolve_selling_unit_price 一致）：
        * 1 专属价优先 → 成交价 = 专属单品/整箱价
-       * 2 否则 VIP → 基础价 × 0.9；C/B/A → 原价
+       * 2 否则按「等级折扣规则」表：单品/整箱可分别配置
        * 3 未选客户 → 基础价
        */
       function computeLinePricing() {
@@ -293,15 +300,13 @@
 
         var opt = customerSelect.options[customerSelect.selectedIndex];
         var level = opt ? opt.getAttribute("data-level") || "C" : "C";
-        var d = getTierDiscountRate(level);
+        var d = getTierDiscountRate(level, isCase);
         var unit = base * d;
         if (isNaN(unit)) unit = 0;
         var priceSource =
           d >= 1
             ? "无折扣"
-            : level === "VIP"
-              ? "VIP（×" + d + "）"
-              : "等级折扣·" + level + "（×" + d + "）";
+            : "等级折扣·" + level + "（×" + d + "）";
         return {
           unit: unit,
           priceSource: priceSource,
