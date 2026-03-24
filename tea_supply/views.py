@@ -469,6 +469,9 @@ def _shop_product_row(customer, p):
     stock_disp = float(getattr(p, "current_stock", 0.0))
     safety = float(getattr(p, "safety_stock", 10.0))
     enabled = bool(getattr(p, "stock_enabled", True))
+    price_note = (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s)
+    if customer is None:
+        price_note = "原价（登录后查看客户价）"
     row = {
         "id": p.id,
         "category_id": int(p.category_id) if p.category_id else None,
@@ -486,7 +489,7 @@ def _shop_product_row(customer, p):
         "display_case": money_float(dc),
         "strike_single": abs(money_float(ds) - base_s) > 1e-6,
         "strike_case": abs(money_float(dc) - base_c) > 1e-6,
-        "price_note": (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s),
+        "price_note": price_note,
         "price_note_single": note_s,
         "price_note_case": note_c,
         "can_split_sale": p.can_split_sale,

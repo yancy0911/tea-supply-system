@@ -327,9 +327,9 @@ class CustomerLevelPriceRule(models.Model):
 
 # 统一等级折扣（代码常量，单品/整箱同一系数）。实际定价不再读取 CustomerLevelPriceRule 表，避免与后台双源冲突。
 CUSTOMER_LEVEL_DISCOUNT_RATES = {
-    Customer.Level.VIP: 0.90,
-    Customer.Level.A: 0.95,
-    Customer.Level.B: 0.98,
+    Customer.Level.VIP: 0.85,
+    Customer.Level.A: 0.90,
+    Customer.Level.B: 0.95,
     Customer.Level.C: 1.00,
 }
 
@@ -924,7 +924,11 @@ def _format_discount_source(level_key, rate, kind_label):
     """kind_label: 单品 / 整箱"""
     if abs(rate - 1.0) < 1e-9:
         return f"{level_key}级原价（{kind_label}）"
-    zhe = int(round(rate * 100))
+    pct = int(round(rate * 100))
+    if pct % 10 == 0:
+        zhe = f"{pct // 10}"
+    else:
+        zhe = f"{pct / 10:.1f}".rstrip("0").rstrip(".")
     return f"{level_key}级{zhe}折（{kind_label}）"
 
 
@@ -937,7 +941,10 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     2) 客户等级折扣（CUSTOMER_LEVEL_DISCOUNT_RATES）
     3) 商品原价
 
-    返回 dict: original_price, final_price, discount_source（写入明细 pricing_note）
+    返回 dict（含兼容键）:
+    - base_price / original_price
+    - final_price
+    - pricing_note / discount_source（写入明细 pricing_note）
     """
     is_case = str(sale_type) == "case"
     original = money_float(product.price_case if is_case else product.price_single)
@@ -945,8 +952,10 @@ def resolve_product_price_for_customer(product, customer, sale_type):
 
     if customer is None:
         return {
+            "base_price": original,
             "original_price": original,
             "final_price": original,
+            "pricing_note": "原价（登录后查看客户价）",
             "discount_source": "基础价",
         }
 
@@ -959,19 +968,31 @@ def resolve_product_price_for_customer(product, customer, sale_type):
         ex = money_float(cp.custom_price_case if is_case else cp.custom_price_single)
         if ex > 0:
             return {
+                "base_price": original,
                 "original_price": original,
                 "final_price": ex,
+                "pricing_note": "客户专属价",
                 "discount_source": "专属价",
             }
 
-    tier = customer.customer_level
+    tier = (customer.customer_level or "").strip()
+    if not tier:
+        return {
+            "base_price": original,
+            "original_price": original,
+            "final_price": original,
+            "pricing_note": "原价",
+            "discount_source": "原价",
+        }
     sr, cr = _discount_rates_for_level(tier)
     rate = cr if is_case else sr
     final = money_float(money_q2(money_dec(original) * money_dec(rate)))
     note = _format_discount_source(tier, rate, kind_label)
     return {
+        "base_price": original,
         "original_price": original,
         "final_price": final,
+        "pricing_note": note,
         "discount_source": note,
     }
 
@@ -979,7 +1000,7 @@ def resolve_product_price_for_customer(product, customer, sale_type):
 def resolve_selling_unit_price(customer, product, sale_type):
     """兼容旧接口：(成交价, 定价说明)。"""
     res = resolve_product_price_for_customer(product, customer, sale_type)
-    note = res["discount_source"]
+    note = res.get("pricing_note") or res["discount_source"]
     if len(note) > 64:
         note = note[:64]
     return money_float(res["final_price"]), note

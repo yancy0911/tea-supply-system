@@ -541,6 +541,7 @@
               if (isNaN(unit)) unit = 0;
               sub = unit * (parseFloat(l.quantity) || 0);
             }
+            var priceNote = (p && p.price_note) ? p.price_note : (l.price_note || "");
             sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
             html +=
@@ -566,6 +567,7 @@
               '<div class="line-col"><span class="k">小计</span><span class="v">¥' +
               fmtMoney(sub) +
               "</span></div>" +
+              (priceNote ? '<div class="line-meta" style="grid-column:1 / -1;">定价说明：' + priceNote + "</div>" : "") +
               "</div>";
           });
           linesArea.innerHTML = html;
