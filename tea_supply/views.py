@@ -1572,12 +1572,8 @@ def order_status_update(request, order_id):
         if status in valid_statuses and workflow in valid_wf:
             try:
                 with transaction.atomic():
-                    order = get_object_or_404(
-                        Order.objects.select_related("customer").select_for_update().prefetch_related(
-                            "items__product"
-                        ),
-                        pk=order_id,
-                    )
+                    # 只对 Order 主表加锁，避免 nullable 外连接（customer）与 FOR UPDATE 冲突
+                    order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
                     old_status = order.status
                     old_wf = order.workflow_status
                     order.status = status
