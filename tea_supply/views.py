@@ -1604,7 +1604,8 @@ def mark_order_paid(request, order_id):
         messages.info(request, "该订单已是「已结算」，未重复变更额度占用。")
         return redirect("orders-list")
     with transaction.atomic():
-        order = Order.objects.select_related("customer").select_for_update().get(pk=order_id)
+        # 禁止 select_related 可空外键与 select_for_update 混用（PostgreSQL：FOR UPDATE 不能锁 outer join 可空侧）
+        order = Order.objects.select_for_update().get(pk=order_id)
         if order.status == Order.Status.PAID:
             messages.info(request, "该订单已是「已结算」，未重复变更额度占用。")
             return redirect("orders-list")
