@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>奶茶供应系统</title>
+    <title>Boba Supply</title>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "PingFang SC",
@@ -139,28 +139,28 @@
     {% endif %}
     <div class="topbar">
       <div class="inner">
-        <div style="font-weight: 800; font-size: 16px">奶茶供应系统</div>
+        <div style="font-weight: 800; font-size: 16px">Boba Supply</div>
         <div class="nav">
-          <a href="/shop/">客户商城</a>
+          <a href="/shop/">Wholesale Shop</a>
           {% if user.is_authenticated and user.is_staff %}
-          <a href="/">店员录单</a>
-          <a href="/orders/">订单</a>
-          <a href="/reports/">报表</a>
-          <a href="/reports/customers/">客户洞察</a>
+          <a href="/">Staff Portal</a>
+          <a href="/orders/">Orders</a>
+          <a href="/reports/">Reports</a>
+          <a href="/reports/customers/">Customer insights</a>
           {% if user.is_superuser %}
-          <a href="/inventory/">库存</a>
-          <a href="/replenishment/">补货预警</a>
-          <a href="/admin/">后台管理</a>
+          <a href="/inventory/">Inventory</a>
+          <a href="/replenishment/">Replenishment</a>
+          <a href="/admin/">Admin</a>
           {% endif %}
           {% endif %}
         </div>
         <div style="margin-left: auto">
           {% if user.is_authenticated %}
-          <span class="muted" style="margin-right: 10px">你好，{{ user.username }}</span>
-          <a class="btn secondary" href="/logout/">退出</a>
+          <span class="muted" style="margin-right: 10px">Hi, {{ user.username }}</span>
+          <a class="btn secondary" href="/logout/">Logout</a>
           {% else %}
-          <a class="btn" href="/login/">登录</a>
-          <a class="btn secondary" href="/register/" style="margin-left: 8px">注册</a>
+          <a class="btn" href="/login/">Sign in</a>
+          <a class="btn secondary" href="/register/" style="margin-left: 8px">Register</a>
           {% endif %}
         </div>
       </div>

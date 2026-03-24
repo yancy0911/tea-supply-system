@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>下单成功 #{{ order.id }}</title>
+    <title>Order placed #{{ order.id }}</title>
     <style>
       body {
         margin: 0;
@@ -92,67 +92,73 @@
   </head>
   <body>
     <div class="card">
-      <h1 class="success">✔ 下单成功</h1>
-      <p class="sub">批发订单已提交，商家会尽快联系您确认价格与发货。</p>
+      <h1 class="success">Order placed</h1>
+      <p class="sub">Your wholesale order was submitted. We will contact you to confirm payment and delivery.</p>
 
       <div class="kv">
         <div class="row">
-          <div class="k">订单号</div>
+          <div class="k">Order #</div>
           <div class="v">#{{ order.id }}</div>
         </div>
         <div class="row">
-          <div class="k">总金额</div>
+          <div class="k">Total</div>
           <div class="v amount">¥{{ order.total_revenue|floatformat:2 }}</div>
         </div>
         <div class="row">
-          <div class="k">支付方式</div>
-          <div class="v">{{ order.get_settlement_type_display }}</div>
+          <div class="k">Settlement</div>
+          <div class="v">{% if order.settlement_type == "credit" %}Credit terms{% else %}Cash / prepaid{% endif %}</div>
         </div>
         <div class="row">
-          <div class="k">支付通道</div>
-          <div class="v">{{ order.get_payment_method_display }}</div>
+          <div class="k">Payment method</div>
+          <div class="v">
+            {% if order.payment_method == "bank_transfer" %}Bank transfer{% elif order.payment_method == "check" %}Check{% elif order.payment_method == "card_on_pickup" %}Pay on pickup / card{% elif order.payment_method == "cash" %}Cash{% elif order.payment_method == "credit" %}Credit terms{% elif order.payment_method == "stripe" %}Card (Stripe){% else %}{{ order.payment_method }}{% endif %}
+          </div>
         </div>
         <div class="row">
-          <div class="k">状态</div>
-          <div class="v">{% if order.workflow_status == "pending_confirm" %}待确认{% else %}已下单{% endif %} · {{ order.get_payment_status_display }}</div>
+          <div class="k">Status</div>
+          <div class="v">
+            {% if order.workflow_status == "pending_confirm" %}Pending confirmation{% else %}Submitted{% endif %}
+            ·
+            {% if order.payment_status == "unpaid" %}Unpaid{% elif order.payment_status == "pending_confirmation" %}Pending confirmation{% elif order.payment_status == "paid" %}Paid{% elif order.payment_status == "partial" %}Partial{% elif order.payment_status == "cancelled" %}Cancelled{% else %}{{ order.payment_status }}{% endif %}
+          </div>
         </div>
       </div>
 
       {% if order.payment_method == "bank_transfer" %}
       <div class="kv" style="margin-top: 12px">
-        <div class="row"><div class="k">银行名称</div><div class="v">{% firstof bank_info.bank_name "请联系管理员" %}</div></div>
-        <div class="row"><div class="k">Account Name</div><div class="v">{% firstof bank_info.account_name "请联系管理员" %}</div></div>
-        <div class="row"><div class="k">Account Number</div><div class="v">{% firstof bank_info.account_number "请联系管理员" %}</div></div>
-        <div class="row"><div class="k">Routing Number</div><div class="v">{% firstof bank_info.routing_number "请联系管理员" %}</div></div>
-        <div class="row"><div class="k">提示</div><div class="v">转账备注请填写订单号 #{{ order.id }}</div></div>
+        <div class="row"><div class="k">Bank name</div><div class="v">{% firstof bank_info.bank_name "Contact us" %}</div></div>
+        <div class="row"><div class="k">Account name</div><div class="v">{% firstof bank_info.account_name "Contact us" %}</div></div>
+        <div class="row"><div class="k">Account number</div><div class="v">{% firstof bank_info.account_number "Contact us" %}</div></div>
+        <div class="row"><div class="k">Routing number</div><div class="v">{% firstof bank_info.routing_number "Contact us" %}</div></div>
+        <div class="row"><div class="k">Note</div><div class="v">Please put order #{{ order.id }} in the transfer memo.</div></div>
       </div>
       <form method="post" action="{% url 'update-transfer-reference' order.id %}" style="margin-top: 12px">
         {% csrf_token %}
-        <label class="k" for="transfer_reference">转账参考号（可选）</label>
+        <label class="k" for="transfer_reference">Transfer reference (optional)</label>
         <input id="transfer_reference" name="transfer_reference" value="{{ order.transfer_reference }}" maxlength="255" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box;" />
-        <button type="submit" style="margin-top:8px;padding:8px 12px;border:0;border-radius:8px;background:#2563eb;color:#fff;">保存参考号</button>
+        <button type="submit" style="margin-top:8px;padding:8px 12px;border:0;border-radius:8px;background:#2563eb;color:#fff;">Save reference</button>
       </form>
       {% elif order.payment_method == "check" %}
       <p class="sub" style="text-align:left;margin-top:12px;">
-        请将支票号填写到订单备注/支付备注，并按约定交付支票。订单号：#{{ order.id }}
+        Please add the check number to your order / payment notes and deliver the check as agreed. Order #{{ order.id }}
       </p>
       {% elif order.payment_method == "card_on_pickup" %}
       <p class="sub" style="text-align:left;margin-top:12px;">
-        订单已提交，请到仓库取货时刷卡付款。
+        Order submitted. Please pay by card when you pick up at the warehouse.
       </p>
       {% elif order.payment_method == "cash" %}
       <p class="sub" style="text-align:left;margin-top:12px;">
-        订单已提交，请交货/提货时现金付款。
+        Order submitted. Please pay cash on delivery or pickup.
       </p>
       {% elif order.payment_method == "credit" %}
       <p class="sub" style="text-align:left;margin-top:12px;">
-        订单已提交，等待财务确认挂账额度。
+        Order submitted. Credit will be confirmed by accounting.
       </p>
       {% endif %}
 
         <div class="actions">
-          <a class="secondary" href="{% url 'my-orders' %}">查看订单</a>
-          <a class="primary" href="{% url 'shop-home' %}">继续购物</a>
+          <a class="secondary" href="{% url 'my-orders' %}">Orders</a>
+          <a class="primary" href="{% url 'shop-home' %}">Continue shopping</a>
         </div>
     </div>
     <script>

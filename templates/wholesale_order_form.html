@@ -63,6 +63,7 @@
                 data-credit-limit="{{ row.customer.credit_limit|floatformat:2 }}"
                 data-unsettled="{{ row.unsettled_amount }}"
                 data-cycle="{{ row.customer.payment_cycle }}"
+                data-is-blocked="{% if row.customer.is_blocked %}1{% else %}0{% endif %}"
               >
                 {{ row.customer.name }}（{{ row.customer.phone }}）
               </option>
@@ -78,6 +79,9 @@
             <div><strong>信用额度：</strong><span id="cc-limit">-</span></div>
             <div><strong>当前未结金额：</strong><span id="cc-unsettled">-</span></div>
             <div><strong>结算周期：</strong><span id="cc-cycle">-</span></div>
+            <div id="cc-blocked-wrap" style="display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-weight: 600">
+              该客户已被暂停供货，请联系管理员（后台取消「是否停单」后可恢复录单）
+            </div>
           </div>
         {% else %}
           <div style="padding: 10px 12px; border-radius: 10px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa;">
@@ -180,8 +184,15 @@
 
         function refresh() {
           var opt = sel.options[sel.selectedIndex];
+          var blockedWrap = document.getElementById("cc-blocked-wrap");
+          var btnSubmit = document.getElementById("btn_submit");
           if (!opt || !opt.value) {
             panel.style.display = "none";
+            if (blockedWrap) blockedWrap.style.display = "none";
+            if (btnSubmit) {
+              btnSubmit.disabled = false;
+              btnSubmit.title = "";
+            }
             return;
           }
           panel.style.display = "block";
@@ -191,6 +202,12 @@
           document.getElementById("cc-limit").textContent = fmt(opt.getAttribute("data-credit-limit"));
           document.getElementById("cc-unsettled").textContent = fmt(opt.getAttribute("data-unsettled"));
           document.getElementById("cc-cycle").textContent = opt.getAttribute("data-cycle") || "-";
+          var blocked = opt.getAttribute("data-is-blocked") === "1";
+          if (blockedWrap) blockedWrap.style.display = blocked ? "block" : "none";
+          if (btnSubmit) {
+            btnSubmit.disabled = blocked;
+            btnSubmit.title = blocked ? "该客户已被暂停供货，请联系管理员" : "";
+          }
         }
 
         sel.addEventListener("change", refresh);
@@ -510,6 +527,11 @@
           alert("请先选择客户");
           return;
         }
+        var opt0 = customerSelect.options[customerSelect.selectedIndex];
+        if (opt0 && opt0.getAttribute("data-is-blocked") === "1") {
+          alert("该客户已被暂停供货，请联系管理员");
+          return;
+        }
         var p = getSelectedProduct(productSelect.value);
         if (!p) {
           alert("请选择商品");
@@ -554,6 +576,14 @@
           e.preventDefault();
           alert("请至少添加一条订单明细");
           return false;
+        }
+        if (customerSelect && customerSelect.value) {
+          var optS = customerSelect.options[customerSelect.selectedIndex];
+          if (optS && optS.getAttribute("data-is-blocked") === "1") {
+            e.preventDefault();
+            alert("该客户已被暂停供货，请联系管理员");
+            return false;
+          }
         }
         recomputeOrderTotal();
       });

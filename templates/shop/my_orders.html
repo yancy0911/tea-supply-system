@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>我的订单</title>
+    <title>Orders</title>
     <style>
       body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; background: #f3f4f6; }
       .wrap { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; }
@@ -19,40 +19,51 @@
   <body>
     <div class="wrap">
       <div class="top">
-        <h2 style="margin:0">我的订单</h2>
-        <a href="/shop/">返回商城</a>
+        <h2 style="margin:0">Orders</h2>
+        <a href="/shop/">Back to shop</a>
       </div>
       {% if orders %}
         {% for order in orders %}
           <div class="card">
             <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
               <div>
-                <div><strong>订单号 #{{ order.id }}</strong></div>
-                <div class="muted">创建时间：{{ order.created_at|date:"Y-m-d H:i" }}</div>
-                <div class="muted">支付方式：{{ order.get_payment_method_display }} · 支付状态：{{ order.get_payment_status_display }}</div>
+                <div><strong>Order #{{ order.id }}</strong></div>
+                <div class="muted">Placed: {{ order.created_at|date:"Y-m-d H:i" }}</div>
+                <div class="muted">
+                  Payment:
+                  {% if order.payment_method == "bank_transfer" %}Bank transfer{% elif order.payment_method == "check" %}Check{% elif order.payment_method == "card_on_pickup" %}Pay on pickup / card{% elif order.payment_method == "cash" %}Cash{% elif order.payment_method == "credit" %}Credit terms{% else %}{{ order.payment_method }}{% endif %}
+                  · Status:
+                  {% if order.payment_status == "unpaid" %}Unpaid{% elif order.payment_status == "pending_confirmation" %}Pending confirmation{% elif order.payment_status == "paid" %}Paid{% elif order.payment_status == "partial" %}Partial{% elif order.payment_status == "cancelled" %}Cancelled{% else %}{{ order.payment_status }}{% endif %}
+                </div>
               </div>
               <div>
-                {% if order.workflow_status == "confirmed" %}
-                  <span class="badge">已确认</span>
+                {% if order.workflow_status == "pending_confirm" %}
+                  <span class="badge">Pending confirmation</span>
+                {% elif order.workflow_status == "confirmed" %}
+                  <span class="badge">Confirmed</span>
+                {% elif order.workflow_status == "preparing" %}
+                  <span class="badge">Preparing</span>
                 {% elif order.workflow_status == "shipped" %}
-                  <span class="badge">已发货</span>
+                  <span class="badge">Shipped</span>
                 {% elif order.workflow_status == "completed" %}
-                  <span class="badge">完成</span>
+                  <span class="badge">Completed</span>
+                {% elif order.workflow_status == "cancelled" %}
+                  <span class="badge">Cancelled</span>
                 {% else %}
-                  <span class="badge">待处理</span>
+                  <span class="badge">Processing</span>
                 {% endif %}
               </div>
             </div>
             <div style="margin-top:8px;">
               <table>
                 <thead>
-                  <tr><th>商品</th><th>方式</th><th>数量</th><th>单价</th><th>小计</th></tr>
+                  <tr><th>Product</th><th>Type</th><th>Qty</th><th>Unit price</th><th>Line total</th></tr>
                 </thead>
                 <tbody>
                   {% for it in order.items.all %}
                     <tr>
                       <td>{{ it.product.name }}</td>
-                      <td>{% if it.sale_type == "case" %}整箱{% else %}单品{% endif %}</td>
+                      <td>{% if it.sale_type == "case" %}Case{% else %}Single{% endif %}</td>
                       <td>{{ it.quantity }}</td>
                       <td>¥{{ it.unit_price|floatformat:2 }}</td>
                       <td>¥{{ it.total_revenue|floatformat:2 }}</td>
@@ -61,16 +72,16 @@
                 </tbody>
               </table>
             </div>
-            <div style="text-align:right;font-weight:700;margin-top:8px;">合计：¥{{ order.total_revenue|floatformat:2 }}</div>
+            <div style="text-align:right;font-weight:700;margin-top:8px;">Total: ¥{{ order.total_revenue|floatformat:2 }}</div>
             {% if order.payment_method == "bank_transfer" and order.payment_status != "paid" %}
               <div style="margin-top: 8px">
-                <a href="{% url 'bank-transfer-instructions' order.id %}">查看转账信息</a>
+                <a href="{% url 'bank-transfer-instructions' order.id %}">Bank transfer details</a>
               </div>
             {% endif %}
           </div>
         {% endfor %}
       {% else %}
-        <div class="card muted">暂无订单。</div>
+        <div class="card muted">No orders yet.</div>
       {% endif %}
     </div>
   </body>

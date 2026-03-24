@@ -208,7 +208,7 @@
         </thead>
         <tbody>
           {% for row in order_rows %}
-            <tr>
+            <tr {% if row.profit is not None and row.profit < 0 %}style="background:#fef2f2;"{% endif %}>
               <td>
                 <a href="{% url 'order-status-update' row.order.id %}">#{{ row.order.id }}</a>
               </td>
@@ -227,8 +227,14 @@
               <td>{{ row.cost|floatformat:2 }}</td>
               <td>
                 <span style="font-weight: 600; color: #2563eb">{{ row.profit|floatformat:2 }}</span>
-                {% if row.profit < 0 %}
+                {% if row.profit is not None and row.profit < 0 %}
                   <span style="margin-left:6px;color:#b91c1c;font-weight:700;">异常利润</span>
+                {% endif %}
+                {% if row.profit_rate is not None and row.profit_rate < 10 %}
+                  <span style="margin-left:6px;color:#ea580c;font-weight:700;">利润率偏低</span>
+                {% endif %}
+                {% if row.cost_missing %}
+                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">未设置成本</span>
                 {% endif %}
               </td>
               <td>{{ row.order.created_at|date:"Y-m-d H:i:s" }}</td>
@@ -273,7 +279,28 @@
               <td>
                 {% if row.order.status == "pending" %}
                   {% if row.order.workflow_status != "confirmed" and row.order.workflow_status != "cancelled" %}
-                    <a href="{% url 'order-confirm' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">确认订单</a>
+                    {% if row.cost_missing %}
+                      <span
+                        class="btn secondary"
+                        style="padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed;"
+                        title="未设置成本"
+                      >确认订单（未设置成本）</span>
+                    {% elif row.profit is not None and row.profit < 0 %}
+                      <span
+                        class="btn secondary"
+                        style="padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed;"
+                        title="亏损订单"
+                      >确认订单（亏损订单）</span>
+                    {% elif row.profit_rate is not None and row.profit_rate < 5 %}
+                      <a
+                        href="{% url 'order-confirm' row.order.id %}"
+                        class="btn"
+                        style="padding: 6px 10px; font-size: 12px; margin-right: 6px"
+                        onclick="return confirm('利润过低，是否继续？');"
+                      >确认订单</a>
+                    {% else %}
+                      <a href="{% url 'order-confirm' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">确认订单</a>
+                    {% endif %}
                     <a href="{% url 'order-cancel' row.order.id %}" class="btn secondary" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">取消订单</a>
                   {% endif %}
                   <a href="{% url 'order_paid' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">标记已收款</a>

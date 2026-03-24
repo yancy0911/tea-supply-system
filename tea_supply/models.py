@@ -151,6 +151,10 @@ class CustomerProductPrice(models.Model):
 
 
 class Customer(models.Model):
+    """商城/录单停单：使用 is_blocked（后台「是否停单」）。"""
+
+    ORDER_STOP_SUPPLIER_MESSAGE = "该客户已被暂停供货，请联系管理员"
+
     class AccountStatus(models.TextChoices):
         PENDING = "pending", "待审核"
         APPROVED = "approved", "已通过"
@@ -287,7 +291,7 @@ class Customer(models.Model):
         if not self.is_active:
             return "客户档案已停用，无法下单，请联系店家"
         if self.is_blocked:
-            return "客户已超额度，已暂停下单"
+            return self.ORDER_STOP_SUPPLIER_MESSAGE
         return ""
 
     @property

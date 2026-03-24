@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>结算页 — 奶茶原料批发商城</title>
+    <title>Checkout — Wholesale Shop</title>
     {{ shop_products|json_script:"shop-products-data" }}
     <style>
       :root {
@@ -275,13 +275,13 @@
   <body>
     <header class="shop-top">
       <div class="shop-top-inner">
-        <div class="shop-logo">奶茶原料 <span>批发商城</span></div>
-        <a href="{% url 'shop-home' %}">← 返回商品列表</a>
+        <div class="shop-logo">Boba <span>Supply</span></div>
+        <a href="{% url 'shop-home' %}">← Back to catalog</a>
       </div>
     </header>
     {% if tier_rules_banner %}
       <p style="max-width: 1240px; margin: 6px auto 0; padding: 0 16px; font-size: 12px; color: var(--muted); text-align: center">
-        等级价参考：{{ tier_rules_banner }}
+        Tier pricing reference: {{ tier_rules_banner }}
       </p>
     {% endif %}
 
@@ -295,9 +295,9 @@
 
     <div class="wrap">
       <div class="steps">
-        <span class="step">购物车</span>
-        <span class="step active">确认订单</span>
-        <span class="step">完成</span>
+        <span class="step">Cart</span>
+        <span class="step active">Checkout</span>
+        <span class="step">Done</span>
       </div>
       {% if shop_customer and shop_order_block_hint %}
         <div class="msg-banner">
@@ -308,14 +308,14 @@
         <div class="layout">
           <div>
             <div class="card">
-              <h2 class="section-title">【1】订单商品</h2>
+              <h2 class="section-title">[1] Items</h2>
               <div class="lines" id="lines-area">
-                <p style="color: var(--muted)">正在加载购物车…</p>
+                <p style="color: var(--muted)">Loading cart…</p>
               </div>
             </div>
 
             <div class="card">
-              <h2 class="section-title">【2】收货信息</h2>
+              <h2 class="section-title">[2] Shipping</h2>
               {% csrf_token %}
               <input type="hidden" name="next" value="checkout" />
               <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
@@ -323,72 +323,74 @@
               <input type="hidden" name="payment_method" id="payment-method-hidden" value="bank_transfer" />
               <div class="row2">
                 <div>
-                  <label for="contact_name">姓名 *</label>
+                  <label for="contact_name">Name *</label>
                   <input id="contact_name" name="contact_name" required maxlength="100" autocomplete="name" />
                 </div>
                 <div>
-                  <label for="delivery_phone">电话 *</label>
+                  <label for="delivery_phone">Phone *</label>
                   <input id="delivery_phone" name="delivery_phone" required maxlength="30" autocomplete="tel" />
                 </div>
               </div>
               <div style="margin-top: 12px">
-                <label for="delivery_address">地址 *</label>
+                <label for="delivery_address">Address *</label>
                 <input id="delivery_address" name="delivery_address" required maxlength="500" autocomplete="street-address" />
               </div>
               <div style="margin-top: 12px">
-                <label for="store_name">门店 / 公司（可选）</label>
-                <input id="store_name" name="store_name" maxlength="200" placeholder="选填" />
+                <label for="store_name">Store / company (optional)</label>
+                <input id="store_name" name="store_name" maxlength="200" placeholder="Optional" />
               </div>
               <div style="margin-top: 12px">
-                <label for="order_note">备注（可选）</label>
-                <textarea id="order_note" name="order_note" maxlength="2000" placeholder="选填：到货时间、卸货点等"></textarea>
+                <label for="order_note">Notes (optional)</label>
+                <textarea id="order_note" name="order_note" maxlength="2000" placeholder="Delivery window, dock, etc."></textarea>
               </div>
               <div style="margin-top: 12px; display:none" id="transfer-reference-wrap">
-                <label for="transfer_reference">转账参考号（可选）</label>
-                <input id="transfer_reference" name="transfer_reference" maxlength="255" placeholder="如已转账可填写流水号" />
+                <label for="transfer_reference">Transfer reference (optional)</label>
+                <input id="transfer_reference" name="transfer_reference" maxlength="255" placeholder="Bank reference if paid" />
               </div>
               <div style="margin-top: 12px; display:none" id="check-number-wrap">
-                <label for="check_number">支票号（可选）</label>
-                <input id="check_number" name="check_number" maxlength="100" placeholder="如使用支票可填写支票号" />
+                <label for="check_number">Check number (optional)</label>
+                <input id="check_number" name="check_number" maxlength="100" placeholder="If paying by check" />
               </div>
             </div>
           </div>
 
           <div class="card summary-card">
-            <h2 class="section-title">订单汇总</h2>
+            <h2 class="section-title">Summary</h2>
             <div class="summary-list">
-              <div class="summary-row"><span class="k">商品种类数</span><span class="v" id="summary-kinds">0</span></div>
-              <div class="summary-row"><span class="k">商品总数量</span><span class="v" id="summary-qty">0</span></div>
-              <div class="summary-row"><span class="k">商品总金额</span><span class="v" id="goods-sum">¥0.00</span></div>
+              <div class="summary-row"><span class="k">Line items</span><span class="v" id="summary-kinds">0</span></div>
+              <div class="summary-row"><span class="k">Total qty</span><span class="v" id="summary-qty">0</span></div>
+              <div class="summary-row"><span class="k">Subtotal</span><span class="v" id="goods-sum">¥0.00</span></div>
             </div>
             <div class="settle-box" style="margin-top: 12px">
-              <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">支付方式</label>
+              <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">Payment method</label>
               <label class="settle-opt">
                 <input type="radio" name="summary-payment-method" value="bank_transfer" checked />
-                银行转账
+                Bank transfer
               </label>
               <label class="settle-opt">
                 <input type="radio" name="summary-payment-method" value="check" />
-                支票
+                Check
               </label>
               <label class="settle-opt">
                 <input type="radio" name="summary-payment-method" value="card_on_pickup" />
-                现场刷卡/取货付款
+                Card on pickup
               </label>
               <label class="settle-opt">
                 <input type="radio" name="summary-payment-method" value="cash" />
-                现金
+                Cash
               </label>
               {% if shop_customer and shop_customer.allow_credit %}
               <label class="settle-opt" style="margin-bottom: 0">
                 <input type="radio" name="summary-payment-method" value="credit" />
-                挂账
+                Credit (on account)
               </label>
+              {% elif shop_customer %}
+              <div class="muted" style="font-size: 12px; margin-top: 6px">Credit is not enabled for this account</div>
               {% endif %}
             </div>
-            <div class="sum" id="order-sum">总计：¥0.00</div>
-            <button type="submit" class="btn" id="btn-place" disabled>确认下单并付款</button>
-            <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration:none;text-align:center">返回购物车</a>
+            <div class="sum" id="order-sum">Total: ¥0.00</div>
+            <button type="submit" class="btn" id="btn-place" disabled>Place order</button>
+            <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration:none;text-align:center">Back to cart</a>
           </div>
         </div>
       </form>
@@ -457,27 +459,27 @@
             settlementHidden.value = selected === "credit" ? "credit" : "cash";
           }
           if (selected === "bank_transfer") {
-            btn.textContent = "提交订单（银行转账）";
+            btn.textContent = "Place order (bank transfer)";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "check") {
-            btn.textContent = "提交订单（支票）";
+            btn.textContent = "Place order (check)";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "";
           } else if (selected === "card_on_pickup") {
-            btn.textContent = "提交订单（现场刷卡/取货付款）";
+            btn.textContent = "Place order (pay on pickup)";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "cash") {
-            btn.textContent = "提交订单（现金）";
+            btn.textContent = "Place order (cash)";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "credit") {
-            btn.textContent = "提交订单（挂账）";
+            btn.textContent = "Place order (credit)";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else {
-            btn.textContent = "提交订单";
+            btn.textContent = "Place order";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           }
@@ -489,19 +491,19 @@
           checkoutForm.addEventListener("submit", function (ev) {
             if (!shopCanOrder) {
               ev.preventDefault();
-              alert(shopOrderBlockHint || "当前无法下单");
+              alert(shopOrderBlockHint || "Ordering is not available.");
               return;
             }
             var selectedPay = paymentHidden ? String(paymentHidden.value || "") : "";
             if (selectedPay === "credit") {
               if (!creditAllow) {
                 ev.preventDefault();
-                alert("未授权赊账，无法下单");
+                alert("Credit is not enabled for your account.");
                 return;
               }
               if (creditLimit <= 0 || currentDebt + currentOrderTotal > creditLimit) {
                 ev.preventDefault();
-                alert("超出信用额度，无法下单");
+                alert("Over credit limit — cannot place this order.");
                 return;
               }
             }
@@ -511,14 +513,14 @@
         function render() {
           if (cart.length === 0) {
             linesArea.innerHTML =
-              '<p style="color:#b45309;font-weight:600">购物车为空，请返回商城选购。</p><p><a href="/shop/">去选购</a></p>';
-            sumEl.textContent = "总计：¥0.00";
+              '<p style="color:#b45309;font-weight:600">Your cart is empty.</p><p><a href="/shop/">Continue shopping</a></p>';
+            sumEl.textContent = "Total: ¥0.00";
             goodsSumEl.textContent = "¥0.00";
             summaryKinds.textContent = "0";
             summaryQty.textContent = "0";
             hiddenJson.value = "[]";
             btn.disabled = true;
-            btn.title = "购物车为空";
+            btn.title = "Cart is empty";
             return;
           }
           var sum = 0;
@@ -526,11 +528,11 @@
           var html = "";
           cart.forEach(function (l) {
             var p = productById(l.product_id);
-            var name = p ? p.name : l.name || "商品";
+            var name = p ? p.name : l.name || "Product";
             var sku = p ? p.sku : l.sku || "";
-            var spec = l.sale_type === "case" ? "整箱" : "单品（袋/件）";
+            var spec = l.sale_type === "case" ? "Case" : "Single";
             var img = p && p.image_url ? p.image_url : "/static/images/default.png";
-            // 结算页必须用内嵌 PRODUCTS（已含专属价/等级价），勿用 localStorage 里旧单价
+            // Use embedded PRODUCTS for current prices
             var unit = parseFloat(l.unit_price) || 0;
             var sub = parseFloat(l.subtotal) || 0;
             if (p && !p.price_on_request) {
@@ -544,8 +546,8 @@
             var priceNote = (p && p.price_note) ? p.price_note : (l.price_note || "");
             var riskText = "";
             if (p) {
-              if (l.sale_type === "case" && p.profit_risk_case) riskText = "利润风险：售价低于成本";
-              if (l.sale_type !== "case" && p.profit_risk_single) riskText = "利润风险：售价低于成本";
+              if (l.sale_type === "case" && p.profit_risk_case) riskText = "Margin risk: price below cost";
+              if (l.sale_type !== "case" && p.profit_risk_single) riskText = "Margin risk: price below cost";
             }
             sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
@@ -563,16 +565,16 @@
               '</div><div class="line-meta">SKU ' +
               sku +
               "</div></div>" +
-              '<div class="line-col"><span class="k">数量</span><span class="v">' +
+              '<div class="line-col"><span class="k">Qty</span><span class="v">' +
               l.quantity +
               "</span></div>" +
-              '<div class="line-col"><span class="k">单价</span><span class="v">¥' +
+              '<div class="line-col"><span class="k">Unit</span><span class="v">¥' +
               fmtMoney(unit) +
               '</span></div>' +
-              '<div class="line-col"><span class="k">小计</span><span class="v">¥' +
+              '<div class="line-col"><span class="k">Line</span><span class="v">¥' +
               fmtMoney(sub) +
               "</span></div>" +
-              (priceNote ? '<div class="line-meta" style="grid-column:1 / -1;">定价说明：' + priceNote + "</div>" : "") +
+              (priceNote ? '<div class="line-meta" style="grid-column:1 / -1;">Pricing: ' + priceNote + "</div>" : "") +
               (riskText ? '<div class="line-meta" style="grid-column:1 / -1;color:#9a3412;font-weight:600;">' + riskText + "</div>" : "") +
               "</div>";
           });
@@ -580,7 +582,7 @@
           goodsSumEl.textContent = "¥" + fmtMoney(sum);
           summaryKinds.textContent = String(cart.length);
           summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
-          sumEl.textContent = "总计：¥" + fmtMoney(sum);
+          sumEl.textContent = "Total: ¥" + fmtMoney(sum);
           currentOrderTotal = sum;
           hiddenJson.value = JSON.stringify(
             cart.map(function (l) {
@@ -589,7 +591,7 @@
           );
           if (!shopCanOrder) {
             btn.disabled = true;
-            btn.title = shopOrderBlockHint || "当前无法下单";
+            btn.title = shopOrderBlockHint || "Ordering unavailable";
           } else {
             btn.disabled = false;
             btn.title = "";

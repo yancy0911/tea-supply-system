@@ -26,6 +26,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
+from .credit_debt import apply_credit_debt_if_needed, reverse_credit_debt_if_counted
 from .money_utils import money_dec, money_float, money_q2
 from tea_supply.utils.pricing import resolve_product_price_for_customer
 from .models import (
@@ -237,8 +238,9 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         else:
             if customer_obj is None:
                 raise ValidationError("请选择客户")
-            if customer_obj.is_blocked:
-                raise ValidationError("客户已超额度，已暂停下单")
+
+        if customer_obj is not None and customer_obj.is_blocked:
+            raise ValidationError(Customer.ORDER_STOP_SUPPLIER_MESSAGE)
 
         current_unsettled = money_float(customer_obj.current_debt) if customer_obj else 0.0
         credit_limit = money_float(customer_obj.credit_limit) if customer_obj else 0.0
@@ -369,7 +371,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if customer_obj is None:
                 raise ValidationError("挂账订单必须绑定客户")
             if not customer_obj.allow_credit:
-                raise ValidationError("未授权赊账，无法下单")
+                raise ValidationError("不允许挂账")
             if credit_limit <= 0:
                 raise ValidationError("超出信用额度，无法下单")
             if current_unsettled >= credit_limit:
@@ -467,6 +469,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
             # 5) 基础库存联动：下单成功即扣减；不足时抛错并整体回滚
             deduct_stock_for_order(order.id)
+            # 6) 挂账：重算总额后计入客户欠款（幂等）；非挂账不处理
+            apply_credit_debt_if_needed(order)
         if profit_risk_warnings and request is not None:
             first_msg = profit_risk_warnings[0]
             messages.warning(request, f"⚠️ {first_msg}")
@@ -1144,7 +1148,10 @@ def shop_submit_order(request):
             request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
         )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        messages.success(request, "订单已提交，等待商家确认付款信息")
+        messages.success(
+            request,
+            "Order submitted. Please wait for payment confirmation.",
+        )
         return redirect("shop-order-success", order_id=order.id)
     except (ValidationError, ValueError, TypeError) as exc:
         print(exc)
@@ -1460,15 +1467,21 @@ def orders_list(request):
             preview = f"{preview} 等"
         if not preview:
             preview = "-"
+        amount = money_float(order.total_revenue or 0.0)
+        cost = money_float(order.total_cost or 0.0)
+        profit = money_float(order.profit or 0.0)
+        profit_rate = (profit / amount * 100.0) if amount > 0 else None
         order_rows.append(
             {
                 "order": order,
                 "item_count": item_count,
                 "items_text": f"{item_count} items" if item_count else "0 items",
                 "product_preview": preview,
-                "amount": money_float(order.total_revenue or 0.0),
-                "cost": money_float(order.total_cost or 0.0),
-                "profit": money_float(order.profit or 0.0),
+                "amount": amount,
+                "cost": cost,
+                "profit": profit,
+                "profit_rate": profit_rate,
+                "cost_missing": cost <= 0,
             }
         )
 
@@ -1705,42 +1718,33 @@ _MSG_SETTLED_RELEASE = (
 )
 
 
-def _increase_debt_on_confirm(order):
-    """挂账订单在确认后计入欠款；幂等（仅计入一次）。"""
-    if (
-        order.settlement_type != Order.SettlementType.CREDIT
-        or not order.customer_id
-        or order.is_debt_counted
-    ):
-        return
-    cust = Customer.objects.select_for_update().get(pk=order.customer_id)
-    latest_debt = money_dec(cust.current_debt or 0.0)
-    latest_limit = money_dec(cust.credit_limit or 0.0)
-    order_amt = money_dec(order.total_revenue or 0.0)
-    if latest_debt >= latest_limit:
-        raise ValidationError("额度已用完，无法继续挂账下单")
-    if latest_debt + order_amt > latest_limit:
-        raise ValidationError("本次挂账将超出信用额度，无法确认订单")
-    cust.current_debt = money_float(max(money_dec(0), latest_debt + order_amt))
-    cust.save(update_fields=["current_debt"])
-    order.is_debt_counted = True
-    order.save(update_fields=["is_debt_counted"])
+def _confirm_order_guard_reason(order):
+    """
+    确认订单后端保护：
+    1) 未设置成本（总成本=0 或明细缺成本） -> 禁止确认
+    2) 总利润<0 -> 禁止确认
+    3) 利润率<5% -> 允许（前端提醒）
+    """
+    amount = money_dec(order.total_revenue or 0)
+    total_cost = money_dec(0)
+    has_missing_cost = False
+    for item in order.items.select_related("product").all():
+        p = item.product
+        qty = money_dec(item.quantity or 0)
+        if str(item.sale_type) == OrderItem.SaleType.CASE:
+            unit_cost = money_dec(getattr(p, "cost_price_case", 0) or 0)
+        else:
+            unit_cost = money_dec(getattr(p, "cost_price_single", 0) or 0)
+        if unit_cost <= money_dec(0):
+            has_missing_cost = True
+        total_cost += money_q2(unit_cost * qty)
 
-
-def _decrease_debt_if_counted(order):
-    """挂账订单在收款/取消时回冲欠款；幂等（仅已计入才减）。"""
-    if (
-        order.settlement_type != Order.SettlementType.CREDIT
-        or not order.customer_id
-        or not order.is_debt_counted
-    ):
-        return
-    cust = Customer.objects.select_for_update().get(pk=order.customer_id)
-    new_debt = money_q2(money_dec(cust.current_debt or 0.0) - money_dec(order.total_revenue or 0.0))
-    cust.current_debt = money_float(max(money_dec(0), new_debt))
-    cust.save(update_fields=["current_debt"])
-    order.is_debt_counted = False
-    order.save(update_fields=["is_debt_counted"])
+    profit = money_q2(amount - total_cost)
+    if has_missing_cost or total_cost <= money_dec(0):
+        return "未设置成本，不能确认订单"
+    if profit < money_dec(0):
+        return "亏损订单，不能确认订单"
+    return ""
 
 
 @login_required
@@ -1760,7 +1764,7 @@ def mark_order_paid(request, order_id):
         order.payment_status = Order.PaymentStatus.PAID
         order.paid_at = timezone.now()
         order.save(update_fields=["status", "payment_status", "paid_at"])
-        _decrease_debt_if_counted(order)
+        reverse_credit_debt_if_counted(order)
     messages.success(request, _MSG_SETTLED_RELEASE)
     return redirect("orders-list")
 
@@ -1773,11 +1777,15 @@ def confirm_order(request, order_id):
         if order.workflow_status == Order.WorkflowStatus.CANCELLED:
             messages.error(request, "已取消订单不能确认")
             return redirect("orders-list")
+        guard_reason = _confirm_order_guard_reason(order)
+        if guard_reason:
+            messages.error(request, guard_reason)
+            return redirect("orders-list")
         if order.workflow_status != Order.WorkflowStatus.CONFIRMED:
             order.workflow_status = Order.WorkflowStatus.CONFIRMED
             order.save(update_fields=["workflow_status"])
         try:
-            _increase_debt_on_confirm(order)
+            apply_credit_debt_if_needed(order)
         except ValidationError as exc:
             messages.error(request, str(exc))
             return redirect("orders-list")
@@ -1792,7 +1800,7 @@ def cancel_order(request, order_id):
         order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
         order.workflow_status = Order.WorkflowStatus.CANCELLED
         order.save(update_fields=["workflow_status"])
-        _decrease_debt_if_counted(order)
+        reverse_credit_debt_if_counted(order)
     messages.success(request, "订单已取消")
     return redirect("orders-list")
 
@@ -1910,14 +1918,14 @@ def order_status_update(request, order_id):
                 logger.info("order_status_update order_id=%s save() finished without DB error", order_id)
 
                 if workflow == Order.WorkflowStatus.CONFIRMED and old_wf != Order.WorkflowStatus.CONFIRMED:
-                    logger.info("order_status_update order_id=%s side_effect _increase_debt_on_confirm", order_id)
-                    _increase_debt_on_confirm(order)
+                    logger.info("order_status_update order_id=%s side_effect apply_credit_debt_if_needed", order_id)
+                    apply_credit_debt_if_needed(order)
                 if workflow == Order.WorkflowStatus.CANCELLED and old_wf != Order.WorkflowStatus.CANCELLED:
-                    logger.info("order_status_update order_id=%s side_effect _decrease_debt_if_counted (cancel)", order_id)
-                    _decrease_debt_if_counted(order)
+                    logger.info("order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (cancel)", order_id)
+                    reverse_credit_debt_if_counted(order)
                 if status == Order.Status.PAID and old_status != Order.Status.PAID:
-                    logger.info("order_status_update order_id=%s side_effect _decrease_debt_if_counted (paid)", order_id)
-                    _decrease_debt_if_counted(order)
+                    logger.info("order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (paid)", order_id)
+                    reverse_credit_debt_if_counted(order)
 
             logger.info("order_status_update order_id=%s transaction committed", order_id)
             if status == Order.Status.PAID and old_status != Order.Status.PAID:
@@ -2052,6 +2060,7 @@ def stripe_success(request):
                     "workflow_status",
                 ]
             )
+            reverse_credit_debt_if_counted(o)
         messages.success(request, "Stripe 支付成功")
         return redirect("shop-order-success", order_id=order.id)
 

@@ -3,7 +3,7 @@
 {% block content %}
   <h2 style="margin: 0 0 8px 0">客户价值与风险看板</h2>
   <p class="muted" style="margin: 0 0 16px 0">
-    统计口径：有效订单 = 履约状态非「已取消」；销售额 / 成本 / 利润按订单字段汇总（与基础报表一致）。
+    统计口径：有效订单 = 履约状态非「已取消」；收入（Revenue）/ 成本（Cost）/ 利润（Profit）按订单字段汇总（与基础报表一致）。
     <a href="{% url 'reports-dashboard' %}">返回基础报表</a>
   </p>
 
@@ -16,16 +16,16 @@
 
   <div class="row">
     <div class="card">
-      <h3 style="margin-top: 0">客户利润排行 TOP10</h3>
-      <p class="muted" style="font-size: 13px; margin-top: -6px">按 Σ订单利润倒序；利润 = 各订单 <code>total_revenue − total_cost</code>（与订单表 <code>profit</code> 一致）。</p>
+      <h3 style="margin-top: 0">客户利润（Profit）排行 TOP10</h3>
+      <p class="muted" style="font-size: 13px; margin-top: -6px">按 Σ订单利润倒序；利润（Profit）= 各订单 <code>total_revenue − total_cost</code>（与订单表 <code>profit</code> 一致）。</p>
       <table class="table">
         <thead>
           <tr>
             <th>客户名称</th>
             <th>订单数</th>
-            <th>总销售额</th>
-            <th>总成本</th>
-            <th>总利润</th>
+            <th>总收入（Revenue）</th>
+            <th>总成本（Cost）</th>
+            <th>总利润（Profit）</th>
           </tr>
         </thead>
         <tbody>
@@ -44,10 +44,10 @@
       </table>
     </div>
     <div class="card">
-      <h3 style="margin-top: 0">客户销售额排行 TOP10</h3>
+      <h3 style="margin-top: 0">客户收入（Revenue）排行 TOP10</h3>
       <table class="table">
         <thead>
-          <tr><th>客户名称</th><th>订单数</th><th>总销售额</th></tr>
+          <tr><th>客户名称</th><th>订单数</th><th>总收入（Revenue）</th></tr>
         </thead>
         <tbody>
           {% for r in sales_top %}

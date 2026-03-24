@@ -12,7 +12,9 @@ from django.urls import path, reverse
 from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 from django.utils import timezone
+from django.db import transaction
 
+from .credit_debt import reverse_credit_debt_if_counted
 from .models import (
     CreditApplication,
     Customer,
@@ -112,15 +114,17 @@ class CustomerAdmin(admin.ModelAdmin):
         "name",
         "contact_name",
         "phone",
+        "is_blocked",
         "current_debt_display",
         "credit_limit_display",
-        "is_blocked_display",
+        "risk_status_display",
         "account_status",
         "level",
         "allow_credit",
         "minimum_order_amount_display",
     )
     list_display_links = ("shop_name", "name")
+    list_editable = ("is_blocked",)
     search_fields = ("name", "contact_name", "phone", "address", "delivery_zone")
     list_filter = (
         "account_status",
@@ -167,13 +171,17 @@ class CustomerAdmin(admin.ModelAdmin):
     def minimum_order_amount_display(self, obj):
         return f"{money_float(obj.minimum_order_amount or 0):.2f}"
 
-    @admin.display(description="停单", ordering="is_blocked")
-    def is_blocked_display(self, obj):
+    @admin.display(description="风险状态")
+    def risk_status_display(self, obj):
+        debt = float(obj.current_debt or 0)
+        limit = float(obj.credit_limit or 0)
         if obj.is_blocked:
-            return format_html(
-                '<span style="color:#c00;font-weight:600;">已停单</span>'
-            )
-        return format_html('<span style="color:#080;">否</span>')
+            return format_html('<span style="color:#b91c1c;font-weight:700;">已停单</span>')
+        if limit > 0 and debt >= limit:
+            return format_html('<span style="color:#b91c1c;font-weight:700;">超额度</span>')
+        if limit > 0 and debt / limit >= 0.8:
+            return format_html('<span style="color:#ea580c;font-weight:700;">关注</span>')
+        return format_html('<span style="color:#15803d;">正常</span>')
 
 
 @admin.register(Ingredient)
@@ -215,7 +223,13 @@ class ProductAdmin(ImportExportModelAdmin):
         "image_preview",
         "unit_label",
         "price_single",
+        "cost_price_single",
+        "profit_single_display",
+        "profit_rate_single_display",
         "price_case",
+        "cost_price_case",
+        "profit_case_display",
+        "profit_rate_case_display",
         "current_stock",
         "safety_stock",
         "stock_enabled",
@@ -225,6 +239,12 @@ class ProductAdmin(ImportExportModelAdmin):
     list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
     change_list_template = "admin/tea_supply/product/change_list.html"
+    readonly_fields = (
+        "profit_single_display",
+        "profit_rate_single_display",
+        "profit_case_display",
+        "profit_rate_case_display",
+    )
 
     def get_urls(self):
         urls = super().get_urls()
@@ -284,6 +304,43 @@ class ProductAdmin(ImportExportModelAdmin):
 
     image_preview.short_description = "图片"
 
+    @admin.display(description="单品利润", ordering="price_single")
+    def profit_single_display(self, obj: Product):
+        cost = getattr(obj, "cost_price_single", None)
+        if cost is None or float(cost) <= 0:
+            return "-"
+        profit = money_float(float(obj.price_single or 0.0) - float(cost or 0.0))
+        return f"{profit:.2f}"
+
+    @admin.display(description="单品利润率", ordering="price_single")
+    def profit_rate_single_display(self, obj: Product):
+        cost = getattr(obj, "cost_price_single", None)
+        price = float(obj.price_single or 0.0)
+        if cost is None or float(cost) <= 0 or price <= 0:
+            return "-"
+        profit = float(obj.price_single or 0.0) - float(cost or 0.0)
+        rate = (profit / price) * 100.0
+        return f"{rate:.2f}%"
+
+    @admin.display(description="整箱利润", ordering="price_case")
+    def profit_case_display(self, obj: Product):
+        cost = getattr(obj, "cost_price_case", None)
+        price = getattr(obj, "price_case", None)
+        if cost is None or float(cost) <= 0 or price is None or float(price) <= 0:
+            return "-"
+        profit = money_float(float(price or 0.0) - float(cost or 0.0))
+        return f"{profit:.2f}"
+
+    @admin.display(description="整箱利润率", ordering="price_case")
+    def profit_rate_case_display(self, obj: Product):
+        cost = getattr(obj, "cost_price_case", None)
+        price = float(obj.price_case or 0.0)
+        if cost is None or float(cost) <= 0 or price <= 0:
+            return "-"
+        profit = float(obj.price_case or 0.0) - float(cost or 0.0)
+        rate = (profit / price) * 100.0
+        return f"{rate:.2f}%"
+
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
@@ -312,8 +369,9 @@ class OrderAdmin(admin.ModelAdmin):
         "stripe_session_id",
         "paid_at",
         "total_revenue_display",
-        "total_cost_display",
-        "profit_display",
+        "calc_total_cost_display",
+        "calc_profit_display",
+        "profit_rate_display",
         "created_at",
     )
     search_fields = (
@@ -356,13 +414,18 @@ class OrderAdmin(admin.ModelAdmin):
         "delivery_address",
         "stripe_session_id",
         "stock_deducted",
-        "total_revenue",
-        "total_cost",
-        "profit",
+        "total_revenue_display",
+        "calc_total_cost_display",
+        "calc_profit_display",
+        "profit_rate_display",
         "created_at",
     )
     readonly_fields = (
         "stock_deducted",
+        "total_revenue_display",
+        "calc_total_cost_display",
+        "calc_profit_display",
+        "profit_rate_display",
         "total_revenue",
         "total_cost",
         "profit",
@@ -376,7 +439,16 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.action(description="标记已收款")
     def action_mark_paid(self, request, queryset):
         now = timezone.now()
-        queryset.update(status=Order.Status.PAID, payment_status=Order.PaymentStatus.PAID, paid_at=now)
+        for oid in queryset.values_list("pk", flat=True):
+            with transaction.atomic():
+                o = Order.objects.select_for_update().get(pk=oid)
+                if o.status == Order.Status.PAID:
+                    continue
+                o.status = Order.Status.PAID
+                o.payment_status = Order.PaymentStatus.PAID
+                o.paid_at = now
+                o.save(update_fields=["status", "payment_status", "paid_at"])
+                reverse_credit_debt_if_counted(o)
 
     @admin.action(description="标记待确认")
     def action_mark_pending_confirmation(self, request, queryset):
@@ -437,17 +509,54 @@ class OrderAdmin(admin.ModelAdmin):
             raise
         logger.info("OrderAdmin.save_model order_id=%s save() completed", obj.pk)
 
+    def _calc_order_cost_profit(self, obj):
+        order_amount = money_float(obj.total_revenue or 0)
+        total_cost = 0.0
+        for item in obj.items.select_related("product").all():
+            p = item.product
+            qty = float(item.quantity or 0)
+            if str(item.sale_type) == OrderItem.SaleType.CASE:
+                unit_cost = float(getattr(p, "cost_price_case", 0) or 0)
+            else:
+                unit_cost = float(getattr(p, "cost_price_single", 0) or 0)
+            total_cost += unit_cost * qty
+        total_cost = money_float(total_cost)
+        total_profit = money_float(order_amount - total_cost)
+        profit_rate = (total_profit / order_amount * 100.0) if order_amount > 0 else None
+        return order_amount, total_cost, total_profit, profit_rate
+
     @admin.display(description="总收入", ordering="total_revenue")
     def total_revenue_display(self, obj):
         return f"{money_float(obj.total_revenue or 0):.2f}"
 
-    @admin.display(description="总成本", ordering="total_cost")
-    def total_cost_display(self, obj):
-        return f"{money_float(obj.total_cost or 0):.2f}"
+    @admin.display(description="总成本")
+    def calc_total_cost_display(self, obj):
+        _, total_cost, _, _ = self._calc_order_cost_profit(obj)
+        return f"{total_cost:.2f}"
 
-    @admin.display(description="利润", ordering="profit")
-    def profit_display(self, obj):
-        return f"{money_float(obj.profit or 0):.2f}"
+    @admin.display(description="总利润")
+    def calc_profit_display(self, obj):
+        _, _, total_profit, _ = self._calc_order_cost_profit(obj)
+        if total_profit > 0:
+            color = "#15803d"  # green
+        elif total_profit < 0:
+            color = "#b91c1c"  # red
+        else:
+            color = "#6b7280"  # gray
+        return format_html('<span style="color:{};font-weight:700;">{:.2f}</span>', color, total_profit)
+
+    @admin.display(description="利润率")
+    def profit_rate_display(self, obj):
+        _, _, _, rate = self._calc_order_cost_profit(obj)
+        if rate is None:
+            return "-"
+        if rate >= 30:
+            color = "#15803d"  # green
+        elif rate >= 10:
+            color = "#ea580c"  # orange
+        else:
+            color = "#b91c1c"  # red
+        return format_html('<span style="color:{};font-weight:700;">{:.2f}%</span>', color, rate)
 
 
 @admin.register(OrderItem)

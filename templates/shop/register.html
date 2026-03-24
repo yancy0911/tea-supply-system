@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>注册</title>
+    <title>Register</title>
   </head>
   <body>
-    <h1>注册</h1>
+    <h1>Register</h1>
     {% if error %}
       <p style="color: red">{{ error }}</p>
     {% endif %}
     <form method="post" action="{% url 'register' %}">
       {% csrf_token %}
       <p>
-        <label>用户名<br /><input type="text" name="username" maxlength="150" required /></label>
+        <label>Username<br /><input type="text" name="username" maxlength="150" required /></label>
       </p>
       <p>
-        <label>密码<br /><input type="password" name="password" required /></label>
+        <label>Password<br /><input type="password" name="password" required /></label>
       </p>
       <p>
-        <label>确认密码<br /><input type="password" name="confirm" required /></label>
+        <label>Confirm password<br /><input type="password" name="confirm" required /></label>
       </p>
-      <p><button type="submit">注册</button></p>
+      <p><button type="submit">Register</button></p>
     </form>
-    <p><a href="{% url 'login' %}">已有账号？去登录</a> · <a href="/shop/">返回商城</a></p>
+    <p><a href="{% url 'login' %}">Already have an account? Sign in</a> · <a href="/shop/">Back to shop</a></p>
   </body>
 </html>

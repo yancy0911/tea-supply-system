@@ -1,111 +1,135 @@
-{% comment %}单张商品卡片：数据来自视图中的 product 字典（_shop_product_row）{% endcomment %}
+{% comment %}Catalog product card — fixed UI English; names/units from DB{% endcomment %}
 <div
-  class="p-card"
+  class="catalog-card"
   data-product-id="{{ product.id }}"
   data-category-id="{% firstof product.category_id '' %}"
   data-pid="{{ product.id }}"
 >
-  <a class="p-img" href="{% url 'shop-product-detail' product.id %}">
+  <a class="catalog-card__media" href="{% url 'shop-product-detail' product.id %}">
     {% if product.image_url %}
-      <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+      <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
     {% else %}
       <img
-        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='72' text-anchor='middle' fill='%2394a3b8' font-size='13' font-family='sans-serif'%3E%E5%95%86%E5%93%81%E5%9B%BE%3C/text%3E%3C/svg%3E"
-        alt=""
+        src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f0f0f0' width='400' height='400'/%3E%3Ctext x='200' y='205' text-anchor='middle' fill='%23a3a3a3' font-size='14' font-family='system-ui,sans-serif'%3ENo image%3C/text%3E%3C/svg%3E"
+        alt="{{ product.name }}"
         loading="lazy"
         decoding="async"
       />
     {% endif %}
   </a>
-  <div class="p-body">
-    <div class="p-cat">{{ product.category_name|default:"—" }}</div>
-    <div class="p-name">
-      <a href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
+  <div class="catalog-card__body">
+    <div class="catalog-card__meta">
+      <span class="catalog-card__badge">{{ product.category_name|default:"Default Category" }}</span>
+      <a class="catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
+      <div class="catalog-card__sku"><span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}</div>
     </div>
-    <div class="p-sku">SKU：{{ product.sku|default:"" }}</div>
-    <div class="p-spec">
-      单位：{{ product.unit_label|default:"—" }}<br />
-      整箱：{{ product.case_label|default:"—" }}
-    </div>
+
     {% if product.price_on_request %}
-      <div class="p-price-row"><span class="p-quote" style="width: 100%">请询价</span></div>
+      <div class="catalog-card__prices catalog-card__prices--quote" aria-label="Pricing">
+        <span class="catalog-quote">Quote required — contact us for bag &amp; case pricing</span>
+      </div>
     {% else %}
-      <div class="p-price-row">
-        <span class="p-price-col">
-          {% if not product.can_quote_single %}
-            <span class="p-quote">单品 请询价</span>
-          {% elif product.strike_single %}
-            <del class="p-base">¥{{ product.base_single|floatformat:2 }}</del>
-            <span class="p-price-discount">¥{{ product.display_single|floatformat:2 }}</span> <small>单品</small>
-          {% else %}
-            <span class="p-price-discount">¥{{ product.display_single|floatformat:2 }}</span> <small>单品</small>
-          {% endif %}
-        </span>
-        <span class="p-price-col">
-          {% if not product.can_quote_case %}
-            <span class="p-quote">整箱 请询价</span>
-          {% elif product.strike_case %}
-            <del class="p-base">¥{{ product.base_case|floatformat:2 }}</del>
-            <span class="p-price-discount">¥{{ product.display_case|floatformat:2 }}</span> <small>整箱</small>
-          {% else %}
-            <span class="p-price-discount">¥{{ product.display_case|floatformat:2 }}</span> <small>整箱</small>
-          {% endif %}
-        </span>
+      <div class="catalog-card__prices" aria-label="Unit pricing">
+        <div class="price-block" data-price-type="bag">
+          <div class="price-block__label">Per bag</div>
+          <div class="price-block__unit">{{ product.unit_label|default:"—" }}</div>
+          <div class="price-block__value">
+            {% if not product.can_quote_single %}
+              <span class="price-block__empty">—</span>
+            {% elif product.strike_single %}
+              <div class="price-block__compare">
+                <del class="price-block__was">¥{{ product.base_single|floatformat:2 }}</del>
+                <strong class="price-block__amount">¥{{ product.display_single|floatformat:2 }}</strong>
+              </div>
+            {% else %}
+              <strong class="price-block__amount">¥{{ product.display_single|floatformat:2 }}</strong>
+            {% endif %}
+          </div>
+        </div>
+        <div class="price-block" data-price-type="case">
+          <div class="price-block__label">Per case</div>
+          <div class="price-block__unit">{{ product.case_label|default:"—" }}</div>
+          <div class="price-block__value">
+            {% if not product.can_quote_case %}
+              <span class="price-block__empty">—</span>
+            {% elif product.strike_case %}
+              <div class="price-block__compare">
+                <del class="price-block__was">¥{{ product.base_case|floatformat:2 }}</del>
+                <strong class="price-block__amount">¥{{ product.display_case|floatformat:2 }}</strong>
+              </div>
+            {% else %}
+              <strong class="price-block__amount">¥{{ product.display_case|floatformat:2 }}</strong>
+            {% endif %}
+          </div>
+        </div>
       </div>
     {% endif %}
-    {% if product.price_on_request %}
-      <div><span class="p-note">价格待定</span></div>
-    {% else %}
-      <div>
+
+    {% if not product.price_on_request %}
+      <div class="catalog-card__note-row">
         <span
-          class="{% with n=product.price_note|default_if_none:'' %}{% if '专属' in n %}p-note ex{% elif 'VIP' in n or '等级' in n %}p-note vip{% else %}p-note{% endif %}{% endwith %}"
-        >
-          {{ product.price_note }}
-        </span>
+          class="catalog-chip {% with n=product.price_note|default_if_none:'' %}{% if '专属' in n %}catalog-chip--accent{% elif 'VIP' in n or '等级' in n %}catalog-chip--vip{% else %}catalog-chip--muted{% endif %}{% endwith %}"
+        >{{ product.price_note }}</span>
         {% if product.profit_risk_single or product.profit_risk_case %}
-          <span class="p-note" style="background:#fff7ed;color:#9a3412;">利润风险</span>
+          <span class="catalog-chip catalog-chip--warn">Margin risk</span>
         {% endif %}
       </div>
     {% endif %}
-    <div style="margin-top:6px; font-size:12px; color:#6b7280;">
+
+    <div class="catalog-card__stock">
       {% if product.stock_enabled %}
-        库存 {{ product.current_stock|floatformat:2 }}
+        Stock: {{ product.current_stock|floatformat:2 }}
         {% if product.is_out_of_stock %}
-          <span style="color:#dc2626; font-weight:700;">· 缺货</span>
+          <span class="catalog-stock-out">· Out of stock</span>
         {% elif product.is_low_stock %}
-          <span style="color:#b45309; font-weight:700;">· 低库存提醒</span>
+          <span class="catalog-stock-low">· Low stock</span>
         {% endif %}
       {% else %}
-        库存不限
+        <span class="catalog-muted">Stock not tracked</span>
       {% endif %}
     </div>
-    <div class="p-mode">
-      <label
-        ><input
-          type="radio"
-          name="mode-{{ product.id }}"
-          value="single"
-          {% if product.default_mode == "single" %}checked{% endif %}
-          {% if not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
-        />
-        单品</label
-      >
-      <label
-        ><input
-          type="radio"
-          name="mode-{{ product.id }}"
-          value="case"
-          {% if product.default_mode == "case" %}checked{% endif %}
-          {% if not product.can_quote_case %}disabled{% endif %}
-        />
-        整箱</label
-      >
+
+    <div class="catalog-card__buy">
+      <div class="catalog-segment" role="group" aria-label="Unit type">
+        <label class="catalog-segment__opt">
+          <input
+            type="radio"
+            name="mode-{{ product.id }}"
+            value="single"
+            {% if product.default_mode == "single" %}checked{% endif %}
+            {% if not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
+          />
+          <span>Bag</span>
+        </label>
+        <label class="catalog-segment__opt">
+          <input
+            type="radio"
+            name="mode-{{ product.id }}"
+            value="case"
+            {% if product.default_mode == "case" %}checked{% endif %}
+            {% if not product.can_quote_case %}disabled{% endif %}
+          />
+          <span>Case</span>
+        </label>
+      </div>
+      <div class="catalog-card__actions">
+        <div class="qty-stepper">
+          <button type="button" data-act="minus" aria-label="Decrease">−</button>
+          <input type="number" min="0.01" step="0.01" value="{{ product.minimum_order_qty }}" aria-label="Quantity" />
+          <button type="button" data-act="plus" aria-label="Increase">+</button>
+        </div>
+        <button
+          type="button"
+          class="btn-add-cart"
+          data-pid="{{ product.id }}"
+          {% if shop_customer and not shop_can_order %}
+            disabled
+            title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
+          {% elif product.price_on_request %}
+            disabled
+          {% endif %}
+        >Add to Cart</button>
+      </div>
     </div>
-    <div class="p-qty-row">
-      <button type="button" data-act="minus">−</button>
-      <input type="number" min="0.01" step="0.01" value="{{ product.minimum_order_qty }}" />
-      <button type="button" data-act="plus">+</button>
-    </div>
-    <button type="button" class="p-add" data-pid="{{ product.id }}" {% if product.price_on_request %}disabled{% endif %}>加入购物车</button>
   </div>
 </div>
