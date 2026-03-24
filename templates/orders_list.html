@@ -227,6 +227,9 @@
               <td>{{ row.cost|floatformat:2 }}</td>
               <td>
                 <span style="font-weight: 600; color: #2563eb">{{ row.profit|floatformat:2 }}</span>
+                {% if row.profit < 0 %}
+                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">异常利润</span>
+                {% endif %}
               </td>
               <td>{{ row.order.created_at|date:"Y-m-d H:i:s" }}</td>
               <td>

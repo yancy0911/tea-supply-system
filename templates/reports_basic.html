@@ -10,6 +10,7 @@
     <div class="card"><div class="label">已确认未收款金额</div><div class="value">{{ kpi_confirmed_unpaid_amount|floatformat:2 }}</div></div>
     <div class="card"><div class="label">本月销售额</div><div class="value">{{ kpi_month_sales|floatformat:2 }}</div></div>
     <div class="card"><div class="label">本月利润</div><div class="value">{{ kpi_month_profit|floatformat:2 }}</div></div>
+    <div class="card"><div class="label">异常利润订单数</div><div class="value" style="color:#b91c1c">{{ abnormal_profit_order_count }}</div></div>
   </div>
 
   <div class="row">
@@ -93,6 +94,27 @@
           <tr><td>{{ r.product__name }}</td><td>{{ r.product__sku }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
         {% empty %}
           <tr><td colspan="3" class="muted">暂无数据</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" style="margin-top: 12px">
+    <h3 style="margin-top: 0">利润低于 0 订单（TOP10）</h3>
+    <table class="table">
+      <thead><tr><th>订单</th><th>客户</th><th>销售额</th><th>成本</th><th>利润</th><th>时间</th></tr></thead>
+      <tbody>
+        {% for o in negative_profit_orders %}
+          <tr>
+            <td>#{{ o.id }}</td>
+            <td>{% if o.customer %}{{ o.customer.name }}{% else %}未指定客户{% endif %}</td>
+            <td>{{ o.total_revenue|floatformat:2 }}</td>
+            <td>{{ o.total_cost|floatformat:2 }}</td>
+            <td style="color:#b91c1c;font-weight:700;">{{ o.profit|floatformat:2 }}</td>
+            <td>{{ o.created_at|date:"Y-m-d H:i:s" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="muted">暂无异常利润订单</td></tr>
         {% endfor %}
       </tbody>
     </table>

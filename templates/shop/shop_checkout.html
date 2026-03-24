@@ -542,6 +542,11 @@
               sub = unit * (parseFloat(l.quantity) || 0);
             }
             var priceNote = (p && p.price_note) ? p.price_note : (l.price_note || "");
+            var riskText = "";
+            if (p) {
+              if (l.sale_type === "case" && p.profit_risk_case) riskText = "利润风险：售价低于成本";
+              if (l.sale_type !== "case" && p.profit_risk_single) riskText = "利润风险：售价低于成本";
+            }
             sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
             html +=
@@ -568,6 +573,7 @@
               fmtMoney(sub) +
               "</span></div>" +
               (priceNote ? '<div class="line-meta" style="grid-column:1 / -1;">定价说明：' + priceNote + "</div>" : "") +
+              (riskText ? '<div class="line-meta" style="grid-column:1 / -1;color:#9a3412;font-weight:600;">' + riskText + "</div>" : "") +
               "</div>";
           });
           linesArea.innerHTML = html;

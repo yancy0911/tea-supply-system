@@ -45,6 +45,7 @@ from .models import (
 )
 
 logger = logging.getLogger(__name__)
+PROFIT_PROTECTION_MODE = "warning"  # "warning" | "block"
 
 
 def tier_discount_map_for_wholesale():
@@ -243,6 +244,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
         order_total = money_dec(0)
         validated = []
+        profit_risk_warnings = []
         for raw in lines:
             if raw.get("product_id") is None:
                 raise ValidationError("订单明细缺少商品")
@@ -280,6 +282,18 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             source = str(price_info.get("source") or "")
             if source == "custom":
                 final_pricing_note = "客户专属价"
+            cost_unit_price = money_dec(
+                p.cost_price_case if sale_type == OrderItem.SaleType.CASE else p.cost_price_single
+            )
+            unit_profit = money_q2(final_unit_price - cost_unit_price)
+            if unit_profit < money_dec(0):
+                risk_msg = (
+                    f"当前售价低于成本，请检查定价：{p.sku} "
+                    f"(售价{money_float(final_unit_price):.2f} < 成本{money_float(cost_unit_price):.2f})"
+                )
+                if PROFIT_PROTECTION_MODE == "block":
+                    raise ValidationError("当前售价低于成本，无法下单")
+                profit_risk_warnings.append(risk_msg)
             order_total += final_subtotal
             validated.append(
                 {
@@ -290,6 +304,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                     "final_subtotal": final_subtotal,
                     "final_pricing_note": final_pricing_note,
                     "source": source,
+                    "cost_unit_price": cost_unit_price,
+                    "unit_profit": unit_profit,
                 }
             )
 
@@ -368,6 +384,10 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
             # 2) 创建订单头（一次提交仅一条）
             order = Order.objects.create(**create_kwargs)
+            if profit_risk_warnings:
+                warning_text = "\n".join(profit_risk_warnings)
+                order.order_note = ((order.order_note or "").strip() + "\n" + warning_text).strip()[:2000]
+                order.save(update_fields=["order_note"])
 
             # 3) 明细只写 OrderItem（不重复建 Order）
             for v in validated:
@@ -406,6 +426,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
             # 5) 基础库存联动：下单成功即扣减；不足时抛错并整体回滚
             deduct_stock_for_order(order.id)
+        if profit_risk_warnings and request is not None:
+            messages.warning(request, "当前售价低于成本，请检查定价")
         return order
     except Exception as e:
         print(e)
@@ -554,6 +576,10 @@ def _shop_product_row(customer, p):
         "is_low_stock": enabled and stock_disp > 0 and stock_disp <= safety,
         "uses_ingredient_stock": bool(p.ingredient_id),
         "units_per_case": float(p.units_per_case),
+        "cost_single": money_float(p.cost_price_single),
+        "cost_case": money_float(p.cost_price_case),
+        "profit_risk_single": money_float(ds) < money_float(p.cost_price_single),
+        "profit_risk_case": money_float(dc) < money_float(p.cost_price_case),
     }
     return row
 
@@ -1588,6 +1614,17 @@ def reports_dashboard(request):
     product_profit_top = (
         product_base.annotate(value=Coalesce(Sum("profit"), 0.0)).order_by("-value")[:10]
     )
+    negative_profit_orders = list(
+        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        .filter(profit__lt=0)
+        .select_related("customer")
+        .order_by("profit", "-created_at")[:10]
+    )
+    abnormal_profit_order_count = (
+        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        .filter(profit__lt=0)
+        .count()
+    )
 
     def _annotate_value_money(rows):
         return [{**r, "value": money_float(r["value"])} for r in rows]
@@ -1605,6 +1642,8 @@ def reports_dashboard(request):
         "product_qty_top": _annotate_value_money(product_qty_top),
         "product_sales_top": _annotate_value_money(product_sales_top),
         "product_profit_top": _annotate_value_money(product_profit_top),
+        "abnormal_profit_order_count": int(abnormal_profit_order_count),
+        "negative_profit_orders": negative_profit_orders,
     }
     return render(request, "reports_basic.html", context)
 

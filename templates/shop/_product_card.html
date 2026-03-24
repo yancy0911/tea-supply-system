@@ -62,6 +62,9 @@
         >
           {{ product.price_note }}
         </span>
+        {% if product.profit_risk_single or product.profit_risk_case %}
+          <span class="p-note" style="background:#fff7ed;color:#9a3412;">利润风险</span>
+        {% endif %}
       </div>
     {% endif %}
     <div style="margin-top:6px; font-size:12px; color:#6b7280;">
