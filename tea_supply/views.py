@@ -1209,24 +1209,24 @@ def demo_landing(request):
 @login_required
 @boss_required
 def inventory_list(request):
-    from .models import Ingredient
-
-    ingredients = Ingredient.objects.order_by("name")
+    products = Product.objects.order_by("name", "sku")
     rows = []
     low_count = 0
-    for ing in ingredients:
-        st = float(ing.stock)
-        wl = float(ing.warning_level)
-        is_low = st < wl
+    for p in products:
+        st = float(p.current_stock or 0.0)
+        wl = float(p.safety_stock or 0.0)
+        is_low = st <= wl
         if is_low:
             low_count += 1
-        suggest = max(0.0, wl - st)
         rows.append(
             {
-                "ingredient": ing,
+                "product": p,
+                "sku": p.sku,
+                "name": p.name,
+                "current_stock": st,
+                "safety_stock": wl,
                 "low_stock": is_low,
                 "status_label": "低库存" if is_low else "正常",
-                "suggest_qty": suggest,
             }
         )
     total_count = len(rows)
