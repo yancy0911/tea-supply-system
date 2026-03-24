@@ -3,6 +3,7 @@ import io
 import json
 import hashlib
 import logging
+from decimal import Decimal, ROUND_HALF_UP
 import secrets
 import time
 import os
@@ -282,6 +283,32 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             source = str(price_info.get("source") or "")
             if source == "custom":
                 final_pricing_note = "客户专属价"
+            auto_cost_updated = False
+            if not p.cost_price_single or float(p.cost_price_single) == 0:
+                p.cost_price_single = float(
+                    (final_unit_price * Decimal("0.6")).quantize(
+                        Decimal("0.01"), rounding=ROUND_HALF_UP
+                    )
+                )
+                auto_cost_updated = True
+            if not p.cost_price_case or float(p.cost_price_case) == 0:
+                p.cost_price_case = float(
+                    (final_unit_price * Decimal("0.6")).quantize(
+                        Decimal("0.01"), rounding=ROUND_HALF_UP
+                    )
+                )
+                auto_cost_updated = True
+            if auto_cost_updated:
+                p.save(update_fields=["cost_price_single", "cost_price_case"])
+                print(
+                    "AUTO_COST_FILLED",
+                    {
+                        "product": p.id,
+                        "sku": p.sku,
+                        "cost_single": str(p.cost_price_single),
+                        "cost_case": str(p.cost_price_case),
+                    },
+                )
             print(
                 "PROFIT_DEBUG",
                 {
