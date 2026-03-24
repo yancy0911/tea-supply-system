@@ -1,1 +1,2 @@
 sku	page	line	error
+G011103	13	1252	同栏卡片内无 PRICE
