@@ -398,6 +398,10 @@
       (function () {
         var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
         var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
+        var creditAllow = {% if credit_allow %}true{% else %}false{% endif %};
+        var creditLimit = parseFloat("{{ credit_limit|default:0 }}") || 0;
+        var currentDebt = parseFloat("{{ current_debt|default:0 }}") || 0;
+        var currentOrderTotal = 0;
         var STORAGE_KEY = "tea_shop_cart_v1";
         var PRODUCTS = [];
         try {
@@ -486,6 +490,20 @@
             if (!shopCanOrder) {
               ev.preventDefault();
               alert(shopOrderBlockHint || "当前无法下单");
+              return;
+            }
+            var selectedPay = paymentHidden ? String(paymentHidden.value || "") : "";
+            if (selectedPay === "credit") {
+              if (!creditAllow) {
+                ev.preventDefault();
+                alert("未授权赊账，无法下单");
+                return;
+              }
+              if (creditLimit <= 0 || currentDebt + currentOrderTotal > creditLimit) {
+                ev.preventDefault();
+                alert("超出信用额度，无法下单");
+                return;
+              }
             }
           });
         }
@@ -555,6 +573,7 @@
           summaryKinds.textContent = String(cart.length);
           summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
           sumEl.textContent = "总计：¥" + fmtMoney(sum);
+          currentOrderTotal = sum;
           hiddenJson.value = JSON.stringify(
             cart.map(function (l) {
               return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };

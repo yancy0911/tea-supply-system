@@ -163,9 +163,9 @@ class OrderAdmin(admin.ModelAdmin):
         "status",
         "stripe_session_id",
         "paid_at",
-        "total_revenue",
-        "total_cost",
-        "profit",
+        "total_revenue_display",
+        "total_cost_display",
+        "profit_display",
         "created_at",
     )
     search_fields = (
@@ -246,6 +246,28 @@ class OrderAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return bool(request.user.is_authenticated and request.user.is_superuser)
+
+    def get_queryset(self, request):
+        # 防止后台查询在关联筛选/搜索时出现重复订单行
+        return super().get_queryset(request).distinct()
+
+    def total_revenue_display(self, obj):
+        return float(obj.total_revenue or 0.0)
+
+    total_revenue_display.short_description = "总收入"
+    total_revenue_display.admin_order_field = "total_revenue"
+
+    def total_cost_display(self, obj):
+        return float(obj.total_cost or 0.0)
+
+    total_cost_display.short_description = "总成本"
+    total_cost_display.admin_order_field = "total_cost"
+
+    def profit_display(self, obj):
+        return float(obj.profit or 0.0)
+
+    profit_display.short_description = "利润"
+    profit_display.admin_order_field = "profit"
 
 
 @admin.register(OrderItem)

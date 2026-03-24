@@ -286,13 +286,13 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if customer_obj is None:
                 raise ValidationError("挂账订单必须绑定客户")
             if not customer_obj.allow_credit:
-                raise ValidationError("该客户未开通赊账权限，仅支持现结")
+                raise ValidationError("未授权赊账，无法下单")
             if credit_limit <= 0:
-                raise ValidationError("该客户信用额度为 0，无法挂账")
+                raise ValidationError("超出信用额度，无法下单")
             if current_unsettled >= credit_limit:
-                raise ValidationError("当前应收账款已用满信用额度，无法继续下单")
+                raise ValidationError("超出信用额度，无法下单")
             if current_unsettled + order_total > credit_limit:
-                raise ValidationError("本次下单将超出信用额度，无法继续下单")
+                raise ValidationError("超出信用额度，无法下单")
 
         with transaction.atomic():
             customer_locked = None
@@ -906,6 +906,9 @@ def shop_checkout(request):
             "shop_can_order": can_order,
             "shop_order_block_hint": order_hint,
             "tier_rules_banner": tier_rules_banner_text(),
+            "credit_allow": bool(customer and customer.allow_credit),
+            "credit_limit": float(customer.credit_limit or 0.0) if customer else 0.0,
+            "current_debt": float(customer.current_debt or 0.0) if customer else 0.0,
         },
     )
 
@@ -1333,39 +1336,24 @@ def orders_list(request):
     order_rows = []
     for order in orders:
         items = list(order.items.select_related("product").all())
-        if not items:
-            order_rows.append(
-                {
-                    "order": order,
-                    "product_name": "-",
-                    "sale_type_label": "-",
-                    "unit_price": None,
-                    "pricing_note": "",
-                    "quantity": "-",
-                    "line_amount": 0.0,
-                    "amount": 0.0,
-                    "line_cost": order.total_cost,
-                    "line_profit": order.profit,
-                }
-            )
-            continue
-
-        for item in items:
-            st = "整箱" if item.sale_type == OrderItem.SaleType.CASE else "单品"
-            order_rows.append(
-                {
-                    "order": order,
-                    "product_name": item.product.name,
-                    "sale_type_label": st,
-                    "unit_price": float(item.unit_price),
-                    "pricing_note": item.pricing_note or "—",
-                    "quantity": item.quantity,
-                    "line_amount": float(item.total_revenue),
-                    "amount": float(order.total_revenue),
-                    "line_cost": float(item.total_cost),
-                    "line_profit": float(item.profit),
-                }
-            )
+        item_count = len(items)
+        product_names = [it.product.name for it in items]
+        preview = "、".join(product_names[:2])
+        if item_count > 2:
+            preview = f"{preview} 等"
+        if not preview:
+            preview = "-"
+        order_rows.append(
+            {
+                "order": order,
+                "item_count": item_count,
+                "items_text": f"{item_count} items" if item_count else "0 items",
+                "product_preview": preview,
+                "amount": float(order.total_revenue or 0.0),
+                "cost": float(order.total_cost or 0.0),
+                "profit": float(order.profit or 0.0),
+            }
+        )
 
     return render(
         request,

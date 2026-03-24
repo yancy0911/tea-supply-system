@@ -194,12 +194,7 @@
           <tr>
             <th>订单ID</th>
             <th>客户名称</th>
-            <th>商品</th>
-            <th>方式</th>
-            <th>成交单价</th>
-            <th>折扣来源</th>
-            <th>数量</th>
-            <th>行金额</th>
+            <th>商品信息</th>
             <th>订单金额</th>
             <th>成本</th>
             <th>利润</th>
@@ -224,16 +219,14 @@
                   未指定客户
                 {% endif %}
               </td>
-              <td>{{ row.product_name }}</td>
-              <td>{{ row.sale_type_label }}</td>
-              <td>{% if row.unit_price is not None %}{{ row.unit_price }}{% else %}-{% endif %}</td>
-              <td style="max-width: 140px">{{ row.pricing_note }}</td>
-              <td>{{ row.quantity }}</td>
-              <td>{{ row.line_amount }}</td>
-              <td style="font-weight: 600">{{ row.amount }}</td>
-              <td>{{ row.line_cost }}</td>
               <td>
-                <span style="font-weight: 600; color: #2563eb">{{ row.line_profit }}</span>
+                <div style="font-weight:600">{{ row.items_text }}</div>
+                <div class="muted" style="font-size:12px">{{ row.product_preview }}</div>
+              </td>
+              <td style="font-weight: 600">{{ row.amount }}</td>
+              <td>{{ row.cost }}</td>
+              <td>
+                <span style="font-weight: 600; color: #2563eb">{{ row.profit }}</span>
               </td>
               <td>{{ row.order.created_at|date:"Y-m-d H:i:s" }}</td>
               <td>
