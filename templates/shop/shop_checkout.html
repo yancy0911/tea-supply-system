@@ -320,7 +320,7 @@
               <input type="hidden" name="next" value="checkout" />
               <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
               <input type="hidden" name="settlement_type" id="settlement-type-hidden" value="cash" />
-              <input type="hidden" name="payment_method" id="payment-method-hidden" value="stripe" />
+              <input type="hidden" name="payment_method" id="payment-method-hidden" value="bank_transfer" />
               <div class="row2">
                 <div>
                   <label for="contact_name">姓名 *</label>
@@ -347,6 +347,10 @@
                 <label for="transfer_reference">转账参考号（可选）</label>
                 <input id="transfer_reference" name="transfer_reference" maxlength="255" placeholder="如已转账可填写流水号" />
               </div>
+              <div style="margin-top: 12px; display:none" id="check-number-wrap">
+                <label for="check_number">支票号（可选）</label>
+                <input id="check_number" name="check_number" maxlength="100" placeholder="如使用支票可填写支票号" />
+              </div>
             </div>
           </div>
 
@@ -357,29 +361,30 @@
               <div class="summary-row"><span class="k">商品总数量</span><span class="v" id="summary-qty">0</span></div>
               <div class="summary-row"><span class="k">商品总金额</span><span class="v" id="goods-sum">¥0.00</span></div>
             </div>
-            <div class="settle-box">
-              <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">结算方式</label>
-              <label class="settle-opt">
-                <input type="radio" name="summary-settlement-type" value="cash" checked />
-                现金
-              </label>
-              {% if shop_customer and shop_customer.allow_credit %}
-                <label class="settle-opt" style="margin-bottom: 0">
-                  <input type="radio" name="summary-settlement-type" value="credit" />
-                  挂账
-                </label>
-              {% endif %}
-            </div>
             <div class="settle-box" style="margin-top: 12px">
               <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">支付方式</label>
               <label class="settle-opt">
-                <input type="radio" name="summary-payment-method" value="stripe" checked />
-                信用卡 / 借记卡（Stripe）
-              </label>
-              <label class="settle-opt" style="margin-bottom: 0">
-                <input type="radio" name="summary-payment-method" value="bank_transfer" />
+                <input type="radio" name="summary-payment-method" value="bank_transfer" checked />
                 银行转账
               </label>
+              <label class="settle-opt">
+                <input type="radio" name="summary-payment-method" value="check" />
+                支票
+              </label>
+              <label class="settle-opt">
+                <input type="radio" name="summary-payment-method" value="card_on_pickup" />
+                现场刷卡/取货付款
+              </label>
+              <label class="settle-opt">
+                <input type="radio" name="summary-payment-method" value="cash" />
+                现金
+              </label>
+              {% if shop_customer and shop_customer.allow_credit %}
+              <label class="settle-opt" style="margin-bottom: 0">
+                <input type="radio" name="summary-payment-method" value="credit" />
+                挂账
+              </label>
+              {% endif %}
             </div>
             <div class="sum" id="order-sum">总计：¥0.00</div>
             <button type="submit" class="btn" id="btn-place" disabled>确认下单并付款</button>
@@ -436,25 +441,41 @@
         var paymentHidden = document.getElementById("payment-method-hidden");
         var transferReferenceWrap = document.getElementById("transfer-reference-wrap");
         var checkoutForm = document.getElementById("checkout-form");
-        var summarySettlementRadios = document.querySelectorAll('input[name="summary-settlement-type"]');
         var summaryPaymentRadios = document.querySelectorAll('input[name="summary-payment-method"]');
-        summarySettlementRadios.forEach(function (radio) {
-          radio.addEventListener("change", function () {
-            if (radio.checked && settlementHidden) settlementHidden.value = radio.value;
-          });
-        });
+        var checkNumberWrap = document.getElementById("check-number-wrap");
         function syncPaymentMethodUI() {
-          var selected = "stripe";
+          var selected = "bank_transfer";
           summaryPaymentRadios.forEach(function (radio) {
             if (radio.checked) selected = radio.value;
           });
           if (paymentHidden) paymentHidden.value = selected;
+          if (settlementHidden) {
+            settlementHidden.value = selected === "credit" ? "credit" : "cash";
+          }
           if (selected === "bank_transfer") {
-            btn.textContent = "提交订单并查看转账信息";
+            btn.textContent = "提交订单（银行转账）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "";
-          } else {
-            btn.textContent = "确认下单并付款";
+            if (checkNumberWrap) checkNumberWrap.style.display = "none";
+          } else if (selected === "check") {
+            btn.textContent = "提交订单（支票）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
+            if (checkNumberWrap) checkNumberWrap.style.display = "";
+          } else if (selected === "card_on_pickup") {
+            btn.textContent = "提交订单（现场刷卡/取货付款）";
+            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
+            if (checkNumberWrap) checkNumberWrap.style.display = "none";
+          } else if (selected === "cash") {
+            btn.textContent = "提交订单（现金）";
+            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
+            if (checkNumberWrap) checkNumberWrap.style.display = "none";
+          } else if (selected === "credit") {
+            btn.textContent = "提交订单（挂账）";
+            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
+            if (checkNumberWrap) checkNumberWrap.style.display = "none";
+          } else {
+            btn.textContent = "提交订单";
+            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
+            if (checkNumberWrap) checkNumberWrap.style.display = "none";
           }
         }
         summaryPaymentRadios.forEach(function (radio) {

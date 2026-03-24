@@ -184,7 +184,31 @@ class OrderAdmin(admin.ModelAdmin):
         "customer",
         "ordered_by",
     )
-    list_editable = ("workflow_status", "status", "settlement_type", "payment_status")
+    list_editable = ("workflow_status", "status", "settlement_type", "payment_method", "payment_status")
+    fields = (
+        "name",
+        "customer",
+        "ordered_by",
+        "guest_session_key",
+        "workflow_status",
+        "status",
+        "settlement_type",
+        "payment_method",
+        "payment_status",
+        "transfer_reference",
+        "order_note",
+        "paid_at",
+        "delivery_phone",
+        "contact_name",
+        "store_name",
+        "delivery_address",
+        "stripe_session_id",
+        "stock_deducted",
+        "total_revenue",
+        "total_cost",
+        "profit",
+        "created_at",
+    )
     readonly_fields = (
         "stock_deducted",
         "total_revenue",
@@ -194,18 +218,21 @@ class OrderAdmin(admin.ModelAdmin):
         "guest_session_key",
         "ordered_by",
         "stripe_session_id",
-        "paid_at",
     )
-    actions = ("action_mark_paid", "action_mark_payment_failed")
+    actions = ("action_mark_paid", "action_mark_pending_confirmation", "action_mark_cancelled")
 
     @admin.action(description="标记已收款")
     def action_mark_paid(self, request, queryset):
         now = timezone.now()
         queryset.update(status=Order.Status.PAID, payment_status=Order.PaymentStatus.PAID, paid_at=now)
 
-    @admin.action(description="标记支付失败")
-    def action_mark_payment_failed(self, request, queryset):
-        queryset.update(payment_status=Order.PaymentStatus.FAILED)
+    @admin.action(description="标记待确认")
+    def action_mark_pending_confirmation(self, request, queryset):
+        queryset.update(payment_status=Order.PaymentStatus.PENDING_CONFIRMATION)
+
+    @admin.action(description="标记已取消")
+    def action_mark_cancelled(self, request, queryset):
+        queryset.update(payment_status=Order.PaymentStatus.CANCELLED)
 
     def has_view_permission(self, request, obj=None):
         return bool(request.user.is_authenticated and request.user.is_staff)

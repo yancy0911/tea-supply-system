@@ -118,6 +118,38 @@
         </div>
       </div>
 
+      {% if order.payment_method == "bank_transfer" %}
+      <div class="kv" style="margin-top: 12px">
+        <div class="row"><div class="k">银行名称</div><div class="v">{% firstof bank_info.bank_name "请联系管理员" %}</div></div>
+        <div class="row"><div class="k">Account Name</div><div class="v">{% firstof bank_info.account_name "请联系管理员" %}</div></div>
+        <div class="row"><div class="k">Account Number</div><div class="v">{% firstof bank_info.account_number "请联系管理员" %}</div></div>
+        <div class="row"><div class="k">Routing Number</div><div class="v">{% firstof bank_info.routing_number "请联系管理员" %}</div></div>
+        <div class="row"><div class="k">提示</div><div class="v">转账备注请填写订单号 #{{ order.id }}</div></div>
+      </div>
+      <form method="post" action="{% url 'update-transfer-reference' order.id %}" style="margin-top: 12px">
+        {% csrf_token %}
+        <label class="k" for="transfer_reference">转账参考号（可选）</label>
+        <input id="transfer_reference" name="transfer_reference" value="{{ order.transfer_reference }}" maxlength="255" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;box-sizing:border-box;" />
+        <button type="submit" style="margin-top:8px;padding:8px 12px;border:0;border-radius:8px;background:#2563eb;color:#fff;">保存参考号</button>
+      </form>
+      {% elif order.payment_method == "check" %}
+      <p class="sub" style="text-align:left;margin-top:12px;">
+        请将支票号填写到订单备注/支付备注，并按约定交付支票。订单号：#{{ order.id }}
+      </p>
+      {% elif order.payment_method == "card_on_pickup" %}
+      <p class="sub" style="text-align:left;margin-top:12px;">
+        订单已提交，请到仓库取货时刷卡付款。
+      </p>
+      {% elif order.payment_method == "cash" %}
+      <p class="sub" style="text-align:left;margin-top:12px;">
+        订单已提交，请交货/提货时现金付款。
+      </p>
+      {% elif order.payment_method == "credit" %}
+      <p class="sub" style="text-align:left;margin-top:12px;">
+        订单已提交，等待财务确认挂账额度。
+      </p>
+      {% endif %}
+
         <div class="actions">
           <a class="secondary" href="{% url 'my-orders' %}">查看订单</a>
           <a class="primary" href="{% url 'shop-home' %}">继续购物</a>

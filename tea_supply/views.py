@@ -200,9 +200,20 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         settlement_type = str(shipping.get("settlement_type") or Order.SettlementType.CASH).strip().lower()
         if settlement_type not in (Order.SettlementType.CASH, Order.SettlementType.CREDIT):
             settlement_type = Order.SettlementType.CASH
-        payment_method = str(shipping.get("payment_method") or Order.PaymentMethod.STRIPE).strip().lower()
-        if payment_method not in (Order.PaymentMethod.STRIPE, Order.PaymentMethod.BANK_TRANSFER):
-            payment_method = Order.PaymentMethod.STRIPE
+        payment_method = str(shipping.get("payment_method") or Order.PaymentMethod.BANK_TRANSFER).strip().lower()
+        valid_payment_methods = {
+            Order.PaymentMethod.BANK_TRANSFER,
+            Order.PaymentMethod.CHECK,
+            Order.PaymentMethod.CARD_ON_PICKUP,
+            Order.PaymentMethod.CASH,
+            Order.PaymentMethod.CREDIT,
+        }
+        if payment_method not in valid_payment_methods:
+            payment_method = Order.PaymentMethod.BANK_TRANSFER
+        if payment_method == Order.PaymentMethod.CREDIT:
+            settlement_type = Order.SettlementType.CREDIT
+        else:
+            settlement_type = Order.SettlementType.CASH
         if from_shop:
             cn = (shipping.get("contact_name") or "").strip()
             phone = (shipping.get("delivery_phone") or "").strip()
@@ -315,15 +326,22 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
                 create_kwargs["settlement_type"] = settlement_type
                 create_kwargs["payment_method"] = payment_method
-                if payment_method == Order.PaymentMethod.BANK_TRANSFER:
-                    create_kwargs["payment_status"] = Order.PaymentStatus.PENDING_TRANSFER
-                else:
-                    create_kwargs["payment_status"] = Order.PaymentStatus.UNPAID
+                create_kwargs["payment_status"] = Order.PaymentStatus.PENDING_CONFIRMATION
                 create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[:100]
                 create_kwargs["delivery_phone"] = (shipping.get("delivery_phone") or "")[:30]
                 create_kwargs["store_name"] = (shipping.get("store_name") or "")[:200]
                 create_kwargs["delivery_address"] = (shipping.get("delivery_address") or "")[:500]
-                create_kwargs["order_note"] = (shipping.get("order_note") or "")[:2000]
+                note = (shipping.get("order_note") or "")[:2000]
+                check_no = (shipping.get("check_number") or "").strip()
+                if payment_method == Order.PaymentMethod.CARD_ON_PICKUP:
+                    note = (note + "\n到仓库刷卡/取货付款").strip()
+                elif payment_method == Order.PaymentMethod.CASH:
+                    note = (note + "\n现金支付").strip()
+                elif payment_method == Order.PaymentMethod.CREDIT:
+                    note = (note + "\n挂账，待财务确认").strip()
+                elif payment_method == Order.PaymentMethod.CHECK and check_no:
+                    note = (note + f"\n支票号: {check_no[:100]}").strip()
+                create_kwargs["order_note"] = note[:2000]
                 create_kwargs["transfer_reference"] = (shipping.get("transfer_reference") or "")[:255]
             else:
                 create_kwargs["customer"] = customer_locked
@@ -932,7 +950,8 @@ def shop_order_success(request, order_id):
     if not request.user.is_authenticated or order.ordered_by_id != request.user.id:
         messages.error(request, "无权查看该订单")
         return redirect("shop-home")
-    return render(request, "shop/shop_order_success.html", {"order": order})
+    bank = getattr(settings, "BANK_TRANSFER_INFO", None) or {}
+    return render(request, "shop/shop_order_success.html", {"order": order, "bank_info": bank})
 
 
 @require_GET
@@ -974,8 +993,9 @@ def shop_submit_order(request):
         "store_name": request.POST.get("store_name", ""),
         "delivery_address": request.POST.get("delivery_address", ""),
         "order_note": request.POST.get("order_note", ""),
+        "check_number": request.POST.get("check_number", ""),
         "settlement_type": request.POST.get("settlement_type", Order.SettlementType.CASH),
-        "payment_method": request.POST.get("payment_method", Order.PaymentMethod.STRIPE),
+        "payment_method": request.POST.get("payment_method", Order.PaymentMethod.BANK_TRANSFER),
         "transfer_reference": request.POST.get("transfer_reference", ""),
     }
     sig_id = str(customer.pk)
@@ -1004,19 +1024,17 @@ def shop_submit_order(request):
             "store_name": request.POST.get("store_name", ""),
             "delivery_address": request.POST.get("delivery_address", ""),
             "order_note": request.POST.get("order_note", ""),
+            "check_number": request.POST.get("check_number", ""),
             "settlement_type": request.POST.get("settlement_type", Order.SettlementType.CASH),
-            "payment_method": request.POST.get("payment_method", Order.PaymentMethod.STRIPE),
+            "payment_method": request.POST.get("payment_method", Order.PaymentMethod.BANK_TRANSFER),
             "transfer_reference": request.POST.get("transfer_reference", ""),
         }
         order = submit_order_from_lines(
             request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
         )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        payment_method = str(request.POST.get("payment_method") or Order.PaymentMethod.STRIPE).strip().lower()
-        if payment_method == Order.PaymentMethod.STRIPE:
-            return redirect("stripe-create-session", order_id=order.id)
-        messages.success(request, "订单已提交，请按转账信息完成付款")
-        return redirect("bank-transfer-instructions", order_id=order.id)
+        messages.success(request, "订单已提交，等待商家确认付款信息")
+        return redirect("shop-order-success", order_id=order.id)
     except (ValidationError, ValueError, TypeError) as exc:
         print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
@@ -1628,7 +1646,7 @@ def _bank_transfer_info():
 @require_GET
 def stripe_create_session(request, order_id):
     order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
-    if order.payment_method != Order.PaymentMethod.STRIPE:
+    if str(order.payment_method) != "stripe":
         messages.error(request, "该订单不是 Stripe 支付方式")
         return redirect("shop-order-success", order_id=order.id)
     secret_key = _stripe_secret_key()
@@ -1701,7 +1719,7 @@ def stripe_success(request):
     if getattr(session, "payment_status", "") == "paid":
         with transaction.atomic():
             o = Order.objects.select_for_update().get(pk=order.id)
-            o.payment_method = Order.PaymentMethod.STRIPE
+            o.payment_method = "stripe"
             o.payment_status = Order.PaymentStatus.PAID
             o.paid_at = timezone.now()
             o.status = Order.Status.PAID
@@ -1719,7 +1737,7 @@ def stripe_success(request):
         messages.success(request, "Stripe 支付成功")
         return redirect("shop-order-success", order_id=order.id)
 
-    Order.objects.filter(pk=order.id).update(payment_status=Order.PaymentStatus.FAILED)
+    Order.objects.filter(pk=order.id).update(payment_status=Order.PaymentStatus.CANCELLED)
     messages.error(request, "支付未完成，请重试")
     return redirect("shop-checkout")
 
@@ -1754,8 +1772,11 @@ def update_transfer_reference(request, order_id):
     order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
     ref = (request.POST.get("transfer_reference") or "").strip()[:255]
     order.transfer_reference = ref
-    if order.payment_method == Order.PaymentMethod.BANK_TRANSFER and order.payment_status == Order.PaymentStatus.UNPAID:
-        order.payment_status = Order.PaymentStatus.PENDING_TRANSFER
+    if (
+        order.payment_method == Order.PaymentMethod.BANK_TRANSFER
+        and order.payment_status == Order.PaymentStatus.UNPAID
+    ):
+        order.payment_status = Order.PaymentStatus.PENDING_CONFIRMATION
         order.save(update_fields=["transfer_reference", "payment_status"])
     else:
         order.save(update_fields=["transfer_reference"])
@@ -1767,9 +1788,9 @@ def update_transfer_reference(request, order_id):
 @internal_user_required
 def mark_order_payment_failed(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
-    order.payment_status = Order.PaymentStatus.FAILED
+    order.payment_status = Order.PaymentStatus.CANCELLED
     order.save(update_fields=["payment_status"])
-    messages.success(request, "已标记为支付失败")
+    messages.success(request, "已标记为已取消")
     return redirect("orders-list")
 
 

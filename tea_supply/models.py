@@ -361,14 +361,18 @@ class Order(models.Model):
         CREDIT = "credit", "挂账"
 
     class PaymentMethod(models.TextChoices):
-        STRIPE = "stripe", "信用卡/借记卡"
         BANK_TRANSFER = "bank_transfer", "银行转账"
+        CHECK = "check", "支票"
+        CARD_ON_PICKUP = "card_on_pickup", "现场刷卡/取货付款"
+        CASH = "cash", "现金"
+        CREDIT = "credit", "挂账"
 
     class PaymentStatus(models.TextChoices):
         UNPAID = "unpaid", "未支付"
+        PENDING_CONFIRMATION = "pending_confirmation", "待确认"
         PAID = "paid", "已支付"
-        FAILED = "failed", "支付失败"
-        PENDING_TRANSFER = "pending_transfer", "待转账确认"
+        PARTIAL = "partial", "部分付款"
+        CANCELLED = "cancelled", "已取消"
 
     name = models.CharField(max_length=100, default="批发订单", verbose_name="订单名称")
     customer = models.ForeignKey(
@@ -416,7 +420,7 @@ class Order(models.Model):
     payment_method = models.CharField(
         max_length=20,
         choices=PaymentMethod.choices,
-        default=PaymentMethod.STRIPE,
+        default=PaymentMethod.BANK_TRANSFER,
         verbose_name="支付方式",
     )
     payment_status = models.CharField(
