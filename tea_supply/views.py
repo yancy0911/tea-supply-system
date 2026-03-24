@@ -469,7 +469,10 @@ def _shop_product_row(customer, p):
     stock_disp = float(getattr(p, "current_stock", 0.0))
     safety = float(getattr(p, "safety_stock", 10.0))
     enabled = bool(getattr(p, "stock_enabled", True))
-    price_note = (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s)
+    if "客户专属价" in (note_s, note_c):
+        price_note = "客户专属价"
+    else:
+        price_note = (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s)
     if customer is None:
         price_note = "原价"
     row = {

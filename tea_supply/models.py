@@ -946,54 +946,91 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     - final_price
     - pricing_note / discount_source（写入明细 pricing_note）
     """
-    is_case = str(sale_type) == "case"
-    original = money_float(product.price_case if is_case else product.price_single)
-    kind_label = "整箱" if is_case else "单品"
+    from decimal import Decimal, ROUND_HALF_UP
 
-    if customer is None:
-        return {
-            "base_price": original,
-            "original_price": original,
-            "final_price": original,
-            "pricing_note": "原价",
-            "discount_source": "原价",
-        }
+    def q(v):
+        return Decimal(str(v or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-    cp = (
-        CustomerProductPrice.objects.filter(customer=customer, product=product, is_active=True)
-        .only("custom_price_single", "custom_price_case")
-        .first()
-    )
-    if cp:
-        ex = money_float(cp.custom_price_case if is_case else cp.custom_price_single)
-        if ex > 0:
-            return {
-                "base_price": original,
-                "original_price": original,
-                "final_price": ex,
-                "pricing_note": "客户专属价",
-                "discount_source": "专属价",
+    is_case = str(sale_type or "single").strip().lower() == "case"
+    if is_case:
+        base_price = q(product.price_case)
+    else:
+        base_price = q(product.price_single)
+
+    custom_found = False
+    source = "base"
+    final_price = base_price
+    pricing_note = "原价"
+
+    if customer:
+        custom_row = (
+            CustomerProductPrice.objects.filter(customer=customer, product=product).first()
+        )
+        custom_found = custom_row is not None
+        if custom_row:
+            if is_case:
+                raw_custom = (
+                    getattr(custom_row, "custom_price_case", None)
+                    if hasattr(custom_row, "custom_price_case")
+                    else getattr(custom_row, "price_case", 0)
+                )
+            else:
+                raw_custom = (
+                    getattr(custom_row, "custom_price_single", None)
+                    if hasattr(custom_row, "custom_price_single")
+                    else getattr(custom_row, "price_single", 0)
+                )
+            custom_price = q(raw_custom)
+            is_enabled = getattr(custom_row, "is_active", True)
+            if is_enabled and custom_price > Decimal("0.00"):
+                source = "custom"
+                final_price = custom_price
+                pricing_note = "客户专属价"
+        if source != "custom":
+            level = (
+                getattr(customer, "customer_level", None)
+                or getattr(customer, "level", None)
+                or ""
+            )
+            level = str(level).upper().strip()
+            discount_map = {
+                "C": Decimal("1.00"),
+                "B": Decimal("0.95"),
+                "A": Decimal("0.90"),
+                "VIP": Decimal("0.85"),
             }
+            rate = discount_map.get(level, Decimal("1.00"))
+            final_price = (base_price * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if level == "B":
+                pricing_note = "B级95折"
+            elif level == "A":
+                pricing_note = "A级9折"
+            elif level == "VIP":
+                pricing_note = "VIP85折"
+            else:
+                pricing_note = "原价"
+            source = "tier" if rate < Decimal("1.00") else "base"
 
-    tier = (customer.customer_level or "").strip()
-    if not tier:
-        return {
-            "base_price": original,
-            "original_price": original,
-            "final_price": original,
-            "pricing_note": "原价",
-            "discount_source": "原价",
-        }
-    sr, cr = _discount_rates_for_level(tier)
-    rate = cr if is_case else sr
-    final = money_float(money_q2(money_dec(original) * money_dec(rate)))
-    note = _format_discount_source(tier, rate, kind_label)
+    # 临时调试日志（用于排查专属价命中）
+    print(
+        "[pricing-debug]",
+        {
+            "customer_id": getattr(customer, "id", None),
+            "product_id": getattr(product, "id", None),
+            "sku": getattr(product, "sku", ""),
+            "sale_type": "case" if is_case else "single",
+            "custom_row_found": custom_found,
+            "source": source,
+            "final_price": str(final_price),
+        },
+    )
     return {
-        "base_price": original,
-        "original_price": original,
-        "final_price": final,
-        "pricing_note": note,
-        "discount_source": note,
+        "base_price": base_price,
+        "original_price": money_float(base_price),
+        "final_price": final_price,
+        "pricing_note": pricing_note,
+        "discount_source": pricing_note,
+        "source": source,
     }
 
 
