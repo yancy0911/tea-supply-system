@@ -427,7 +427,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             # 5) 基础库存联动：下单成功即扣减；不足时抛错并整体回滚
             deduct_stock_for_order(order.id)
         if profit_risk_warnings and request is not None:
-            messages.warning(request, "当前售价低于成本，请检查定价")
+            first_msg = profit_risk_warnings[0]
+            messages.warning(request, f"⚠️ {first_msg}")
         return order
     except Exception as e:
         print(e)
