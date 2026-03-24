@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:tea_supply_product_changelist' %}">商品</a>
+  &rsaquo; 成本价导入
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <h1>{{ title }}</h1>
+  {% if import_error %}
+    <p class="errornote">{{ import_error }}</p>
+  {% endif %}
+
+  {% if result %}
+    <div class="module" style="margin-bottom: 20px">
+      <h2>导入结果摘要</h2>
+      <table class="table" style="width: auto; border-collapse: collapse">
+        <tr><th style="text-align:left;padding:8px;">成功更新</th><td style="padding:8px;"><strong>{{ result.updated_count }}</strong></td></tr>
+        <tr><th style="text-align:left;padding:8px;">跳过</th><td style="padding:8px;"><strong>{{ result.skipped_count }}</strong></td></tr>
+        <tr><th style="text-align:left;padding:8px;">未匹配 SKU</th><td style="padding:8px;"><strong>{{ result.missing_skus|length }}</strong></td></tr>
+        <tr><th style="text-align:left;padding:8px;">错误行</th><td style="padding:8px;"><strong>{{ result.error_rows|length }}</strong></td></tr>
+      </table>
+
+      {% if result.missing_skus %}
+        <h3 style="margin-top:16px;">未匹配 SKU（前 20 条）</h3>
+        <table class="table" style="width:100%; border-collapse: collapse; font-size:13px;">
+          <thead><tr style="background:#f3f4f6;"><th style="padding:8px;border:1px solid #e5e7eb;">行号</th><th style="padding:8px;border:1px solid #e5e7eb;">SKU</th></tr></thead>
+          <tbody>
+            {% for line_no, sku in result.missing_skus|slice:":20" %}
+              <tr><td style="padding:8px;border:1px solid #e5e7eb;">{{ line_no }}</td><td style="padding:8px;border:1px solid #e5e7eb;">{{ sku }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+
+      {% if result.error_rows %}
+        <h3 style="margin-top:16px;">错误行（前 20 条）</h3>
+        <table class="table" style="width:100%; border-collapse: collapse; font-size:13px;">
+          <thead><tr style="background:#f3f4f6;"><th style="padding:8px;border:1px solid #e5e7eb;">行号</th><th style="padding:8px;border:1px solid #e5e7eb;">原因</th></tr></thead>
+          <tbody>
+            {% for line_no, reason in result.error_rows|slice:":20" %}
+              <tr><td style="padding:8px;border:1px solid #e5e7eb;">{{ line_no }}</td><td style="padding:8px;border:1px solid #e5e7eb;color:#b91c1c;">{{ reason }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="module">
+    <h2>CSV 模板</h2>
+    <pre style="background:#f9fafb; padding:12px; border-radius:8px; overflow-x:auto; font-size:12px">{{ header_line }}</pre>
+    <p><a class="button" href="{{ template_url }}">下载模板 CSV</a></p>
+    <form method="post" enctype="multipart/form-data" style="margin-top:16px;">
+      {% csrf_token %}
+      <p>
+        <label for="id_csv_file"><strong>选择 CSV 文件（UTF-8）</strong></label><br />
+        <input type="file" name="csv_file" id="id_csv_file" accept=".csv,text/csv" required />
+      </p>
+      <p>
+        <input type="submit" class="default" value="上传并导入" />
+        <a href="{% url 'admin:tea_supply_product_changelist' %}" class="button" style="margin-left:8px;">返回商品列表</a>
+      </p>
+    </form>
+  </div>
+</div>
+{% endblock %}

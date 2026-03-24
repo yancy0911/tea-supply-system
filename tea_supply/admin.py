@@ -1,8 +1,14 @@
 import logging
+import csv
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import admin
+from django.contrib import messages
 from django import forms
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.shortcuts import render, redirect
+from django.urls import path, reverse
 from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
 from django.utils import timezone
@@ -24,6 +30,56 @@ from .money_utils import money_float
 from .resources import ProductCategoryResource, ProductResource
 
 logger = logging.getLogger(__name__)
+
+
+def import_product_costs_csv(file_obj):
+    def q2(v):
+        return Decimal(str(v)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    result = {
+        "updated_count": 0,
+        "skipped_count": 0,
+        "missing_skus": [],
+        "error_rows": [],
+    }
+    file_obj.seek(0)
+    text = file_obj.read().decode("utf-8-sig")
+    reader = csv.DictReader(text.splitlines())
+    required = {"sku", "cost_price_single", "cost_price_case"}
+    if set(reader.fieldnames or []) != required:
+        raise ValidationError("CSV 表头必须为：sku,cost_price_single,cost_price_case")
+
+    for idx, row in enumerate(reader, start=2):
+        sku = (row.get("sku") or "").strip()
+        if not sku:
+            result["error_rows"].append((idx, "sku 为空"))
+            continue
+        product = Product.objects.filter(sku=sku).first()
+        if not product:
+            result["missing_skus"].append((idx, sku))
+            continue
+
+        raw_single = (row.get("cost_price_single") or "").strip()
+        raw_case = (row.get("cost_price_case") or "").strip()
+        update_fields = []
+        try:
+            if raw_single != "":
+                product.cost_price_single = float(q2(raw_single))
+                update_fields.append("cost_price_single")
+            if raw_case != "":
+                product.cost_price_case = float(q2(raw_case))
+                update_fields.append("cost_price_case")
+        except (InvalidOperation, ValueError):
+            result["error_rows"].append((idx, f"成本价不是有效数字（sku={sku}）"))
+            continue
+
+        if not update_fields:
+            result["skipped_count"] += 1
+            continue
+        product.save(update_fields=update_fields)
+        result["updated_count"] += 1
+
+    return result
 
 
 class ProductAdminForm(forms.ModelForm):
@@ -168,6 +224,51 @@ class ProductAdmin(ImportExportModelAdmin):
     )
     list_filter = ("category", "is_active")
     search_fields = ("name", "sku", "unit_label")
+    change_list_template = "admin/tea_supply/product/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                "import-costs/",
+                self.admin_site.admin_view(self.import_costs_view),
+                name="tea_supply_product_import_costs",
+            ),
+            path(
+                "import-costs/template.csv",
+                self.admin_site.admin_view(self.download_cost_template_view),
+                name="tea_supply_product_import_costs_template",
+            ),
+        ]
+        return custom + urls
+
+    def import_costs_view(self, request):
+        ctx = {
+            **self.admin_site.each_context(request),
+            "title": "成本价导入",
+            "result": None,
+            "import_error": "",
+            "header_line": "sku,cost_price_single,cost_price_case",
+            "template_url": reverse("admin:tea_supply_product_import_costs_template"),
+        }
+        if request.method == "POST":
+            f = request.FILES.get("csv_file")
+            if not f:
+                ctx["import_error"] = "请先选择 CSV 文件"
+                return render(request, "admin/tea_supply/product/import_costs.html", ctx)
+            try:
+                result = import_product_costs_csv(f)
+                ctx["result"] = result
+                messages.success(request, "成本价导入完成")
+            except Exception as exc:
+                ctx["import_error"] = str(exc)
+        return render(request, "admin/tea_supply/product/import_costs.html", ctx)
+
+    def download_cost_template_view(self, request):
+        content = "sku,cost_price_single,cost_price_case\n"
+        resp = HttpResponse(content, content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = 'attachment; filename="product_cost_template.csv"'
+        return resp
 
     def has_module_permission(self, request):
         return request.user.is_superuser
