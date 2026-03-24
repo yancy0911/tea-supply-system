@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import hashlib
+import logging
 import secrets
 import time
 import os
@@ -41,6 +42,8 @@ from .models import (
     resolve_product_price_for_customer,
     resolve_selling_unit_price,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def tier_discount_map_for_wholesale():
@@ -1646,59 +1649,154 @@ def cancel_order(request, order_id):
     return redirect("orders-list")
 
 
-@login_required
-@internal_user_required
-def order_status_update(request, order_id):
-    if request.method == "POST":
-        status = request.POST.get("status")
-        workflow = request.POST.get("workflow_status")
-        valid_statuses = {choice[0] for choice in Order.Status.choices}
-        valid_wf = {choice[0] for choice in Order.WorkflowStatus.choices}
-        if status in valid_statuses and workflow in valid_wf:
-            try:
-                with transaction.atomic():
-                    # 只对 Order 主表加锁，避免 nullable 外连接（customer）与 FOR UPDATE 冲突
-                    order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
-                    old_status = order.status
-                    old_wf = order.workflow_status
-                    order.status = status
-                    order.workflow_status = workflow
-                    if status == Order.Status.PAID:
-                        order.payment_status = Order.PaymentStatus.PAID
-                        order.paid_at = timezone.now()
-                    order.save(update_fields=["status", "workflow_status", "payment_status", "paid_at"])
-                    if (
-                        workflow == Order.WorkflowStatus.CONFIRMED
-                        and old_wf != Order.WorkflowStatus.CONFIRMED
-                    ):
-                        _increase_debt_on_confirm(order)
-                    if workflow == Order.WorkflowStatus.CANCELLED and old_wf != Order.WorkflowStatus.CANCELLED:
-                        _decrease_debt_if_counted(order)
-                    if (
-                        status == Order.Status.PAID
-                        and old_status != Order.Status.PAID
-                    ):
-                        _decrease_debt_if_counted(order)
-                    if status == Order.Status.PAID and old_status != Order.Status.PAID:
-                        messages.success(request, _MSG_SETTLED_RELEASE)
-                    else:
-                        messages.success(request, "订单已保存")
-                return redirect("orders-list")
-            except ValidationError as exc:
-                messages.error(request, f"无法保存订单流转：{exc}")
-                return redirect("orders-list")
-        messages.error(request, "无效的订单状态或履约状态")
-
-    order = get_object_or_404(
-        Order.objects.select_related("customer").prefetch_related("items__product"),
-        pk=order_id,
-    )
-    context = {
+def _order_status_update_context(order):
+    return {
         "order": order,
         "status_choices": Order.Status.choices,
         "workflow_choices": Order.WorkflowStatus.choices,
+        "settlement_choices": Order.SettlementType.choices,
+        "payment_method_choices": Order.PaymentMethod.choices,
+        "payment_status_choices": Order.PaymentStatus.choices,
     }
-    return render(request, "order_status_update.html", context)
+
+
+@login_required
+@internal_user_required
+def order_status_update(request, order_id):
+    """
+    订单详情页保存入口：履约/结算方式/支付相关字段 + 结算状态（应收账款）。
+    仅锁 Order 主表；联动欠款在同事务内执行，失败则整笔回滚并提示原因。
+    """
+    detail_qs = Order.objects.select_related("customer").prefetch_related("items__product")
+
+    if request.method == "POST":
+        workflow = (request.POST.get("workflow_status") or "").strip()
+        settlement = (request.POST.get("settlement_type") or "").strip()
+        payment_method = (request.POST.get("payment_method") or "").strip()
+        payment_status = (request.POST.get("payment_status") or "").strip()
+        status = (request.POST.get("status") or "").strip()
+
+        valid_wf = {c[0] for c in Order.WorkflowStatus.choices}
+        valid_settlement = {c[0] for c in Order.SettlementType.choices}
+        valid_pm = {c[0] for c in Order.PaymentMethod.choices}
+        valid_ps = {c[0] for c in Order.PaymentStatus.choices}
+        valid_status = {c[0] for c in Order.Status.choices}
+
+        if not (
+            workflow in valid_wf
+            and settlement in valid_settlement
+            and payment_method in valid_pm
+            and payment_status in valid_ps
+            and status in valid_status
+        ):
+            logger.warning(
+                "order_status_update invalid POST order_id=%s wf=%r settlement=%r pm=%r ps=%r status=%r",
+                order_id,
+                workflow,
+                settlement,
+                payment_method,
+                payment_status,
+                status,
+            )
+            messages.error(
+                request,
+                "保存失败：提交的履约状态、结算方式、支付方式、支付状态或结算状态不合法，请重试。",
+            )
+            order = get_object_or_404(detail_qs, pk=order_id)
+            return render(request, "order_status_update.html", _order_status_update_context(order))
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(pk=order_id)
+                old_wf = order.workflow_status
+                old_status = order.status
+                old_snapshot = {
+                    "workflow_status": order.workflow_status,
+                    "settlement_type": order.settlement_type,
+                    "payment_method": order.payment_method,
+                    "payment_status": order.payment_status,
+                    "status": order.status,
+                    "paid_at": order.paid_at,
+                }
+                logger.info(
+                    "order_status_update order_id=%s before wf=%s settlement=%s pm=%s ps=%s status=%s paid_at=%s",
+                    order_id,
+                    old_snapshot["workflow_status"],
+                    old_snapshot["settlement_type"],
+                    old_snapshot["payment_method"],
+                    old_snapshot["payment_status"],
+                    old_snapshot["status"],
+                    old_snapshot["paid_at"],
+                )
+
+                order.workflow_status = workflow
+                order.settlement_type = settlement
+                order.payment_method = payment_method
+                order.payment_status = payment_status
+                order.status = status
+                if status == Order.Status.PAID and old_status != Order.Status.PAID and order.paid_at is None:
+                    order.paid_at = timezone.now()
+
+                update_fields = [
+                    "workflow_status",
+                    "settlement_type",
+                    "payment_method",
+                    "payment_status",
+                    "status",
+                ]
+                if order.paid_at != old_snapshot["paid_at"]:
+                    update_fields.append("paid_at")
+
+                logger.info(
+                    "order_status_update order_id=%s entering save() update_fields=%s new wf=%s settlement=%s pm=%s ps=%s status=%s paid_at=%s",
+                    order_id,
+                    update_fields,
+                    workflow,
+                    settlement,
+                    payment_method,
+                    payment_status,
+                    status,
+                    order.paid_at,
+                )
+                order.save(update_fields=update_fields)
+                logger.info("order_status_update order_id=%s save() finished without DB error", order_id)
+
+                if workflow == Order.WorkflowStatus.CONFIRMED and old_wf != Order.WorkflowStatus.CONFIRMED:
+                    logger.info("order_status_update order_id=%s side_effect _increase_debt_on_confirm", order_id)
+                    _increase_debt_on_confirm(order)
+                if workflow == Order.WorkflowStatus.CANCELLED and old_wf != Order.WorkflowStatus.CANCELLED:
+                    logger.info("order_status_update order_id=%s side_effect _decrease_debt_if_counted (cancel)", order_id)
+                    _decrease_debt_if_counted(order)
+                if status == Order.Status.PAID and old_status != Order.Status.PAID:
+                    logger.info("order_status_update order_id=%s side_effect _decrease_debt_if_counted (paid)", order_id)
+                    _decrease_debt_if_counted(order)
+
+            logger.info("order_status_update order_id=%s transaction committed", order_id)
+            if status == Order.Status.PAID and old_status != Order.Status.PAID:
+                messages.success(request, _MSG_SETTLED_RELEASE)
+            else:
+                messages.success(request, "订单已保存")
+            return redirect(reverse("order-status-update", kwargs={"order_id": order_id}))
+        except ValidationError as exc:
+            logger.exception(
+                "order_status_update order_id=%s ValidationError transaction rolled back: %s",
+                order_id,
+                exc,
+            )
+            messages.error(request, f"保存失败（已回滚）：{exc}")
+        except Exception as exc:
+            logger.exception(
+                "order_status_update order_id=%s unexpected error transaction rolled back: %s",
+                order_id,
+                exc,
+            )
+            messages.error(request, f"保存失败（已回滚）：{exc}")
+
+        order = get_object_or_404(detail_qs, pk=order_id)
+        return render(request, "order_status_update.html", _order_status_update_context(order))
+
+    order = get_object_or_404(detail_qs, pk=order_id)
+    return render(request, "order_status_update.html", _order_status_update_context(order))
 
 
 def _stripe_secret_key():

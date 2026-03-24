@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 from django.utils.html import format_html
@@ -17,6 +19,8 @@ from .models import (
     UserRole,
 )
 from .resources import ProductCategoryResource, ProductResource
+
+logger = logging.getLogger(__name__)
 
 
 class CustomerProductPriceInline(admin.TabularInline):
@@ -259,8 +263,46 @@ class OrderAdmin(admin.ModelAdmin):
         return bool(request.user.is_authenticated and request.user.is_superuser)
 
     def get_queryset(self, request):
-        # 防止后台查询在关联筛选/搜索时出现重复订单行
-        return super().get_queryset(request).distinct()
+        # 不在此对全表 .distinct()：与 list_editable 同时使用时，部分环境下列表保存无法正确落库。
+        return super().get_queryset(request)
+
+    def save_model(self, request, obj, form, change):
+        if change and obj.pk:
+            try:
+                prev = Order.objects.filter(pk=obj.pk).values(
+                    "workflow_status",
+                    "settlement_type",
+                    "payment_method",
+                    "payment_status",
+                    "status",
+                ).first()
+            except Exception:
+                prev = None
+            if prev:
+                logger.info(
+                    "OrderAdmin.save_model order_id=%s before wf=%s settlement=%s pm=%s ps=%s status=%s",
+                    obj.pk,
+                    prev["workflow_status"],
+                    prev["settlement_type"],
+                    prev["payment_method"],
+                    prev["payment_status"],
+                    prev["status"],
+                )
+        logger.info(
+            "OrderAdmin.save_model order_id=%s entering super().save_model change=%s",
+            getattr(obj, "pk", None),
+            change,
+        )
+        try:
+            super().save_model(request, obj, form, change)
+        except Exception as exc:
+            logger.exception(
+                "OrderAdmin.save_model order_id=%s failed (not saved): %s",
+                getattr(obj, "pk", None),
+                exc,
+            )
+            raise
+        logger.info("OrderAdmin.save_model order_id=%s save() completed", obj.pk)
 
     def total_revenue_display(self, obj):
         return float(obj.total_revenue or 0.0)

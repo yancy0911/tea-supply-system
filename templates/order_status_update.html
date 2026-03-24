@@ -77,6 +77,30 @@
         </select>
       </div>
       <div style="margin-bottom: 12px">
+        <label for="settlement_type" class="muted" style="display: block; margin-bottom: 6px">结算方式</label>
+        <select id="settlement_type" name="settlement_type" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+          {% for value, label in settlement_choices %}
+            <option value="{{ value }}" {% if order.settlement_type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom: 12px">
+        <label for="payment_method" class="muted" style="display: block; margin-bottom: 6px">支付方式</label>
+        <select id="payment_method" name="payment_method" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+          {% for value, label in payment_method_choices %}
+            <option value="{{ value }}" {% if order.payment_method == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom: 12px">
+        <label for="payment_status" class="muted" style="display: block; margin-bottom: 6px">支付状态</label>
+        <select id="payment_status" name="payment_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+          {% for value, label in payment_status_choices %}
+            <option value="{{ value }}" {% if order.payment_status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-bottom: 12px">
         <label for="status" class="muted" style="display: block; margin-bottom: 6px">结算状态（应收账款）</label>
         <select id="status" name="status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
           {% for value, label in status_choices %}
