@@ -1,5 +1,6 @@
 import logging
 import csv
+import re
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from django.contrib import admin
@@ -32,6 +33,148 @@ from .money_utils import money_float
 from .resources import ProductCategoryResource, ProductResource
 
 logger = logging.getLogger(__name__)
+
+# Admin data sync: Chinese → English (longer phrases first for substring replacement).
+CATEGORY_KEYWORD_REPLACEMENTS = (
+    ("雪克杯", "Shaker Cup"),
+    ("雪克", "Shaker Cup"),
+    ("木薯波巴", "Tapioca Boba"),
+    ("默认分类", "Default"),
+    ("爆爆珠", "Popping Boba"),
+    ("椰果", "Coconut Jelly"),
+    ("果酱", "Fruit Jam"),
+    ("特殊粉", "Special Powder"),
+    ("糖浆", "Syrup"),
+    ("工具", "Tools"),
+    ("机器", "Machinery"),
+    ("果肉", "Pulp Topping"),
+    ("纯粉", "Pure Powder"),
+    ("茶包", "Tea Bag"),
+)
+
+# 整箱 before 箱; 单品/袋 for labels inside name or unit fields.
+LABEL_PHRASE_REPLACEMENTS = (
+    ("整箱", "Case"),
+    ("单品", "Single"),
+    ("袋", "Bag"),
+    ("箱", "Case"),
+)
+
+CJK_RE = re.compile(r"[\u4e00-\u9fff]+")
+
+
+def _collapse_spaces(s: str) -> str:
+    return re.sub(r"\s+", " ", (s or "").strip())
+
+
+def _dedupe_consecutive_words(s: str) -> str:
+    parts = s.split()
+    if not parts:
+        return ""
+    out = [parts[0]]
+    for p in parts[1:]:
+        if p.lower() != out[-1].lower():
+            out.append(p)
+    return " ".join(out)
+
+
+def normalize_category_name_to_english(raw: str) -> str:
+    """Map known Chinese category phrases, strip leftover CJK, collapse spaces."""
+    s = raw or ""
+    for zh, en in CATEGORY_KEYWORD_REPLACEMENTS:
+        s = s.replace(zh, f" {en} ")
+    s = CJK_RE.sub("", s)
+    s = _collapse_spaces(s)
+    return _dedupe_consecutive_words(s)
+
+
+def normalize_product_field_to_english(raw: str, *, apply_label_phrases: bool) -> str:
+    """Strip CJK; optionally map 单品/整箱/袋/箱 before stripping."""
+    s = raw or ""
+    if apply_label_phrases:
+        for zh, en in LABEL_PHRASE_REPLACEMENTS:
+            s = s.replace(zh, en)
+    s = CJK_RE.sub("", s)
+    return _collapse_spaces(s)
+
+
+@admin.action(description="Convert categories to English")
+def normalize_categories_to_english(modeladmin, request, queryset):
+    """Batch-normalize ProductCategory.name to English (admin-only data sync)."""
+    updated = 0
+    for cat in queryset:
+        new_name = normalize_category_name_to_english(cat.name or "")
+        if not new_name:
+            modeladmin.message_user(
+                request,
+                f"Skipped category id={cat.pk}: result would be empty.",
+                level=messages.WARNING,
+            )
+            continue
+        if new_name == (cat.name or "").strip():
+            continue
+        if (
+            ProductCategory.objects.filter(name=new_name)
+            .exclude(pk=cat.pk)
+            .exists()
+        ):
+            modeladmin.message_user(
+                request,
+                f"Skipped “{cat.name}”: another category already uses “{new_name}”.",
+                level=messages.WARNING,
+            )
+            continue
+        cat.name = new_name
+        cat.save(update_fields=["name"])
+        updated += 1
+    if updated:
+        messages.success(request, "Data normalized to English successfully")
+    else:
+        messages.info(request, "No category names were changed.")
+
+
+normalize_categories_to_english.short_description = "Convert categories to English"
+
+
+@admin.action(description="Clean products to English (names & unit labels)")
+def clean_products_to_english(modeladmin, request, queryset):
+    """Batch-clean Product name / unit_label / case_label (admin-only)."""
+    updated = 0
+    for p in queryset:
+        new_name = normalize_product_field_to_english(p.name, apply_label_phrases=True)
+        new_unit = normalize_product_field_to_english(
+            p.unit_label, apply_label_phrases=True
+        )
+        new_case = normalize_product_field_to_english(
+            p.case_label, apply_label_phrases=True
+        )
+        fields = []
+        if new_name != (p.name or ""):
+            if not new_name:
+                modeladmin.message_user(
+                    request,
+                    f"Skipped SKU {p.sku!r}: name would be empty after normalization.",
+                    level=messages.WARNING,
+                )
+            else:
+                p.name = new_name
+                fields.append("name")
+        if new_unit != (p.unit_label or ""):
+            p.unit_label = new_unit
+            fields.append("unit_label")
+        if new_case != (p.case_label or ""):
+            p.case_label = new_case
+            fields.append("case_label")
+        if fields:
+            p.save(update_fields=fields)
+            updated += 1
+    if updated:
+        messages.success(request, "Data normalized to English successfully")
+    else:
+        messages.info(request, "No product fields were changed.")
+
+
+clean_products_to_english.short_description = "Clean products to English"
 
 
 def import_product_costs_csv(file_obj):
@@ -205,6 +348,9 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
     list_display = ("name", "sort_order", "is_active")
     list_editable = ("sort_order", "is_active")
     search_fields = ("name",)
+    # Callable registration (reliable); string "normalize_categories_to_english" only resolves
+    # to methods on this class, not module-level functions.
+    actions = [normalize_categories_to_english]
 
     def has_module_permission(self, request):
         return request.user.is_superuser
@@ -245,6 +391,7 @@ class ProductAdmin(ImportExportModelAdmin):
         "profit_case_display",
         "profit_rate_case_display",
     )
+    actions = [clean_products_to_english]
 
     def get_urls(self):
         urls = super().get_urls()

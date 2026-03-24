@@ -19,7 +19,13 @@
   </a>
   <div class="catalog-card__body">
     <div class="catalog-card__meta">
-      <span class="catalog-card__badge">{{ product.category_name|default:"Default Category" }}</span>
+      <span class="catalog-card__badge">
+        {% if product.category_name %}
+          {% include "shop/_category_label_en.html" with name=product.category_name only %}
+        {% else %}
+          Default Category
+        {% endif %}
+      </span>
       <a class="catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
       <div class="catalog-card__sku"><span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}</div>
     </div>
@@ -31,7 +37,7 @@
     {% else %}
       <div class="catalog-card__prices" aria-label="Unit pricing">
         <div class="price-block" data-price-type="bag">
-          <div class="price-block__label">Per bag</div>
+          <div class="price-block__label">Per Bag</div>
           <div class="price-block__unit">{{ product.unit_label|default:"—" }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_single %}
@@ -47,7 +53,7 @@
           </div>
         </div>
         <div class="price-block" data-price-type="case">
-          <div class="price-block__label">Per case</div>
+          <div class="price-block__label">Per Case</div>
           <div class="price-block__unit">{{ product.case_label|default:"—" }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_case %}
@@ -67,9 +73,12 @@
 
     {% if not product.price_on_request %}
       <div class="catalog-card__note-row">
-        <span
-          class="catalog-chip {% with n=product.price_note|default_if_none:'' %}{% if '专属' in n %}catalog-chip--accent{% elif 'VIP' in n or '等级' in n %}catalog-chip--vip{% else %}catalog-chip--muted{% endif %}{% endwith %}"
-        >{{ product.price_note }}</span>
+        {% if product.price_note %}
+          <span
+            class="catalog-chip catalog-chip--muted js-shop-price-note"
+            data-price-note-src="{{ product.price_note|escapejs }}"
+          ></span>
+        {% endif %}
         {% if product.profit_risk_single or product.profit_risk_case %}
           <span class="catalog-chip catalog-chip--warn">Margin risk</span>
         {% endif %}
@@ -99,7 +108,7 @@
             {% if product.default_mode == "single" %}checked{% endif %}
             {% if not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
           />
-          <span>Bag</span>
+          <span>Single</span>
         </label>
         <label class="catalog-segment__opt">
           <input
