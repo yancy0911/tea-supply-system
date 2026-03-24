@@ -272,20 +272,24 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 sale_type=sale_type,
             )
             assert price_info["source"] in ["custom", "tier", "base"]
-            unit_price = money_dec(price_info["final_price"])
-            if money_float(unit_price) <= 0:
+            final_unit_price = money_dec(price_info["final_price"])
+            if money_float(final_unit_price) <= 0:
                 raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
-            line_amt = money_q2(money_dec(qty) * unit_price)
-            order_total += line_amt
+            final_subtotal = money_q2(money_dec(qty) * final_unit_price)
+            final_pricing_note = str(price_info.get("pricing_note") or "")
+            source = str(price_info.get("source") or "")
+            if source == "custom":
+                final_pricing_note = "客户专属价"
+            order_total += final_subtotal
             validated.append(
                 {
                     "product_id": pid,
                     "sale_type": sale_type,
                     "quantity": qty,
-                    "unit_price": unit_price,
-                    "subtotal": line_amt,
-                    "pricing_note": str(price_info.get("pricing_note") or ""),
-                    "source": str(price_info.get("source") or ""),
+                    "final_unit_price": final_unit_price,
+                    "final_subtotal": final_subtotal,
+                    "final_pricing_note": final_pricing_note,
+                    "source": source,
                 }
             )
 
@@ -367,23 +371,34 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
 
             # 3) 明细只写 OrderItem（不重复建 Order）
             for v in validated:
+                product = Product.objects.get(pk=v["product_id"])
+                sale_type = v["sale_type"]
+                qty = v["quantity"]
+                source = v["source"]
+                final_unit_price = v["final_unit_price"]
+                final_subtotal = v["final_subtotal"]
+                final_pricing_note = v["final_pricing_note"]
                 print(
-                    "🔥定价命中：",
+                    "PRICE_SAVE_DEBUG",
                     {
-                        "product": v["product_id"],
-                        "customer": customer_locked.id if customer_locked else None,
-                        "source": v["source"],
-                        "price": str(v["unit_price"]),
+                        "product_id": product.id,
+                        "product_sku": getattr(product, "sku", ""),
+                        "customer_id": getattr(customer_locked, "id", None),
+                        "sale_type": sale_type,
+                        "source": source,
+                        "unit_price": str(final_unit_price),
+                        "subtotal": str(final_subtotal),
+                        "pricing_note": final_pricing_note,
                     },
                 )
                 OrderItem.objects.create(
                     order=order,
-                    product_id=v["product_id"],
-                    sale_type=v["sale_type"],
-                    quantity=v["quantity"],
-                    unit_price=money_float(v["unit_price"]),
-                    total_revenue=money_float(v["subtotal"]),
-                    pricing_note=(v["pricing_note"] or "")[:64],
+                    product=product,
+                    sale_type=sale_type,
+                    quantity=qty,
+                    unit_price=money_float(final_unit_price),
+                    total_revenue=money_float(final_subtotal),
+                    pricing_note=(final_pricing_note or "")[:64],
                 )
 
             # 4) 统一重算总金额：order.total_amount = sum(order_items.line_total)
