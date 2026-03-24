@@ -26,13 +26,13 @@
         <div class="k">应转金额</div>
         <div class="amt">¥{{ order.total_revenue|floatformat:2 }}</div>
         <div class="k">银行名称</div>
-        <div class="v">{{ bank_info.bank_name|default:"未配置" }}</div>
+        <div class="v">{% firstof bank_info.bank_name "请联系管理员" %}</div>
         <div class="k">Account Name</div>
-        <div class="v">{{ bank_info.account_name|default:"未配置" }}</div>
+        <div class="v">{% firstof bank_info.account_name "请联系管理员" %}</div>
         <div class="k">Account Number</div>
-        <div class="v">{{ bank_info.account_number|default:"未配置" }}</div>
+        <div class="v">{% firstof bank_info.account_number "请联系管理员" %}</div>
         <div class="k">Routing Number</div>
-        <div class="v">{{ bank_info.routing_number|default:"未配置" }}</div>
+        <div class="v">{% firstof bank_info.routing_number "请联系管理员" %}</div>
 
         <form method="post" action="{% url 'update-transfer-reference' order.id %}" style="margin-top:14px">
           {% csrf_token %}

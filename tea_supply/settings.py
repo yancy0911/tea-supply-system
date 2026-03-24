@@ -214,6 +214,12 @@ BANK_NAME = os.environ.get("BANK_NAME", "").strip()
 BANK_ACCOUNT_NAME = os.environ.get("BANK_ACCOUNT_NAME", "").strip()
 BANK_ACCOUNT_NUMBER = os.environ.get("BANK_ACCOUNT_NUMBER", "").strip()
 BANK_ROUTING_NUMBER = os.environ.get("BANK_ROUTING_NUMBER", "").strip()
+BANK_TRANSFER_INFO = {
+    "bank_name": "Chase Bank",
+    "account_name": "Yancy Supply LLC",
+    "account_number": "123456789",
+    "routing_number": "021000021",
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

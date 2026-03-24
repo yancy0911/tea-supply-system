@@ -1740,7 +1740,7 @@ def stripe_cancel(request):
 @require_GET
 def bank_transfer_instructions(request, order_id):
     order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
-    bank = _bank_transfer_info()
+    bank = getattr(settings, "BANK_TRANSFER_INFO", None) or {}
     return render(
         request,
         "shop/bank_transfer_instructions.html",
