@@ -34,10 +34,11 @@ class CustomerAdmin(admin.ModelAdmin):
         "contact_name",
         "phone",
         "current_debt",
+        "credit_limit",
+        "is_blocked_display",
         "account_status",
         "level",
         "allow_credit",
-        "credit_limit",
         "minimum_order_amount",
     )
     list_display_links = ("shop_name", "name")
@@ -47,6 +48,7 @@ class CustomerAdmin(admin.ModelAdmin):
         "customer_level",
         "allow_credit",
         "is_active",
+        "is_blocked",
         "payment_cycle",
         "is_monthly_settlement",
         "delivery_zone",
@@ -64,6 +66,7 @@ class CustomerAdmin(admin.ModelAdmin):
         "allow_credit",
         "credit_limit",
         "current_debt",
+        "is_blocked",
         "minimum_order_amount",
         "is_active",
         "payment_cycle",
@@ -72,6 +75,14 @@ class CustomerAdmin(admin.ModelAdmin):
     )
     inlines = (CustomerProductPriceInline,)
     autocomplete_fields = ("user",)
+
+    @admin.display(description="停单", ordering="is_blocked")
+    def is_blocked_display(self, obj):
+        if obj.is_blocked:
+            return format_html(
+                '<span style="color:#c00;font-weight:600;">已停单</span>'
+            )
+        return format_html('<span style="color:#080;">否</span>')
 
 
 @admin.register(Ingredient)

@@ -190,7 +190,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
     从购物车明细创建订单（批发录单 / 客户商城共用逻辑）。
     request: 可为 None（店员录单）；商城下单传入 request 以绑定 session。
     lines: 已解析的 list，元素为 dict：product_id, sale_type, quantity
-    from_shop=True 时跳过赊账/额度校验（商城现结/线下对账由老板处理）。
+    from_shop=True 时仍校验账号/停单等；仅跳过挂账额度数值校验（现结由老板线下对账）。
     """
     try:
         if not isinstance(lines, list) or len(lines) == 0:
@@ -231,6 +231,8 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         else:
             if customer_obj is None:
                 raise ValidationError("请选择客户")
+            if customer_obj.is_blocked:
+                raise ValidationError("客户已超额度，已暂停下单")
 
         current_unsettled = float(customer_obj.current_debt) if customer_obj else 0.0
         credit_limit = float(customer_obj.credit_limit) if customer_obj else 0.0
@@ -1371,6 +1373,101 @@ def orders_list(request):
             "workflow_choices": Order.WorkflowStatus.choices,
             "status_choices": Order.Status.choices,
             "filter_customers": Customer.objects.all().order_by("name"),
+        },
+    )
+
+
+def _customer_risk_status_label(customer):
+    """风险展示优先级：已停单 > 超额度 > 关注 > 正常。"""
+    debt = float(customer.current_debt or 0)
+    limit = float(customer.credit_limit or 0)
+    if customer.is_blocked:
+        return "已停单"
+    if limit > 0 and debt >= limit:
+        return "超额度"
+    if limit > 0 and debt / limit >= 0.8:
+        return "关注"
+    return "正常"
+
+
+@login_required
+@internal_user_required
+def customer_insights_dashboard(request):
+    """
+    客户价值与风险看板（稳版）：只读统计，口径与基础报表一致
+    （排除 workflow_status=已取消；无客户订单不参与排行）。
+    """
+    valid_order_base = Order.objects.exclude(
+        workflow_status=Order.WorkflowStatus.CANCELLED
+    ).exclude(customer__isnull=True)
+
+    profit_top = list(
+        valid_order_base.values("customer_id", "customer__name")
+        .annotate(
+            order_count=Count("id"),
+            total_sales=Coalesce(Sum("total_revenue"), 0.0),
+            total_cost=Coalesce(Sum("total_cost"), 0.0),
+            total_profit=Coalesce(Sum("profit"), 0.0),
+        )
+        .order_by("-total_profit")[:10]
+    )
+
+    sales_top = list(
+        valid_order_base.values("customer_id", "customer__name")
+        .annotate(
+            order_count=Count("id"),
+            total_sales=Coalesce(Sum("total_revenue"), 0.0),
+        )
+        .order_by("-total_sales")[:10]
+    )
+
+    debt_top = []
+    for c in Customer.objects.all().order_by("-current_debt")[:10]:
+        debt = float(c.current_debt or 0)
+        limit = float(c.credit_limit or 0)
+        ratio_pct = (debt / limit * 100.0) if limit > 0 else None
+        debt_top.append(
+            {
+                "name": c.name,
+                "current_debt": debt,
+                "credit_limit": limit,
+                "ratio_pct": ratio_pct,
+                "is_blocked": c.is_blocked,
+            }
+        )
+
+    risk_qs = Customer.objects.filter(
+        Q(is_blocked=True)
+        | Q(credit_limit__gt=0, current_debt__gte=F("credit_limit") * 0.8)
+    ).order_by("-current_debt")
+    risk_rows = []
+    for c in risk_qs:
+        risk_rows.append(
+            {
+                "name": c.name,
+                "current_debt": float(c.current_debt or 0),
+                "credit_limit": float(c.credit_limit or 0),
+                "risk_status": _customer_risk_status_label(c),
+            }
+        )
+
+    kpi_total_customers = Customer.objects.count()
+    kpi_customers_with_orders = valid_order_base.values("customer_id").distinct().count()
+    kpi_blocked_customers = Customer.objects.filter(is_blocked=True).count()
+    kpi_customers_with_debt = Customer.objects.filter(current_debt__gt=0).count()
+
+    return render(
+        request,
+        "reports_customer_insights.html",
+        {
+            "profit_top": profit_top,
+            "sales_top": sales_top,
+            "debt_top": debt_top,
+            "risk_rows": risk_rows,
+            "kpi_total_customers": kpi_total_customers,
+            "kpi_customers_with_orders": kpi_customers_with_orders,
+            "kpi_blocked_customers": kpi_blocked_customers,
+            "kpi_customers_with_debt": kpi_customers_with_debt,
         },
     )
 

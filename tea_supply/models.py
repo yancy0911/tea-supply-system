@@ -209,6 +209,11 @@ class Customer(models.Model):
         verbose_name="当前欠款",
         help_text="挂账订单累计未收款金额；收款后自动减少，不低于 0。",
     )
+    is_blocked = models.BooleanField(
+        default=False,
+        verbose_name="是否停单",
+        help_text="欠款≥信用额度时系统自动停单；后台可手动解除（欠款与额度未变时保留解除状态）。",
+    )
     minimum_order_amount = models.FloatField(
         default=0,
         verbose_name="起送金额",
@@ -238,6 +243,39 @@ class Customer(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get("update_fields")
+        old_row = None
+        if self.pk:
+            old_row = (
+                Customer.objects.filter(pk=self.pk)
+                .values("is_blocked", "current_debt", "credit_limit")
+                .first()
+            )
+        prev_blocked = bool(old_row["is_blocked"]) if old_row else False
+        self._apply_credit_block_rule(old_row)
+        if update_fields is not None:
+            ufs = list(update_fields)
+            if self.is_blocked != prev_blocked and "is_blocked" not in ufs:
+                ufs.append("is_blocked")
+            kwargs["update_fields"] = ufs
+        super().save(*args, **kwargs)
+
+    def _apply_credit_block_rule(self, old_row):
+        limit = float(self.credit_limit or 0)
+        debt = float(self.current_debt or 0)
+        if limit > 0 and debt >= limit:
+            if old_row:
+                old_debt = float(old_row["current_debt"] or 0)
+                old_limit = float(old_row["credit_limit"] or 0)
+                debt_same = abs(old_debt - debt) < 1e-6
+                limit_same = abs(old_limit - limit) < 1e-6
+                if debt_same and limit_same and not self.is_blocked:
+                    return
+            self.is_blocked = True
+        elif limit > 0 and debt < limit:
+            self.is_blocked = False
+
     def shop_order_denial_reason(self):
         """商城下单被拒绝时的说明；空字符串表示可下单。"""
         if self.account_status == self.AccountStatus.PENDING:
@@ -246,6 +284,8 @@ class Customer(models.Model):
             return "账号已禁用，无法下单，请联系店家"
         if not self.is_active:
             return "客户档案已停用，无法下单，请联系店家"
+        if self.is_blocked:
+            return "客户已超额度，已暂停下单"
         return ""
 
     @property
@@ -862,6 +902,8 @@ class CreditApplication(models.Model):
                 allow_credit=True,
                 credit_limit=max(0.0, approved_limit),
             )
+            cust = Customer.objects.get(pk=self.customer_id)
+            cust.save()
 
 
 def _discount_rates_for_level(level_key):

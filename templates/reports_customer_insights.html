@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2 style="margin: 0 0 8px 0">客户价值与风险看板</h2>
+  <p class="muted" style="margin: 0 0 16px 0">
+    统计口径：有效订单 = 履约状态非「已取消」；销售额 / 成本 / 利润按订单字段汇总（与基础报表一致）。
+    <a href="{% url 'reports-dashboard' %}">返回基础报表</a>
+  </p>
+
+  <div class="card-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px">
+    <div class="card"><div class="label">客户总数</div><div class="value">{{ kpi_total_customers }}</div></div>
+    <div class="card"><div class="label">有成交客户数</div><div class="value">{{ kpi_customers_with_orders }}</div></div>
+    <div class="card"><div class="label">已停单客户数</div><div class="value" style="color:#b91c1c">{{ kpi_blocked_customers }}</div></div>
+    <div class="card"><div class="label">欠款客户数</div><div class="value">{{ kpi_customers_with_debt }}</div></div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h3 style="margin-top: 0">客户利润排行 TOP10</h3>
+      <p class="muted" style="font-size: 13px; margin-top: -6px">按 Σ订单利润倒序；利润 = 各订单 <code>total_revenue − total_cost</code>（与订单表 <code>profit</code> 一致）。</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>客户名称</th>
+            <th>订单数</th>
+            <th>总销售额</th>
+            <th>总成本</th>
+            <th>总利润</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in profit_top %}
+            <tr>
+              <td>{{ r.customer__name }}</td>
+              <td>{{ r.order_count }}</td>
+              <td>{{ r.total_sales|floatformat:2 }}</td>
+              <td>{{ r.total_cost|floatformat:2 }}</td>
+              <td style="font-weight:600">{{ r.total_profit|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="muted">暂无数据</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top: 0">客户销售额排行 TOP10</h3>
+      <table class="table">
+        <thead>
+          <tr><th>客户名称</th><th>订单数</th><th>总销售额</th></tr>
+        </thead>
+        <tbody>
+          {% for r in sales_top %}
+            <tr>
+              <td>{{ r.customer__name }}</td>
+              <td>{{ r.order_count }}</td>
+              <td>{{ r.total_sales|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="muted">暂无数据</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top: 12px">
+    <div class="card">
+      <h3 style="margin-top: 0">欠款排行 TOP10</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>客户名称</th>
+            <th>当前欠款</th>
+            <th>信用额度</th>
+            <th>欠款占比</th>
+            <th>是否停单</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in debt_top %}
+            <tr>
+              <td>{{ r.name }}</td>
+              <td>{{ r.current_debt|floatformat:2 }}</td>
+              <td>{{ r.credit_limit|floatformat:2 }}</td>
+              <td>{% if r.ratio_pct is not None %}{{ r.ratio_pct|floatformat:1 }}%{% else %}—{% endif %}</td>
+              <td>
+                {% if r.is_blocked %}
+                  <span style="color:#b91c1c;font-weight:600">已停单</span>
+                {% else %}
+                  <span style="color:#15803d">否</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="muted">暂无数据</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top: 0">风险客户列表</h3>
+      <p class="muted" style="font-size: 13px; margin-top: -6px">
+        已停单、或额度 &gt;0 且 欠款/额度 ≥80% 的客户；状态优先级：已停单 &gt; 超额度 &gt; 关注。
+      </p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>客户名称</th>
+            <th>当前欠款</th>
+            <th>信用额度</th>
+            <th>风险状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in risk_rows %}
+            <tr>
+              <td>{{ r.name }}</td>
+              <td>{{ r.current_debt|floatformat:2 }}</td>
+              <td>{{ r.credit_limit|floatformat:2 }}</td>
+              <td>
+                {% if r.risk_status == "已停单" %}
+                  <span style="color:#7f1d1d;font-weight:600">已停单</span>
+                {% elif r.risk_status == "超额度" %}
+                  <span style="color:#b91c1c;font-weight:600">超额度</span>
+                {% elif r.risk_status == "关注" %}
+                  <span style="color:#c2410c;font-weight:600">关注</span>
+                {% else %}
+                  <span style="color:#15803d">正常</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">暂无风险客户</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
