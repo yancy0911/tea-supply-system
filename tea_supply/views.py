@@ -25,9 +25,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import (
+    CUSTOMER_LEVEL_DISCOUNT_RATES,
     CreditApplication,
     Customer,
-    CustomerLevelPriceRule,
     CustomerProductPrice,
     Ingredient,
     Order,
@@ -43,30 +43,23 @@ from .models import (
 
 
 def tier_discount_map_for_wholesale():
-    """录单页 JS：等级 -> {single, case} 折扣率；缺省 1.0（原价）。"""
-    out = {code: {"single": 1.0, "case": 1.0} for code, _ in Customer.Level.choices}
-    for r in CustomerLevelPriceRule.objects.filter(is_active=True):
-        out[r.level] = {
-            "single": float(r.single_discount_rate),
-            "case": float(r.case_discount_rate),
-        }
+    """录单页 JS：等级 -> {single, case} 折扣率（与 CUSTOMER_LEVEL_DISCOUNT_RATES 一致）。"""
+    out = {}
+    for code, _ in Customer.Level.choices:
+        r = float(CUSTOMER_LEVEL_DISCOUNT_RATES.get(code, 1.0))
+        out[code] = {"single": r, "case": r}
     return out
 
 
 def tier_rules_banner_text():
-    """商城页眉小字：C/B/A 等级价说明（来自规则表）。"""
+    """商城页眉小字：等级折扣说明（与代码常量一致）。"""
     parts = []
-    for lvl in ["C", "B", "A"]:
-        rule = CustomerLevelPriceRule.objects.filter(level=lvl, is_active=True).first()
-        rs = float(rule.single_discount_rate) if rule else 1.0
-        rc = float(rule.case_discount_rate) if rule else 1.0
-        if abs(rs - rc) < 1e-9:
-            if abs(rs - 1.0) < 1e-9:
-                parts.append(f"{lvl}原价")
-            else:
-                parts.append(f"{lvl}{int(round(rs * 100))}折")
+    for lvl in ["C", "B", "A", "VIP"]:
+        r = float(CUSTOMER_LEVEL_DISCOUNT_RATES.get(lvl, 1.0))
+        if abs(r - 1.0) < 1e-9:
+            parts.append(f"{lvl}原价")
         else:
-            parts.append(f"{lvl}单{int(round(rs * 100))}折·箱{int(round(rc * 100))}折")
+            parts.append(f"{lvl}{int(round(r * 100))}折")
     return " · ".join(parts)
 
 
@@ -255,10 +248,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if qty < float(p.minimum_order_qty):
                 raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
 
-            if customer_obj is None:
-                unit_price = float(p.price_case) if sale_type == OrderItem.SaleType.CASE else float(p.price_single)
-            else:
-                unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)
+            unit_price, _ = resolve_selling_unit_price(customer_obj, p, sale_type)
             if float(unit_price) <= 0:
                 raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
             line_amt = qty * float(unit_price)

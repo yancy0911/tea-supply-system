@@ -256,10 +256,10 @@
       }
 
       /**
-       * 折扣规则（与后端 resolve_product_price_for_customer / resolve_selling_unit_price 一致）：
-       * 1 专属价优先 → 成交价 = 专属单品/整箱价
-       * 2 否则按「等级折扣规则」表：单品/整箱可分别配置
-       * 3 未选客户 → 基础价
+       * 与后端 resolve_product_price_for_customer 一致：
+       * 1 专属价优先
+       * 2 否则等级价 VIP×0.90 / A×0.95 / B×0.98 / C×1.00（单品整箱同系数）
+       * 3 无客户 → 商品原价
        */
       function computeLinePricing() {
         var p = getSelectedProduct(productSelect.value);

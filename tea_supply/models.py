@@ -177,7 +177,7 @@ class Customer(models.Model):
         choices=Level.choices,
         default=Level.C,
         verbose_name="客户等级（VIP）",
-        help_text="商城/录单：专属价优先；否则按「等级折扣规则」表对基础价打折。可手动改等级；订单也会按消费自动重算等级。",
+        help_text="商城/录单：专属价优先；否则按统一等级折扣（VIP×0.90、A×0.95、B×0.98、C×1.00）乘基础价。可手动改等级；订单也会按消费自动重算等级。",
     )
     allow_credit = models.BooleanField(
         default=False,
@@ -240,7 +240,7 @@ class Customer(models.Model):
 
 
 class CustomerLevelPriceRule(models.Model):
-    """按客户等级配置单品/整箱折扣率（相对商品基础价）；规则为空或缺失等级时按原价。"""
+    """历史表：当前定价已改为代码常量 CUSTOMER_LEVEL_DISCOUNT_RATES，请勿再依赖本表。"""
 
     level = models.CharField(
         max_length=10,
@@ -266,6 +266,15 @@ class CustomerLevelPriceRule(models.Model):
 
     def __str__(self):
         return f"{self.level} 单×{self.single_discount_rate} 箱×{self.case_discount_rate}"
+
+
+# 统一等级折扣（代码常量，单品/整箱同一系数）。实际定价不再读取 CustomerLevelPriceRule 表，避免与后台双源冲突。
+CUSTOMER_LEVEL_DISCOUNT_RATES = {
+    Customer.Level.VIP: 0.90,
+    Customer.Level.A: 0.95,
+    Customer.Level.B: 0.98,
+    Customer.Level.C: 1.00,
+}
 
 
 class StockLog(models.Model):
@@ -663,16 +672,9 @@ class OrderItem(models.Model):
             self.profit = self.total_revenue - self.total_cost
             return
 
-        if customer is None:
-            if self.sale_type == self.SaleType.CASE:
-                self.unit_price = float(p.price_case)
-            else:
-                self.unit_price = float(p.price_single)
-            self.pricing_note = "基础价"
-        else:
-            unit_price, pricing_note = resolve_selling_unit_price(customer, p, self.sale_type)
-            self.unit_price = float(unit_price)
-            self.pricing_note = pricing_note
+        unit_price, pricing_note = resolve_selling_unit_price(customer, p, self.sale_type)
+        self.unit_price = float(unit_price)
+        self.pricing_note = pricing_note
         q = float(self.quantity)
         self.total_revenue = q * self.unit_price
         if self.sale_type == self.SaleType.CASE:
@@ -806,11 +808,9 @@ class CreditApplication(models.Model):
 
 
 def _discount_rates_for_level(level_key):
-    """返回 (单品率, 整箱率)；无规则或表为空时均为 1.0。"""
-    rule = CustomerLevelPriceRule.objects.filter(level=level_key, is_active=True).first()
-    if not rule:
-        return 1.0, 1.0
-    return float(rule.single_discount_rate), float(rule.case_discount_rate)
+    """返回 (单品率, 整箱率)；与 CUSTOMER_LEVEL_DISCOUNT_RATES 一致；未知等级按 1.0。"""
+    r = float(CUSTOMER_LEVEL_DISCOUNT_RATES.get(level_key, 1.0))
+    return r, r
 
 
 def _format_discount_source(level_key, rate, kind_label):
@@ -823,8 +823,13 @@ def _format_discount_source(level_key, rate, kind_label):
 
 def resolve_product_price_for_customer(product, customer, sale_type):
     """
-    统一价格解析（商城/录单/订单明细共用）。
-    sale_type: OrderItem.SaleType 或 'single' / 'case'
+    统一价格解析（商城/录单/订单明细/校验共用）。sale_type: OrderItem.SaleType 或 'single' / 'case'。
+
+    优先级（固定）：
+    1) 启用中的客户商品专属价（>0）
+    2) 客户等级折扣（CUSTOMER_LEVEL_DISCOUNT_RATES）
+    3) 商品原价
+
     返回 dict: original_price, final_price, discount_source（写入明细 pricing_note）
     """
     is_case = str(sale_type) == "case"

@@ -1,5 +1,7 @@
 """
-等级价统一解析入口（实现与数据模型均在 `tea_supply.models`）。
+统一价格解析入口（实现见 `tea_supply.models`）。
+
+优先级：专属价 > 等级折扣（CUSTOMER_LEVEL_DISCOUNT_RATES）> 商品原价。
 
 用法::
 
