@@ -291,10 +291,10 @@ class StockLogAdmin(admin.ModelAdmin):
 
 @admin.register(InventoryLog)
 class InventoryLogAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "product", "change_type", "quantity", "before_stock", "after_stock", "note")
+    list_display = ("created_at", "product", "order", "change_type", "quantity", "before_stock", "after_stock", "note")
     list_filter = ("change_type", "created_at")
     search_fields = ("product__sku", "product__name", "note")
-    readonly_fields = ("created_at", "product", "change_type", "quantity", "before_stock", "after_stock", "note")
+    readonly_fields = ("created_at", "product", "order", "change_type", "quantity", "before_stock", "after_stock", "note")
 
     def has_add_permission(self, request):
         return False

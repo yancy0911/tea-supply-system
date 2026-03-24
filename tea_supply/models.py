@@ -349,6 +349,14 @@ class InventoryLog(models.Model):
         ADJUST = "adjust", "调整"
 
     product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name="inventory_logs", verbose_name="商品")
+    order = models.ForeignKey(
+        "Order",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_logs",
+        verbose_name="关联订单",
+    )
     change_type = models.CharField(max_length=12, choices=ChangeType.choices, verbose_name="变动类型")
     quantity = models.FloatField(default=0, verbose_name="变动数量")
     before_stock = models.FloatField(default=0, verbose_name="变动前库存")
@@ -554,7 +562,7 @@ def assert_order_fits_available_stock(order_id):
             continue
         cur = float(getattr(p, "current_stock", 0.0))
         if cur < need:
-            raise ValidationError(f"商品「{p.name}」库存不足：本单需 {need:g}，当前可售 {cur:g}")
+            raise ValidationError(f"库存不足：{p.sku}")
 
 
 def _write_stock_log(product, need, *, add_back, order=None, remark=""):
@@ -578,15 +586,19 @@ def _write_stock_log(product, need, *, add_back, order=None, remark=""):
     )
 
 
-def _write_inventory_log(product, qty, before_stock, after_stock, *, add_back=False, remark=""):
+def _write_inventory_log(product, qty, before_stock, after_stock, *, add_back=False, order=None, remark=""):
     ctype = InventoryLog.ChangeType.IN if add_back else InventoryLog.ChangeType.OUT
+    base_note = remark or ("订单回库" if add_back else "订单扣减")
+    if order is not None:
+        base_note = f"{base_note}（订单#{order.id}）"
     InventoryLog.objects.create(
         product=product,
+        order=order,
         change_type=ctype,
         quantity=float(qty),
         before_stock=float(before_stock),
         after_stock=float(after_stock),
-        note=(remark or ("订单回库" if add_back else "订单扣减"))[:240],
+        note=base_note[:240],
     )
 
 
@@ -603,6 +615,9 @@ def _apply_need_to_inventory(product, need, *, add_back=False, order=None):
         # 浮点库存可能出现极小精度误差；这里做防负库存的兜底处理。
         eps = 1e-9
         p2 = Product.objects.select_for_update().get(pk=product.pk)
+        if not bool(getattr(p2, "stock_enabled", True)):
+            # 库存不限：不拦截、不扣减
+            return
         cur = float(p2.current_stock or 0.0)
         if add_back:
             new_stock = cur + need
@@ -618,6 +633,7 @@ def _apply_need_to_inventory(product, need, *, add_back=False, order=None):
             before_stock=cur,
             after_stock=float(p2.current_stock),
             add_back=add_back,
+            order=order,
             remark=("订单回库" if add_back else "订单扣减"),
         )
         _write_stock_log(product, need, add_back=add_back, order=order)

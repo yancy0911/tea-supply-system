@@ -280,7 +280,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 continue
             cur = float(getattr(p, "current_stock", 0.0))
             if cur < need:
-                raise ValidationError(f"商品「{p.name}」库存不足：本单共需 {need:g}，当前可售 {cur:g}，请减少数量")
+                raise ValidationError(f"库存不足：{p.sku}")
 
         if settlement_type == Order.SettlementType.CREDIT:
             if customer_obj is None:
