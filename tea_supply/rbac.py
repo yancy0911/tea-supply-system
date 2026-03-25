@@ -13,10 +13,13 @@ Response policy (V1.5):
 """
 
 from functools import wraps
+from typing import Optional
 
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from tea_supply.models import UserRole
 
@@ -49,6 +52,47 @@ def is_staff_portal_role(role):
         UserRole.Role.WAREHOUSE,
         UserRole.Role.DRIVER,
     )
+
+
+def _safe_next_url(request, url: Optional[str]) -> Optional[str]:
+    """Reject open redirects; allow same-site relative paths and safe absolute URLs."""
+    s = (url or "").strip()
+    if not s:
+        return None
+    if s.startswith("/") and not s.startswith("//"):
+        return s
+    if url_has_allowed_host_and_scheme(
+        s,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return s
+    return None
+
+
+def resolve_login_redirect_url(request, user, *, next_url: Optional[str] = None) -> str:
+    """
+    Default landing URL after successful login (when ``next`` is absent or unsafe).
+
+    owner → /dashboard/
+    manager → /orders/
+    warehouse → /inventory/
+    driver → /driver/orders/
+    customer → /shop/
+    """
+    safe = _safe_next_url(request, next_url)
+    if safe:
+        return safe
+    role = get_effective_role(user)
+    if role == UserRole.Role.OWNER:
+        return reverse("boss-dashboard")
+    if role == UserRole.Role.MANAGER:
+        return reverse("orders-list")
+    if role == UserRole.Role.WAREHOUSE:
+        return reverse("inventory-list")
+    if role == UserRole.Role.DRIVER:
+        return reverse("driver-orders")
+    return reverse("shop-home")
 
 
 def role_required(*allowed_roles):

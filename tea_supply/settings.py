@@ -277,5 +277,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Auth redirect for the backend pages
 LOGIN_URL = "login"
+# Custom login uses rbac.resolve_login_redirect_url; this fallback is for Django auth shortcuts.
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"

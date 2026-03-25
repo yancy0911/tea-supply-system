@@ -33,7 +33,12 @@ from .credit_debt import apply_credit_debt_if_needed, reverse_credit_debt_if_cou
 from .order_status_flow import apply_payment_paid_system, apply_transition, can_transition
 from .money_utils import money_dec, money_float, money_q2
 from tea_supply.utils.pricing import resolve_product_price_for_customer
-from tea_supply.rbac import get_effective_role, owner_required, role_required
+from tea_supply.rbac import (
+    get_effective_role,
+    owner_required,
+    resolve_login_redirect_url,
+    role_required,
+)
 
 from .models import (
     CUSTOMER_LEVEL_DISCOUNT_RATES,
@@ -648,7 +653,8 @@ def get_shop_customer(request):
 
 
 def _ensure_customer_role(user):
-    UserRole.objects.update_or_create(
+    """Ensure a UserRole row exists; default customer only on first create (do not overwrite staff)."""
+    UserRole.objects.get_or_create(
         user=user, defaults={"role": UserRole.Role.CUSTOMER}
     )
 
@@ -1056,7 +1062,11 @@ def shop_logout(request):
 @ensure_csrf_cookie
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("shop-home")
+        return redirect(
+            resolve_login_redirect_url(
+                request, request.user, next_url=request.GET.get("next")
+            )
+        )
     if request.method == "GET":
         return render(request, "shop/login.html")
 
@@ -1071,9 +1081,17 @@ def login_view(request):
     if not (user.is_staff or user.is_superuser):
         ensure_customer_profile(user)
     next_url = (request.POST.get("next") or "").strip()
-    if next_url:
-        return redirect(next_url)
-    return redirect("shop-home")
+    return redirect(resolve_login_redirect_url(request, user, next_url=next_url))
+
+
+@login_required
+def delivery_help_view(request):
+    """Internal guide for handover; same RBAC as the rest of the app (no extra rules)."""
+    return render(
+        request,
+        "delivery_help.html",
+        {"portal_role": get_effective_role(request.user)},
+    )
 
 
 @login_required

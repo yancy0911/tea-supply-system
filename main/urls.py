@@ -7,6 +7,7 @@ from tea_supply.views import (
     confirm_order,
     credit_apply_view,
     credit_home_view,
+    delivery_help_view,
     demo_landing,
     driver_orders,
     inventory_list,
@@ -40,6 +41,7 @@ from tea_supply.views import (
 
 urlpatterns = [
     path("login/", login_view, name="login"),
+    path("help/", delivery_help_view, name="delivery-help"),
     path("logout/", logout_view, name="logout"),
     path("dashboard/", boss_dashboard, name="boss-dashboard"),
     path("dashboard/order/<int:order_id>/start-delivery/", boss_start_delivery, name="boss-start-delivery"),
