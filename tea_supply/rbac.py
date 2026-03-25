@@ -28,7 +28,8 @@ def get_effective_role(user):
     """
     Return UserRole.Role value for this user.
     Superusers are treated as owner for staff portal / reports.
-    Users without a UserRole row get one with role=customer (lazy create).
+    Staff (is_staff) without a UserRole row are treated as owner (no lazy create).
+    Other users without a UserRole row get one with role=customer (lazy create).
     """
     if not user or not getattr(user, "is_authenticated", False):
         return None
@@ -36,6 +37,10 @@ def get_effective_role(user):
         return UserRole.Role.OWNER
     rp = getattr(user, "role_profile", None)
     if rp is None:
+        rp = UserRole.objects.filter(user=user).first()
+    if rp is None:
+        if getattr(user, "is_staff", False):
+            return UserRole.Role.OWNER
         rp, _ = UserRole.objects.get_or_create(
             user=user, defaults={"role": UserRole.Role.CUSTOMER}
         )
@@ -70,20 +75,23 @@ def _safe_next_url(request, url: Optional[str]) -> Optional[str]:
     return None
 
 
-def resolve_login_redirect_url(request, user, *, next_url: Optional[str] = None) -> str:
+def _login_redirect_role(user) -> str:
     """
-    Default landing URL after successful login (when ``next`` is absent or unsafe).
+    Role used only for post-login redirect (does not lazy-create UserRole for staff).
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return UserRole.Role.CUSTOMER
+    if getattr(user, "is_superuser", False):
+        return UserRole.Role.OWNER
+    rp = UserRole.objects.filter(user=user).first()
+    if rp is not None:
+        return rp.role
+    if getattr(user, "is_staff", False):
+        return UserRole.Role.OWNER
+    return UserRole.Role.CUSTOMER
 
-    owner → /dashboard/
-    manager → /orders/
-    warehouse → /inventory/
-    driver → /driver/orders/
-    customer → /shop/
-    """
-    safe = _safe_next_url(request, next_url)
-    if safe:
-        return safe
-    role = get_effective_role(user)
+
+def _default_home_for_role(role: str) -> str:
     if role == UserRole.Role.OWNER:
         return reverse("boss-dashboard")
     if role == UserRole.Role.MANAGER:
@@ -93,6 +101,84 @@ def resolve_login_redirect_url(request, user, *, next_url: Optional[str] = None)
     if role == UserRole.Role.DRIVER:
         return reverse("driver-orders")
     return reverse("shop-home")
+
+
+# Path prefixes (no trailing slash required on keys; matching is prefix-safe).
+_NEXT_ALLOWED_PREFIXES = {
+    UserRole.Role.OWNER: (
+        "/dashboard",
+        "/orders",
+        "/reports",
+        "/inventory",
+        "/replenishment",
+        "/customers",
+        "/admin",
+        "/order",
+        "/profile",
+        "/credit",
+        "/",
+    ),
+    UserRole.Role.MANAGER: (
+        "/dashboard",
+        "/orders",
+        "/reports",
+        "/customers",
+        "/order",
+        "/profile",
+        "/credit",
+        "/",
+    ),
+    UserRole.Role.WAREHOUSE: ("/inventory", "/replenishment", "/order", "/profile"),
+    UserRole.Role.DRIVER: ("/driver", "/profile"),
+    UserRole.Role.CUSTOMER: (
+        "/shop",
+        "/my-orders",
+        "/profile",
+        "/credit",
+        "/checkout",
+    ),
+}
+
+
+def _path_allowed_for_role(path: str, role: str) -> bool:
+    path = (path or "").strip()
+    path = path.split("?")[0]
+    if not path.startswith("/"):
+        path = "/" + path if path else "/"
+    if path != "/" and path.endswith("/"):
+        path = path.rstrip("/")
+    prefixes = _NEXT_ALLOWED_PREFIXES.get(role, ())
+    for prefix in prefixes:
+        if prefix == "/":
+            if path in ("", "/"):
+                return True
+            continue
+        if path == prefix or path.startswith(prefix + "/"):
+            return True
+    return False
+
+
+def get_post_login_redirect(request, user, next_url: Optional[str] = None) -> str:
+    """
+    After successful login: use ``next`` only if safe (same-site) and allowed for the
+    user's role; otherwise the role default home.
+
+    Staff/superuser with no UserRole row → default /dashboard/ (and owner-like ``next`` rules).
+    Non-staff with no UserRole → /shop/ defaults (customer).
+    """
+    role = _login_redirect_role(user)
+    default = _default_home_for_role(role)
+    safe = _safe_next_url(request, next_url)
+    if not safe:
+        return default
+    if _path_allowed_for_role(safe, role):
+        return safe
+    return default
+
+
+def resolve_login_redirect_url(request, user, *, next_url: Optional[str] = None) -> str:
+    """Backwards-compatible alias for :func:`get_post_login_redirect`."""
+    return get_post_login_redirect(request, user, next_url)
 
 
 def role_required(*allowed_roles):

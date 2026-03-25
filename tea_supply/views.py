@@ -35,8 +35,8 @@ from .money_utils import money_dec, money_float, money_q2
 from tea_supply.utils.pricing import resolve_product_price_for_customer
 from tea_supply.rbac import (
     get_effective_role,
+    get_post_login_redirect,
     owner_required,
-    resolve_login_redirect_url,
     role_required,
 )
 
@@ -654,6 +654,8 @@ def get_shop_customer(request):
 
 def _ensure_customer_role(user):
     """Ensure a UserRole row exists; default customer only on first create (do not overwrite staff)."""
+    if user.is_staff or user.is_superuser:
+        return
     UserRole.objects.get_or_create(
         user=user, defaults={"role": UserRole.Role.CUSTOMER}
     )
@@ -1063,9 +1065,7 @@ def shop_logout(request):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(
-            resolve_login_redirect_url(
-                request, request.user, next_url=request.GET.get("next")
-            )
+            get_post_login_redirect(request, request.user, request.GET.get("next"))
         )
     if request.method == "GET":
         return render(request, "shop/login.html")
@@ -1081,7 +1081,7 @@ def login_view(request):
     if not (user.is_staff or user.is_superuser):
         ensure_customer_profile(user)
     next_url = (request.POST.get("next") or "").strip()
-    return redirect(resolve_login_redirect_url(request, user, next_url=next_url))
+    return redirect(get_post_login_redirect(request, user, next_url))
 
 
 @login_required

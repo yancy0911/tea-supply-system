@@ -12,12 +12,18 @@
       input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; }
       button { width: 100%; margin-top: 14px; background: #ff5000; color: #fff; border: 0; padding: 10px 0; border-radius: 8px; font-weight: 700; }
       .hint { margin-top: 10px; font-size: 13px; color: #6b7280; text-align: center; }
+      .login-note { margin: 0 0 14px; font-size: 13px; color: #4b5563; line-height: 1.45; }
+      .login-note a { color: #15803d; font-weight: 600; }
       .msg { margin-bottom: 8px; color: #b91c1c; font-size: 13px; }
     </style>
   </head>
   <body>
     <div class="wrap">
       <h2>Sign in</h2>
+      <p class="login-note">
+        Staff / business users log in here.
+        Customers can continue to <a href="{% url 'shop-home' %}">the shop</a>.
+      </p>
       {% if messages %}
         {% for message in messages %}
           <div class="msg">{{ message }}</div>

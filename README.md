@@ -20,7 +20,7 @@ python manage.py runserver
 
 **[docs/DELIVERY.md](docs/DELIVERY.md)**
 
-登录后默认首页按角色跳转（老板 → `/dashboard/`，经理 → `/orders/`，仓库 → `/inventory/`，司机 → `/driver/orders/`，客户 → `/shop/`），实现见 `tea_supply/rbac.py` 中 `resolve_login_redirect_url`。
+登录后默认首页按角色跳转（老板 → `/dashboard/`，经理 → `/orders/`，仓库 → `/inventory/`，司机 → `/driver/orders/`，客户 → `/shop/`），`next` 仅在角色允许的路径前缀内生效；实现见 `tea_supply/rbac.py` 中 `get_post_login_redirect`。
 
 简要在线帮助（需登录）：`/help/`。
 

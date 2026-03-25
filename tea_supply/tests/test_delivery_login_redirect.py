@@ -1,6 +1,8 @@
 """
-Post-login default redirects and safe ``next`` handling (see rbac.resolve_login_redirect_url).
+Post-login redirects: get_post_login_redirect (role defaults + allowed ``next`` prefixes).
 """
+
+from urllib.parse import urlparse
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
@@ -50,15 +52,34 @@ class DeliveryLoginRedirectTests(TestCase):
         self.assertEqual(r.status_code, 302)
         self.assertIn("/shop/", r["Location"])
 
-    def test_safe_next_relative_honored(self):
-        _user_with_role("mg_dl2", UserRole.Role.MANAGER)
+    def test_manager_next_allowed_orders_preserved(self):
+        _user_with_role("mg_ok", UserRole.Role.MANAGER)
         c = Client()
         r = c.post(
             "/login/",
-            {"username": "mg_dl2", "password": "pw-delivery-01", "next": "/shop/orders/"},
+            {
+                "username": "mg_ok",
+                "password": "pw-delivery-01",
+                "next": "/orders/?tab=1",
+            },
         )
         self.assertEqual(r.status_code, 302)
-        self.assertTrue(r["Location"].endswith("/shop/orders/"))
+        self.assertIn("/orders/", r["Location"])
+
+    def test_manager_next_disallowed_shop_ignored(self):
+        _user_with_role("mg_shop", UserRole.Role.MANAGER)
+        c = Client()
+        r = c.post(
+            "/login/",
+            {
+                "username": "mg_shop",
+                "password": "pw-delivery-01",
+                "next": "/shop/orders/",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("/orders/", r["Location"])
+        self.assertNotIn("/shop/", r["Location"])
 
     def test_unsafe_next_open_redirect_ignored(self):
         _user_with_role("mg_dl3", UserRole.Role.MANAGER)
@@ -73,6 +94,44 @@ class DeliveryLoginRedirectTests(TestCase):
         )
         self.assertEqual(r.status_code, 302)
         self.assertIn("/orders/", r["Location"])
+
+    def test_customer_next_checkout_allowed(self):
+        _user_with_role("cu_ch", UserRole.Role.CUSTOMER)
+        c = Client()
+        r = c.post(
+            "/login/",
+            {
+                "username": "cu_ch",
+                "password": "pw-delivery-01",
+                "next": "/checkout/",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("/checkout/", r["Location"])
+
+    def test_driver_next_disallowed_orders_uses_default(self):
+        _user_with_role("dr_bad", UserRole.Role.DRIVER)
+        c = Client()
+        r = c.post(
+            "/login/",
+            {
+                "username": "dr_bad",
+                "password": "pw-delivery-01",
+                "next": "/orders/",
+            },
+        )
+        self.assertEqual(r.status_code, 302)
+        loc_path = urlparse(r["Location"]).path
+        self.assertTrue(loc_path.startswith("/driver/"))
+        self.assertFalse(loc_path == "/orders" or loc_path.startswith("/orders/"))
+
+    def test_staff_no_userrole_goes_dashboard(self):
+        User.objects.create_user(username="st_norole", password="pw-staff", is_staff=True)
+        c = Client()
+        r = c.post("/login/", {"username": "st_norole", "password": "pw-staff"})
+        self.assertEqual(r.status_code, 302)
+        self.assertIn("/dashboard/", r["Location"])
+        self.assertFalse(UserRole.objects.filter(user__username="st_norole").exists())
 
     def test_login_preserves_non_customer_role(self):
         """Regression: login must not overwrite UserRole to customer every time."""
