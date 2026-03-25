@@ -1,5 +1,6 @@
 import threading
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.db import transaction, models
@@ -491,12 +492,6 @@ class Order(models.Model):
         PARTIAL = "partial", "Partial"
         CANCELLED = "cancelled", "Cancelled"
 
-    class DeliveryStatus(models.TextChoices):
-        PENDING = "Pending", "Pending"
-        ASSIGNED = "Assigned", "Assigned"
-        DELIVERING = "Delivering", "Delivering"
-        COMPLETED = "Completed", "Completed"
-
     name = models.CharField(max_length=100, default="Wholesale order", verbose_name="订单名称")
     customer = models.ForeignKey(
         Customer,
@@ -567,29 +562,34 @@ class Order(models.Model):
     delivery_address = models.CharField(max_length=500, blank=True, default="", verbose_name="配送地址")
     order_note = models.TextField(blank=True, default="", verbose_name="订单备注")
     assigned_vehicle = models.ForeignKey(
-        Vehicle,
+        "Vehicle",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="orders",
-        verbose_name="分配车辆",
     )
     assigned_driver = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="delivery_orders",
-        verbose_name="配送司机",
+        related_name="driver_orders",
     )
+
+    DELIVERY_STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("assigned", "Assigned"),
+        ("delivering", "Delivering"),
+        ("completed", "Completed"),
+    ]
+
     delivery_status = models.CharField(
         max_length=20,
-        choices=DeliveryStatus.choices,
-        default=DeliveryStatus.PENDING,
-        verbose_name="配送状态",
+        choices=DELIVERY_STATUS_CHOICES,
+        default="pending",
     )
-    delivery_date = models.DateField(null=True, blank=True, verbose_name="配送日期")
-    delivery_notes = models.TextField(blank=True, default="", verbose_name="配送备注")
+    delivery_date = models.DateTimeField(null=True, blank=True)
+    delivery_notes = models.TextField(blank=True)
     stock_deducted = models.BooleanField(
         default=False,
         verbose_name="已扣库存",

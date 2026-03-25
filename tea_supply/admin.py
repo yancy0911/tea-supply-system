@@ -418,6 +418,10 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "customer",
+        "delivery_status",
+        "assigned_vehicle",
+        "assigned_driver",
+        "delivery_date",
         "ordered_by",
         "guest_session_key",
         "workflow_status",
@@ -433,10 +437,6 @@ class OrderAdmin(admin.ModelAdmin):
         "calc_profit_display",
         "profit_rate_display",
         "created_at",
-        "delivery_status",
-        "assigned_vehicle",
-        "assigned_driver",
-        "delivery_date",
     )
     search_fields = (
         "name",
@@ -460,36 +460,57 @@ class OrderAdmin(admin.ModelAdmin):
         "delivery_status",
     )
     list_editable = ("workflow_status", "status", "settlement_type", "payment_method", "payment_status")
-    raw_id_fields = ("assigned_vehicle", "assigned_driver")
-    fields = (
-        "name",
-        "customer",
-        "ordered_by",
-        "guest_session_key",
-        "workflow_status",
-        "status",
-        "settlement_type",
-        "payment_method",
-        "payment_status",
-        "transfer_reference",
-        "order_note",
-        "paid_at",
-        "delivery_phone",
-        "contact_name",
-        "store_name",
-        "delivery_address",
-        "assigned_vehicle",
-        "assigned_driver",
-        "delivery_status",
-        "delivery_date",
-        "delivery_notes",
-        "stripe_session_id",
-        "stock_deducted",
-        "total_revenue_display",
-        "calc_total_cost_display",
-        "calc_profit_display",
-        "profit_rate_display",
-        "created_at",
+    autocomplete_fields = ("assigned_vehicle", "assigned_driver")
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "customer",
+                    "ordered_by",
+                    "guest_session_key",
+                    "workflow_status",
+                    "status",
+                    "settlement_type",
+                    "payment_method",
+                    "payment_status",
+                    "transfer_reference",
+                    "order_note",
+                    "paid_at",
+                    "stripe_session_id",
+                    "stock_deducted",
+                    "total_revenue_display",
+                    "calc_total_cost_display",
+                    "calc_profit_display",
+                    "profit_rate_display",
+                    "created_at",
+                )
+            },
+        ),
+        (
+            "收货与地址",
+            {
+                "fields": (
+                    "delivery_phone",
+                    "contact_name",
+                    "store_name",
+                    "delivery_address",
+                )
+            },
+        ),
+        (
+            "配送",
+            {
+                "fields": (
+                    "assigned_vehicle",
+                    "assigned_driver",
+                    "delivery_status",
+                    "delivery_date",
+                    "delivery_notes",
+                ),
+            },
+        ),
     )
     readonly_fields = (
         "stock_deducted",
