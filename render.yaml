@@ -6,5 +6,5 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     # 必须用 shell 展开 $PORT：若写成 `PORT=... gunicorn ... --bind 0.0.0.0:$PORT`，父 shell 会先展开空的 $PORT，导致绑定端口为空、进程秒退、健康检查永远失败。
-    startCommand: bash -c 'exec gunicorn tea_supply.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 120'
+    startCommand: bash -c 'python -c "import os; print(\"DATABASE_URL_SET=\", bool(os.getenv(\"DATABASE_URL\")))" && python manage.py migrate --noinput && exec gunicorn tea_supply.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 120'
     releaseCommand: python manage.py migrate --noinput
