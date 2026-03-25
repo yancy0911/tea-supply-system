@@ -174,6 +174,51 @@
     .orders-actions-menu a.danger {
       color: #b91c1c;
     }
+
+    /* Actions (B2B/ERP style) */
+    .orders-actions-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .orders-main-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 32px;
+      width: 150px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-decoration: none;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    .orders-main-action--primary {
+      background: #2563eb;
+      color: #fff;
+    }
+    .orders-main-action--success {
+      background: #15803d;
+      color: #fff;
+    }
+    .orders-main-action--disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    details.orders-actions-dd > summary {
+      height: 32px;
+      width: 36px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      user-select: none;
+    }
   </style>
   <h2 style="margin: 0 0 12px 0">Orders</h2>
 
@@ -330,47 +375,47 @@
                   </span>
                 {% elif row.order.workflow_status == "cancelled" %}
                   <span
-                    style="display:inline-block; padding:2px 8px; border-radius:999px; background:#fee2e2; color:#991b1b; font-weight:700;"
+                    style="display:inline-block; padding:2px 8px; border-radius:999px; background:#f3f4f6; color:#4b5563; font-weight:700;"
                   >
                     Cancelled
                   </span>
                 {% else %}
-                  <div style="display:flex; align-items:center; justify-content:space-between; gap: 10px;">
-                    <div style="flex: 1 1 auto; min-width: 0;">
+                  <div class="orders-actions-wrap">
+                    <div style="flex: 0 0 auto; min-width: 0;">
                       {% if row.order.workflow_status == "confirmed" %}
                         <a
                           href="{% url 'order_paid' row.order.id %}"
-                          style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; background:#15803d; color:#fff; font-weight:800; text-decoration:none; white-space:nowrap;"
+                          class="orders-main-action orders-main-action--success"
                         >Mark as Paid</a>
                       {% else %}
                         {% if row.cost_missing %}
                           <span
-                            style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; opacity: .55; cursor: not-allowed; background:#2563eb; color:#fff; font-weight:800; white-space:nowrap;"
+                            class="orders-main-action orders-main-action--primary orders-main-action--disabled"
                             title="Cost not set"
                           >Confirm Order</span>
                         {% elif row.profit is not None and row.profit < 0 %}
                           <span
-                            style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; opacity: .55; cursor: not-allowed; background:#2563eb; color:#fff; font-weight:800; white-space:nowrap;"
+                            class="orders-main-action orders-main-action--primary orders-main-action--disabled"
                             title="Negative profit"
                           >Confirm Order</span>
                         {% elif row.profit_rate is not None and row.profit_rate < 5 %}
                           <a
                             href="{% url 'order-confirm' row.order.id %}"
-                            style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; background:#2563eb; color:#fff; font-weight:800; text-decoration:none; white-space:nowrap;"
+                            class="orders-main-action orders-main-action--primary"
                             onclick="return confirm('Low margin. Continue?');"
                           >Confirm Order</a>
                         {% else %}
                           <a
                             href="{% url 'order-confirm' row.order.id %}"
-                            style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; background:#2563eb; color:#fff; font-weight:800; text-decoration:none; white-space:nowrap;"
+                            class="orders-main-action orders-main-action--primary"
                           >Confirm Order</a>
                         {% endif %}
                       {% endif %}
                     </div>
 
-                    <details class="orders-actions-dd" style="flex: 0 0 auto;">
+                    <details class="orders-actions-dd">
                       <summary
-                        style="padding: 6px 10px; font-size: 12px; border-radius:10px; background:#f3f4f6; color:#6b7280; border: 1px solid #d1d5db; font-weight:800; cursor:pointer;"
+                        style="background:#f3f4f6; color:#6b7280; border: 1px solid #d1d5db; font-weight:900; cursor:pointer;"
                         aria-label="More actions"
                       >
                         ⋯
