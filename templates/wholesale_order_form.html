@@ -107,7 +107,9 @@
             <select id="prod_sel" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
               <option value="">Select product</option>
               {% for p in products %}
-                <option value="{{ p.id }}" data-category-id="{{ p.category_id }}">{{ p.name }}（{{ p.sku }}）</option>
+                <option value="{{ p.id }}" data-category-id="{{ p.category_id }}">
+                  {% if p.id in recommended_product_ids %}🔥 {% endif %}{{ p.name }}（{{ p.sku }}）
+                </option>
               {% endfor %}
             </select>
           </div>

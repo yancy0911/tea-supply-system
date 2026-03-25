@@ -486,6 +486,37 @@
 
     <div class="section">
       <div class="section-head">
+        <h3 class="section-title">📈 Recommended products</h3>
+        <span class="section-hint">Top 5</span>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Unit profit</th>
+            <th>Total profit</th>
+            <th>Qty</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recommendation_rows %}
+            <tr>
+              <td><span style="font-weight:800;">{{ r.sku }}</span> · {{ r.name }}</td>
+              <td style="font-weight:900;color:#15803d;">{{ r.unit_profit|floatformat:2 }}</td>
+              <td style="font-weight:900;color:#15803d;">{{ r.total_profit|floatformat:2 }}</td>
+              <td>{{ r.qty|floatformat:2 }}</td>
+              <td class="muted" style="font-size:12px;">{{ r.reason }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
         <h3 class="section-title">Last 7 days trend</h3>
         <span class="section-hint">Orders + sales</span>
       </div>

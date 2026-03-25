@@ -52,6 +52,60 @@ logger = logging.getLogger(__name__)
 PROFIT_PROTECTION_MODE = "warning"  # "warning" | "block"
 
 
+def _profit_recommendation_rows(limit=5):
+    base = (
+        OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
+        .values("product_id", "product__name", "product__sku")
+        .annotate(
+            qty=Coalesce(Sum("quantity"), 0.0),
+            total_profit=Coalesce(Sum("profit"), 0.0),
+        )
+    )
+    top_profit_ids = set(
+        r["product_id"] for r in base.order_by("-total_profit")[: max(limit, 5)]
+    )
+    top_unit_ids = set(
+        r["product_id"]
+        for r in base.annotate(
+            unit_profit=Coalesce(Sum("profit"), 0.0)
+            / (Coalesce(Sum("quantity"), 0.0) + 1e-9)
+        )
+        .order_by("-unit_profit")[: max(limit, 5)]
+    )
+    top_qty_ids = set(
+        r["product_id"] for r in base.order_by("-qty")[: max(limit, 5)]
+    )
+
+    rows = []
+    for r in base.order_by("-total_profit")[:limit]:
+        pid = r["product_id"]
+        qty = float(r["qty"] or 0.0)
+        total_profit = float(r["total_profit"] or 0.0)
+        unit_profit = 0.0 if qty <= 0 else money_float(total_profit / qty)
+
+        if pid in top_unit_ids:
+            reason = "高利润商品"
+        elif pid in top_qty_ids:
+            reason = "畅销商品"
+        elif pid in top_profit_ids:
+            reason = "高收益商品"
+        else:
+            reason = "推荐商品"
+
+        rows.append(
+            {
+                "product_id": pid,
+                "sku": r["product__sku"],
+                "name": r["product__name"],
+                "qty": qty,
+                "total_profit": money_float(total_profit),
+                "unit_profit": unit_profit,
+                "reason": reason,
+            }
+        )
+    return rows
+
+
 def tier_discount_map_for_wholesale():
     """录单页 JS：等级 -> {single, case} 折扣率（与 CUSTOMER_LEVEL_DISCOUNT_RATES 一致）。"""
     out = {}
@@ -872,6 +926,9 @@ def wholesale_order_entry(request):
         ),
         "exclusive_prices_json": json.dumps(exclusive_map, ensure_ascii=False),
         "today_order_count": Order.objects.count(),
+        "recommended_product_ids": [
+            r["product_id"] for r in _profit_recommendation_rows(limit=5)
+        ],
     }
     return render(request, "wholesale_order_form.html", context)
 
@@ -2012,6 +2069,8 @@ def boss_dashboard(request):
         for r in product_profit_base
     ]
 
+    recommendation_rows = _profit_recommendation_rows(limit=5)
+
     # 7-day trend (orders + sales)
     start = today - timedelta(days=6)
     trend_qs = (
@@ -2114,6 +2173,7 @@ def boss_dashboard(request):
             "dispatch_orders": dispatch_orders,
             "customer_profit_top5": customer_profit_top5,
             "product_profit_top5": product_profit_top5,
+            "recommendation_rows": recommendation_rows,
             "trend7": trend,
             "low_stock_rows": low_stock_rows,
             "reorder_rows": reorder_rows,
