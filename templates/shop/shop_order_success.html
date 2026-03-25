@@ -117,7 +117,7 @@
         <div class="row">
           <div class="k">Status</div>
           <div class="v">
-            {% if order.workflow_status == "pending_confirm" %}Pending confirmation{% else %}Submitted{% endif %}
+            {% if order.status == "pending" %}Pending confirmation{% else %}Submitted{% endif %}
             ·
             {% if order.payment_status == "unpaid" %}Unpaid{% elif order.payment_status == "pending_confirmation" %}Pending confirmation{% elif order.payment_status == "paid" %}Paid{% elif order.payment_status == "partial" %}Partial{% elif order.payment_status == "cancelled" %}Cancelled{% else %}{{ order.payment_status }}{% endif %}
           </div>

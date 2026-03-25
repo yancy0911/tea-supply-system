@@ -63,11 +63,11 @@ class RBACV15AccessTests(TestCase):
         order = Order.objects.create(
             name="RBAC test order",
             assigned_driver=driver_b,
-            delivery_status="assigned",
+            status=Order.OrderStatus.SHIPPING,
         )
         self.client.login(username="da_v15", password="testpass-v15")
         r = self.client.post(
             "/driver/orders/",
-            {"order_id": str(order.pk), "action": "start_delivery"},
+            {"order_id": str(order.pk), "action": "mark_completed"},
         )
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 302)

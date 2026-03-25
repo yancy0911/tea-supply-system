@@ -581,17 +581,14 @@ class Vehicle(models.Model):
 
 
 class Order(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        PAID = "paid", "Settled"
-
-    class WorkflowStatus(models.TextChoices):
-        PENDING_CONFIRM = "pending_confirm", "Pending confirm"
-        CONFIRMED = "confirmed", "Confirmed"
-        PREPARING = "preparing", "Preparing"
-        SHIPPED = "shipped", "Shipped"
-        COMPLETED = "completed", "Completed"
-        CANCELLED = "cancelled", "Cancelled"
+    class OrderStatus(models.TextChoices):
+        PENDING = "pending", "待确认"
+        CONFIRMED = "confirmed", "已确认"
+        PAID = "paid", "已付款"
+        PICKING = "picking", "备货中"
+        SHIPPING = "shipping", "配送中"
+        COMPLETED = "completed", "完成"
+        CANCELLED = "cancelled", "已取消"
 
     class SettlementType(models.TextChoices):
         CASH = "cash", "Cash terms"
@@ -603,6 +600,7 @@ class Order(models.Model):
         CARD_ON_PICKUP = "card_on_pickup", "Card on pickup"
         CASH = "cash", "Cash"
         CREDIT = "credit", "On account"
+        STRIPE = "stripe", "Stripe"
 
     class PaymentStatus(models.TextChoices):
         UNPAID = "unpaid", "Unpaid"
@@ -650,10 +648,10 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING,
-        verbose_name="结算状态",
+        max_length=24,
+        choices=OrderStatus.choices,
+        default=OrderStatus.PENDING,
+        verbose_name="订单状态",
     )
     settlement_type = models.CharField(
         max_length=12,
@@ -677,12 +675,6 @@ class Order(models.Model):
     stripe_session_id = models.CharField(max_length=255, blank=True, default="", verbose_name="Stripe Session ID")
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name="支付时间")
     transfer_reference = models.CharField(max_length=255, blank=True, default="", verbose_name="转账参考号")
-    workflow_status = models.CharField(
-        max_length=24,
-        choices=WorkflowStatus.choices,
-        default=WorkflowStatus.PENDING_CONFIRM,
-        verbose_name="履约状态",
-    )
     contact_name = models.CharField(max_length=100, blank=True, default="", verbose_name="收货人")
     delivery_phone = models.CharField(max_length=30, blank=True, default="", verbose_name="联系电话")
     store_name = models.CharField(max_length=200, blank=True, default="", verbose_name="门店/公司")
@@ -1296,7 +1288,7 @@ def update_customer_level(customer):
     if not customer:
         return
     total_profit = (
-        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
         .filter(customer=customer)
         .aggregate(v=Sum("profit"))
         .get("v")
@@ -1312,49 +1304,49 @@ def update_customer_level(customer):
     customer.save(update_fields=["level", "discount_rate"])
 
 
-def _should_release_stock_on_workflow(old_wf, new_wf):
-    if new_wf == Order.WorkflowStatus.CANCELLED:
+def _should_release_stock_on_status(old, new):
+    if new == Order.OrderStatus.CANCELLED:
         return True
-    if new_wf == Order.WorkflowStatus.PENDING_CONFIRM and old_wf == Order.WorkflowStatus.PREPARING:
+    if new == Order.OrderStatus.PENDING and old == Order.OrderStatus.PICKING:
         return True
     return False
 
 
 @receiver(pre_save, sender=Order)
-def _order_cache_prev_workflow(sender, instance, **kwargs):
+def _order_cache_prev_status(sender, instance, **kwargs):
     if instance.pk:
         try:
             prev = Order.objects.get(pk=instance.pk)
-            instance._prev_workflow_status = prev.workflow_status
+            instance._prev_status = prev.status
             instance._prev_stock_deducted = prev.stock_deducted
         except Order.DoesNotExist:
-            instance._prev_workflow_status = None
+            instance._prev_status = None
             instance._prev_stock_deducted = False
 
 
 @receiver(post_save, sender=Order)
-def _order_workflow_inventory(sender, instance, created, **kwargs):
-    """履约状态变更：进入备货中扣库存；取消/退回待确认/已取消时恢复库存。"""
+def _order_status_inventory(sender, instance, created, **kwargs):
+    """订单状态变更：进入备货中扣库存；取消/退回待确认时恢复库存。"""
     if created:
         return
-    old_wf = getattr(instance, "_prev_workflow_status", None)
-    if old_wf is None:
+    old = getattr(instance, "_prev_status", None)
+    if old is None:
         return
-    new_wf = instance.workflow_status
-    if old_wf == new_wf:
+    new = instance.status
+    if old == new:
         return
     prev_deducted = getattr(instance, "_prev_stock_deducted", False)
     try:
         if (
-            new_wf == Order.WorkflowStatus.PREPARING
-            and old_wf != Order.WorkflowStatus.PREPARING
+            new == Order.OrderStatus.PICKING
+            and old != Order.OrderStatus.PICKING
             and not prev_deducted
         ):
             deduct_stock_for_order(instance.pk)
-        elif prev_deducted and _should_release_stock_on_workflow(old_wf, new_wf):
+        elif prev_deducted and _should_release_stock_on_status(old, new):
             release_stock_for_order(instance.pk)
     except ValidationError:
-        Order.objects.filter(pk=instance.pk).update(workflow_status=old_wf)
+        Order.objects.filter(pk=instance.pk).update(status=old)
         raise
 
 

@@ -27,6 +27,10 @@
 
     <div style="margin-bottom: 16px; line-height: 1.85; font-size: 14px">
       <div><strong>Order:</strong>#{{ order.id }} · {{ order.name }}</div>
+      <div>
+        <strong>Lifecycle status:</strong>
+        <span class="badge badge--info">{{ order.get_status_display }}</span>
+      </div>
       <div><strong>Customer:</strong>{% if order.customer %}{{ order.customer.name }} ({{ order.customer.phone }}){% else %}No customer{% endif %}</div>
       {% if order.customer %}
         <div>
@@ -90,51 +94,61 @@
     </table>
     <p style="text-align: right; font-size: 16px; font-weight: 700">Total: {{ currency_symbol }}{{ order.total_revenue|floatformat:2 }}</p>
 
-    <form method="post">
-      {% csrf_token %}
-      <div style="margin-bottom: 12px">
-        <label for="workflow_status" class="muted" style="display: block; margin-bottom: 6px">Workflow status</label>
-        <select id="workflow_status" name="workflow_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-          {% for value, label in workflow_choices %}
-            <option value="{{ value }}" {% if order.workflow_status == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div style="margin-bottom: 12px">
-        <label for="settlement_type" class="muted" style="display: block; margin-bottom: 6px">Settlement</label>
-        <select id="settlement_type" name="settlement_type" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-          {% for value, label in settlement_choices %}
-            <option value="{{ value }}" {% if order.settlement_type == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div style="margin-bottom: 12px">
-        <label for="payment_method" class="muted" style="display: block; margin-bottom: 6px">Payment method</label>
-        <select id="payment_method" name="payment_method" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-          {% for value, label in payment_method_choices %}
-            <option value="{{ value }}" {% if order.payment_method == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div style="margin-bottom: 12px">
-        <label for="payment_status" class="muted" style="display: block; margin-bottom: 6px">Payment status</label>
-        <select id="payment_status" name="payment_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-          {% for value, label in payment_status_choices %}
-            <option value="{{ value }}" {% if order.payment_status == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div style="margin-bottom: 12px">
-        <label for="status" class="muted" style="display: block; margin-bottom: 6px">Settlement status (A/R)</label>
-        <select id="status" name="status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-          {% for value, label in status_choices %}
-            <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    {% if is_owner %}
+      <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 12px">
+          <label for="order_status" class="muted" style="display: block; margin-bottom: 6px">Order status (lifecycle)</label>
+          <select id="order_status" name="order_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+            {% for value, label in order_status_choices %}
+              <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom: 12px">
+          <label for="settlement_type" class="muted" style="display: block; margin-bottom: 6px">Settlement</label>
+          <select id="settlement_type" name="settlement_type" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+            {% for value, label in settlement_choices %}
+              <option value="{{ value }}" {% if order.settlement_type == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom: 12px">
+          <label for="payment_method" class="muted" style="display: block; margin-bottom: 6px">Payment method</label>
+          <select id="payment_method" name="payment_method" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+            {% for value, label in payment_method_choices %}
+              <option value="{{ value }}" {% if order.payment_method == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="margin-bottom: 12px">
+          <label for="payment_status" class="muted" style="display: block; margin-bottom: 6px">Payment status</label>
+          <select id="payment_status" name="payment_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
+            {% for value, label in payment_status_choices %}
+              <option value="{{ value }}" {% if order.payment_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-      <button type="submit" class="btn">Save</button>
-      <a href="/orders/" class="btn secondary" style="margin-left: 8px">Back to list</a>
-    </form>
+        <button type="submit" class="btn">Save</button>
+        <a href="/orders/" class="btn secondary" style="margin-left: 8px">Back to list</a>
+      </form>
+    {% else %}
+      <div style="margin-bottom: 16px">
+        <p class="muted" style="margin: 0 0 8px 0">Allowed actions for your role:</p>
+        {% for code in next_statuses %}
+          <form method="post" action="{% url 'order-transition' order.id %}" style="display: inline-block; margin-right: 8px; margin-bottom: 8px">
+            {% csrf_token %}
+            <input type="hidden" name="target_status" value="{{ code }}" />
+            <button type="submit" class="btn">
+              {% if code == "confirmed" %}Confirm order{% elif code == "paid" %}Mark paid{% elif code == "picking" %}Start picking{% elif code == "shipping" %}Dispatch / shipping{% elif code == "completed" %}Complete delivery{% elif code == "cancelled" %}Cancel order{% else %}{{ code }}{% endif %}
+            </button>
+          </form>
+        {% empty %}
+          <p class="muted">No status actions available.</p>
+        {% endfor %}
+      </div>
+      <a href="/orders/" class="btn secondary">Back to list</a>
+    {% endif %}
   </div>
 {% endblock %}

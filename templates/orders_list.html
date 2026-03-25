@@ -259,20 +259,11 @@
         </select>
       </div>
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Workflow</div>
-        <select name="workflow_status" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db">
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Order status</div>
+        <select name="order_status" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db">
           <option value="">All</option>
-          {% for value, label in workflow_choices %}
-            <option value="{{ value }}" {% if filter_workflow == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Settlement</div>
-        <select name="status" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db">
-          <option value="">All</option>
-          {% for value, label in status_choices %}
-            <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+          {% for value, label in order_status_choices %}
+            <option value="{{ value }}" {% if filter_order_status == value %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
@@ -318,19 +309,19 @@
               <td style="font-weight: 600">{{ row.amount|floatformat:2 }}</td>
               <td>
                 <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
-                  {% if row.order.workflow_status == "cancelled" %}
-                    <span class="badge badge--danger">{{ row.order.get_workflow_status_display }}</span>
-                  {% elif row.order.workflow_status == "completed" %}
-                    <span class="badge badge--success">{{ row.order.get_workflow_status_display }}</span>
-                  {% elif row.order.workflow_status == "pending_confirm" or row.order.workflow_status == "preparing" or row.order.workflow_status == "confirmed" or row.order.workflow_status == "shipped" %}
-                    <span class="badge badge--info">{{ row.order.get_workflow_status_display }}</span>
+                  {% if row.order.status == "cancelled" %}
+                    <span class="badge badge--danger">{{ row.order.get_status_display }}</span>
+                  {% elif row.order.status == "completed" %}
+                    <span class="badge badge--success">{{ row.order.get_status_display }}</span>
+                  {% elif row.order.status == "pending" or row.order.status == "confirmed" or row.order.status == "paid" or row.order.status == "picking" or row.order.status == "shipping" %}
+                    <span class="badge badge--info">{{ row.order.get_status_display }}</span>
                   {% else %}
-                    <span class="badge badge--neutral">{{ row.order.get_workflow_status_display }}</span>
+                    <span class="badge badge--neutral">{{ row.order.get_status_display }}</span>
                   {% endif %}
-                  {% if row.order.status == "paid" %}
-                    <span class="badge badge--success">Paid</span>
+                  {% if row.order.payment_status == "paid" %}
+                    <span class="badge badge--success">Payment settled</span>
                   {% else %}
-                    <span class="badge badge--info">Unpaid</span>
+                    <span class="badge badge--info">Payment open</span>
                   {% endif %}
                   {% if row.profit is not None and row.profit < 0 %}
                     <span class="badge badge--danger">Loss</span>
@@ -341,13 +332,13 @@
               </td>
               <td>{{ row.order.created_at|date:"Y-m-d H:i" }}</td>
               <td>
-                {% if row.order.status == "paid" %}
+                {% if row.order.status == "paid" or row.order.status == "picking" or row.order.status == "shipping" or row.order.status == "completed" %}
                   <span
                     style="display:inline-block; padding:2px 8px; border-radius:999px; background:#f3f4f6; color:#4b5563; font-weight:700;"
                   >
-                    Paid ✔
+                    In progress / done
                   </span>
-                {% elif row.order.workflow_status == "cancelled" %}
+                {% elif row.order.status == "cancelled" %}
                   <span
                     style="display:inline-block; padding:2px 8px; border-radius:999px; background:#f3f4f6; color:#4b5563; font-weight:700;"
                   >
@@ -356,12 +347,12 @@
                 {% else %}
                   <div class="orders-actions-wrap">
                     <div style="flex: 0 0 auto; min-width: 0;">
-                      {% if row.order.workflow_status == "confirmed" %}
+                      {% if row.order.status == "confirmed" %}
                         <a
                           href="{% url 'order_paid' row.order.id %}"
                           class="orders-main-action orders-main-action--success"
                         >Mark as Paid</a>
-                      {% else %}
+                      {% elif row.order.status == "pending" %}
                         {% if row.cost_missing %}
                           <span
                             class="orders-main-action orders-main-action--primary orders-main-action--disabled"
@@ -384,6 +375,8 @@
                             class="orders-main-action orders-main-action--primary"
                           >Confirm Order</a>
                         {% endif %}
+                      {% else %}
+                        <a href="{% url 'order-status-update' row.order.id %}" class="orders-main-action orders-main-action--primary">View</a>
                       {% endif %}
                     </div>
 

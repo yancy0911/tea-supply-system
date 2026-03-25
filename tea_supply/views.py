@@ -20,7 +20,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Min, Q, Sum
 from django.db.models.functions import Coalesce, TruncDate
-from django.http import HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -30,6 +30,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from django.middleware.csrf import get_token
 
 from .credit_debt import apply_credit_debt_if_needed, reverse_credit_debt_if_counted
+from .order_status_flow import apply_payment_paid_system, apply_transition, can_transition
 from .money_utils import money_dec, money_float, money_q2
 from tea_supply.utils.pricing import resolve_product_price_for_customer
 from tea_supply.rbac import get_effective_role, owner_required, role_required
@@ -61,7 +62,7 @@ PROFIT_PROTECTION_MODE = "warning"  # "warning" | "block"
 
 def _profit_recommendation_rows(*, company=None, limit=5):
     base_qs = OrderItem.objects.exclude(
-        order__workflow_status=Order.WorkflowStatus.CANCELLED
+        order__status=Order.OrderStatus.CANCELLED
     )
     if company is not None:
         base_qs = base_qs.filter(order__company=company)
@@ -141,7 +142,8 @@ def tier_rules_banner_text():
 
 
 def _unsettled_order_statuses():
-    return (Order.Status.PENDING,)
+    """Lifecycle stages where settlement (A/R) is still open — before PAID."""
+    return (Order.OrderStatus.PENDING, Order.OrderStatus.CONFIRMED)
 
 
 def get_user_company(user):
@@ -503,7 +505,7 @@ def submit_order_from_lines(
                     create_kwargs["guest_session_key"] = _guest_order_session_key(
                         request, guest_session_key
                     )
-                create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
+                create_kwargs["status"] = Order.OrderStatus.PENDING
                 create_kwargs["settlement_type"] = settlement_type
                 create_kwargs["payment_method"] = payment_method
                 create_kwargs["payment_status"] = (
@@ -1426,10 +1428,10 @@ def _sales_units_by_product(days):
     qs = (
         OrderItem.objects.filter(order__created_at__gte=since)
         .exclude(
-            order__workflow_status__in=[
-                Order.WorkflowStatus.PENDING_CONFIRM,
-                Order.WorkflowStatus.CONFIRMED,
-                Order.WorkflowStatus.CANCELLED,
+            order__status__in=[
+                Order.OrderStatus.PENDING,
+                Order.OrderStatus.CONFIRMED,
+                Order.OrderStatus.CANCELLED,
             ]
         )
         .select_related("product")
@@ -1655,7 +1657,7 @@ def orders_list(request):
     customers_map = {c.id: c for c in Customer.objects.filter(pk__in=customer_ids)}
 
     earliest_pending = (
-        Order.objects.filter(status=Order.Status.PENDING)
+        Order.objects.filter(status=Order.OrderStatus.PENDING)
         .values("customer_id")
         .annotate(m=Min("created_at"))
     )
@@ -1694,17 +1696,14 @@ def orders_list(request):
         .prefetch_related("items__product")
         .order_by("-created_at")
     )
-    wf = (request.GET.get("workflow_status") or "").strip()
-    st = (request.GET.get("status") or "").strip()
+    order_status_f = (request.GET.get("order_status") or "").strip()
     q = (request.GET.get("q") or "").strip()
     cust_id = (request.GET.get("customer_id") or "").strip()
     date_from = (request.GET.get("date_from") or "").strip()
     date_to = (request.GET.get("date_to") or "").strip()
 
-    if wf in dict(Order.WorkflowStatus.choices):
-        orders_qs = orders_qs.filter(workflow_status=wf)
-    if st in dict(Order.Status.choices):
-        orders_qs = orders_qs.filter(status=st)
+    if order_status_f in dict(Order.OrderStatus.choices):
+        orders_qs = orders_qs.filter(status=order_status_f)
     if q:
         cond = (
             Q(customer__name__icontains=q)
@@ -1787,14 +1786,12 @@ def orders_list(request):
             "customer_debts": customer_debts,
             "today_stats": today_stats,
             "hide_financial_fields": hide_financial_fields,
-            "filter_workflow": wf,
-            "filter_status": st,
+            "filter_order_status": order_status_f,
             "filter_q": q,
             "filter_customer_id": cust_id,
             "filter_date_from": date_from,
             "filter_date_to": date_to,
-            "workflow_choices": Order.WorkflowStatus.choices,
-            "status_choices": Order.Status.choices,
+            "order_status_choices": Order.OrderStatus.choices,
             "filter_customers": Customer.objects.all().order_by("name"),
         },
     )
@@ -1818,10 +1815,10 @@ def _customer_risk_status_label(customer):
 def customer_insights_dashboard(request):
     """
     客户价值与风险看板（稳版）：只读统计，口径与基础报表一致
-    （排除 workflow_status=已取消；无客户订单不参与排行）。
+    （排除 status=已取消；无客户订单不参与排行）。
     """
     valid_order_base = Order.objects.exclude(
-        workflow_status=Order.WorkflowStatus.CANCELLED
+        status=Order.OrderStatus.CANCELLED
     ).exclude(customer__isnull=True)
 
     profit_top = list(
@@ -1914,7 +1911,7 @@ def reports_dashboard(request):
     today = timezone.localdate()
     month_start = today.replace(day=1)
 
-    valid_orders = Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+    valid_orders = Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
     today_orders = valid_orders.filter(created_at__date=today)
     month_orders = valid_orders.filter(
         created_at__date__gte=month_start, created_at__date__lte=today
@@ -1929,25 +1926,29 @@ def reports_dashboard(request):
         profit=Coalesce(Sum("profit"), 0.0),
     )
     pending_confirm_count = Order.objects.filter(
-        workflow_status=Order.WorkflowStatus.PENDING_CONFIRM
+        status=Order.OrderStatus.PENDING
     ).count()
     confirmed_unpaid_amount = (
         Order.objects.filter(
-            workflow_status=Order.WorkflowStatus.CONFIRMED, status=Order.Status.PENDING
+            status=Order.OrderStatus.CONFIRMED,
+            payment_status__in=(
+                Order.PaymentStatus.UNPAID,
+                Order.PaymentStatus.PENDING_CONFIRMATION,
+            ),
         )
         .aggregate(v=Coalesce(Sum("total_revenue"), 0.0))
         .get("v", 0.0)
     )
 
     customer_sales_top = (
-        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
         .exclude(customer__isnull=True)
         .values("customer_id", "customer__name")
         .annotate(value=Coalesce(Sum("total_revenue"), 0.0))
         .order_by("-value")[:10]
     )
     customer_profit_top = (
-        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
         .exclude(customer__isnull=True)
         .values("customer_id", "customer__name")
         .annotate(value=Coalesce(Sum("profit"), 0.0))
@@ -1960,7 +1961,7 @@ def reports_dashboard(request):
     )
 
     product_base = OrderItem.objects.exclude(
-        order__workflow_status=Order.WorkflowStatus.CANCELLED
+        order__status=Order.OrderStatus.CANCELLED
     ).values("product_id", "product__name", "product__sku")
     product_qty_top = product_base.annotate(
         value=Coalesce(Sum("quantity"), 0.0)
@@ -1972,13 +1973,13 @@ def reports_dashboard(request):
         value=Coalesce(Sum("profit"), 0.0)
     ).order_by("-value")[:10]
     negative_profit_orders = list(
-        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
         .filter(profit__lt=0)
         .select_related("customer")
         .order_by("profit", "-created_at")[:10]
     )
     abnormal_profit_order_count = (
-        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
         .filter(profit__lt=0)
         .count()
     )
@@ -2021,7 +2022,7 @@ def boss_dashboard(request):
     company = get_user_company(request.user)
     today = timezone.localdate()
 
-    valid_orders = Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+    valid_orders = Order.objects.exclude(status=Order.OrderStatus.CANCELLED)
     if company is not None:
         valid_orders = valid_orders.filter(company=company)
     today_orders = valid_orders.filter(created_at__date=today)
@@ -2041,22 +2042,21 @@ def boss_dashboard(request):
         else money_float((float(kpi_today_profit or 0.0) / float(kpi_today_sales or 1.0)) * 100.0)
     )
 
-    unpaid_qs = Order.objects.filter(status=Order.Status.PENDING).exclude(
-        workflow_status=Order.WorkflowStatus.CANCELLED
-    )
+    unpaid_qs = Order.objects.exclude(
+        payment_status=Order.PaymentStatus.PAID
+    ).exclude(status=Order.OrderStatus.CANCELLED)
     if company is not None:
         unpaid_qs = unpaid_qs.filter(company=company)
     kpi_unpaid_order_count = int(unpaid_qs.count())
 
+    ship_base = Order.objects.filter(status=Order.OrderStatus.SHIPPING)
+    if company is not None:
+        ship_base = ship_base.filter(company=company)
     kpi_dispatch_assigned_count = int(
-        (Order.objects.filter(delivery_status="assigned", company=company).count()
-         if company is not None
-         else Order.objects.filter(delivery_status="assigned").count())
+        ship_base.filter(delivery_status="assigned").count()
     )
     kpi_dispatch_delivering_count = int(
-        (Order.objects.filter(delivery_status="delivering", company=company).count()
-         if company is not None
-         else Order.objects.filter(delivery_status="delivering").count())
+        ship_base.filter(delivery_status="delivering").count()
     )
 
     recent_qs = Order.objects.select_related(
@@ -2068,19 +2068,16 @@ def boss_dashboard(request):
     unpaid_orders = list(
         unpaid_qs.select_related("customer").order_by("-created_at")[:10]
     )
-    dispatch_orders = list(
-        Order.objects.filter(delivery_status__in=["assigned", "delivering"])
+    dq = (
+        Order.objects.filter(
+            status__in=(Order.OrderStatus.PAID, Order.OrderStatus.PICKING)
+        )
         .select_related("customer", "assigned_driver", "assigned_vehicle")
-        .order_by("-created_at")[:10]
+        .order_by("-created_at")
     )
     if company is not None:
-        dispatch_orders = list(
-            Order.objects.filter(
-                company=company, delivery_status__in=["assigned", "delivering"]
-            )
-            .select_related("customer", "assigned_driver", "assigned_vehicle")
-            .order_by("-created_at")[:10]
-        )
+        dq = dq.filter(company=company)
+    dispatch_orders = list(dq[:10])
 
     customer_profit_top5 = list(
         valid_orders.exclude(customer__isnull=True)
@@ -2103,7 +2100,7 @@ def boss_dashboard(request):
     ]
 
     product_items = OrderItem.objects.exclude(
-        order__workflow_status=Order.WorkflowStatus.CANCELLED
+        order__status=Order.OrderStatus.CANCELLED
     )
     if company is not None:
         product_items = product_items.filter(order__company=company)
@@ -2252,15 +2249,12 @@ def boss_dashboard(request):
 @role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 @require_POST
 def boss_start_delivery(request, order_id):
-    """Owner action: assigned -> delivering (one-click from dashboard)."""
-    with transaction.atomic():
-        o = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
-        if o.delivery_status != "assigned":
-            messages.error(request, "Cannot start delivery: order is not in 'assigned' state.")
-            return redirect("boss-dashboard")
-        o.delivery_status = "delivering"
-        o.save(update_fields=["delivery_status"])
-    messages.success(request, "Delivery started.")
+    """Move order to Shipping (dispatch) when allowed by role + lifecycle."""
+    ok, msg = apply_transition(request.user, order_id, Order.OrderStatus.SHIPPING)
+    if not ok:
+        messages.error(request, msg)
+        return redirect("boss-dashboard")
+    messages.success(request, "Order moved to shipping.")
     return redirect("boss-dashboard")
 
 
@@ -2303,26 +2297,12 @@ def _confirm_order_guard_reason(order):
 @role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def mark_order_paid(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
-    if order.status == Order.Status.PAID:
+    if order.status == Order.OrderStatus.PAID:
         messages.info(request, "Order was already settled; credit usage unchanged.")
         return redirect("orders-list")
-    try:
-        with transaction.atomic():
-            # 禁止 select_related 可空外键与 select_for_update 混用（PostgreSQL：FOR UPDATE 不能锁 outer join 可空侧）
-            order = Order.objects.select_for_update().get(pk=order_id)
-            if order.status == Order.Status.PAID:
-                messages.info(request, "Order was already settled; credit usage unchanged.")
-                return redirect("orders-list")
-            deduct_stock_for_order(order.pk)
-            order.status = Order.Status.PAID
-            order.payment_status = Order.PaymentStatus.PAID
-            order.paid_at = timezone.now()
-            order.save(update_fields=["status", "payment_status", "paid_at"])
-            reverse_credit_debt_if_counted(order)
-            if order.customer_id:
-                update_customer_level(order.customer)
-    except ValidationError as exc:
-        messages.error(request, str(exc))
+    ok, msg = apply_transition(request.user, order_id, Order.OrderStatus.PAID)
+    if not ok:
+        messages.error(request, msg)
         return redirect("orders-list")
     messages.success(request, _MSG_SETTLED_RELEASE)
     return redirect("orders-list")
@@ -2331,25 +2311,17 @@ def mark_order_paid(request, order_id):
 @login_required
 @role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def confirm_order(request, order_id):
-    try:
-        with transaction.atomic():
-            order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
-            if order.workflow_status == Order.WorkflowStatus.CANCELLED:
-                messages.error(request, "Cancelled orders cannot be confirmed.")
-                return redirect("orders-list")
-            guard_reason = _confirm_order_guard_reason(order)
-            if guard_reason:
-                messages.error(request, guard_reason)
-                return redirect("orders-list")
-            deduct_stock_for_order(order.pk)
-            if order.workflow_status != Order.WorkflowStatus.CONFIRMED:
-                order.workflow_status = Order.WorkflowStatus.CONFIRMED
-                order.save(update_fields=["workflow_status"])
-            apply_credit_debt_if_needed(order)
-            if order.customer_id:
-                update_customer_level(order.customer)
-    except ValidationError as exc:
-        messages.error(request, str(exc))
+    order = get_object_or_404(Order, pk=order_id)
+    if order.status == Order.OrderStatus.CANCELLED:
+        messages.error(request, "Cancelled orders cannot be confirmed.")
+        return redirect("orders-list")
+    guard_reason = _confirm_order_guard_reason(order)
+    if guard_reason:
+        messages.error(request, guard_reason)
+        return redirect("orders-list")
+    ok, msg = apply_transition(request.user, order_id, Order.OrderStatus.CONFIRMED)
+    if not ok:
+        messages.error(request, msg)
         return redirect("orders-list")
     messages.success(request, "Order confirmed.")
     return redirect("orders-list")
@@ -2358,198 +2330,135 @@ def confirm_order(request, order_id):
 @login_required
 @role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def cancel_order(request, order_id):
-    with transaction.atomic():
-        order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
-        order.workflow_status = Order.WorkflowStatus.CANCELLED
-        order.save(update_fields=["workflow_status"])
-        reverse_credit_debt_if_counted(order)
+    ok, msg = apply_transition(request.user, order_id, Order.OrderStatus.CANCELLED)
+    if not ok:
+        messages.error(request, msg)
+        return redirect("orders-list")
     messages.success(request, "Order cancelled.")
     return redirect("orders-list")
 
 
-def _order_status_update_context(order):
+def _order_status_update_context(request, order):
+    role = get_effective_role(request.user)
+    next_statuses = []
+    for code, _label in Order.OrderStatus.choices:
+        ok, _m = can_transition(request.user, order, code)
+        if ok and code != order.status:
+            next_statuses.append(code)
     return {
         "order": order,
-        "status_choices": Order.Status.choices,
-        "workflow_choices": Order.WorkflowStatus.choices,
+        "order_status_choices": Order.OrderStatus.choices,
         "settlement_choices": Order.SettlementType.choices,
         "payment_method_choices": Order.PaymentMethod.choices,
         "payment_status_choices": Order.PaymentStatus.choices,
+        "next_statuses": next_statuses,
+        "portal_role": role,
+        "is_owner": role == UserRole.Role.OWNER,
     }
 
 
 @login_required
-@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
+@role_required(
+    UserRole.Role.OWNER,
+    UserRole.Role.MANAGER,
+    UserRole.Role.WAREHOUSE,
+)
 def order_status_update(request, order_id):
     """
-    订单详情页保存入口：履约/结算方式/支付相关字段 + 结算状态（应收账款）。
-    仅锁 Order 主表；联动欠款在同事务内执行，失败则整笔回滚并提示原因。
+    Order detail: owner edits payment fields + lifecycle status; others see read-only + action buttons.
     """
     company = get_user_company(request.user)
     detail_qs = Order.objects.select_related("customer").prefetch_related("items__product")
     if company is not None:
         detail_qs = detail_qs.filter(company=company)
 
+    order = get_object_or_404(detail_qs, pk=order_id)
+
     if request.method == "POST":
-        workflow = (request.POST.get("workflow_status") or "").strip()
+        if get_effective_role(request.user) != UserRole.Role.OWNER:
+            messages.error(request, "Only the owner can save this form.")
+            return redirect(reverse("order-status-update", kwargs={"order_id": order_id}))
+
         settlement = (request.POST.get("settlement_type") or "").strip()
         payment_method = (request.POST.get("payment_method") or "").strip()
         payment_status = (request.POST.get("payment_status") or "").strip()
-        status = (request.POST.get("status") or "").strip()
+        new_status = (request.POST.get("order_status") or "").strip()
 
-        valid_wf = {c[0] for c in Order.WorkflowStatus.choices}
         valid_settlement = {c[0] for c in Order.SettlementType.choices}
         valid_pm = {c[0] for c in Order.PaymentMethod.choices}
         valid_ps = {c[0] for c in Order.PaymentStatus.choices}
-        valid_status = {c[0] for c in Order.Status.choices}
+        valid_os = {c[0] for c in Order.OrderStatus.choices}
 
         if not (
-            workflow in valid_wf
-            and settlement in valid_settlement
+            settlement in valid_settlement
             and payment_method in valid_pm
             and payment_status in valid_ps
-            and status in valid_status
+            and new_status in valid_os
         ):
-            logger.warning(
-                "order_status_update invalid POST order_id=%s wf=%r settlement=%r pm=%r ps=%r status=%r",
-                order_id,
-                workflow,
-                settlement,
-                payment_method,
-                payment_status,
-                status,
-            )
-            messages.error(
-                request,
-                "Save failed: workflow, settlement, payment method, payment status, or settlement status is invalid.",
-            )
-            order = get_object_or_404(detail_qs, pk=order_id)
+            messages.error(request, "Invalid form values.")
             return render(
-                request, "order_status_update.html", _order_status_update_context(order)
+                request,
+                "order_status_update.html",
+                _order_status_update_context(request, order),
             )
 
         try:
             with transaction.atomic():
-                order = Order.objects.select_for_update().get(pk=order_id)
-                old_wf = order.workflow_status
-                old_status = order.status
-                old_snapshot = {
-                    "workflow_status": order.workflow_status,
-                    "settlement_type": order.settlement_type,
-                    "payment_method": order.payment_method,
-                    "payment_status": order.payment_status,
-                    "status": order.status,
-                    "paid_at": order.paid_at,
-                }
-                logger.info(
-                    "order_status_update order_id=%s before wf=%s settlement=%s pm=%s ps=%s status=%s paid_at=%s",
-                    order_id,
-                    old_snapshot["workflow_status"],
-                    old_snapshot["settlement_type"],
-                    old_snapshot["payment_method"],
-                    old_snapshot["payment_status"],
-                    old_snapshot["status"],
-                    old_snapshot["paid_at"],
-                )
-
-                order.workflow_status = workflow
-                order.settlement_type = settlement
-                order.payment_method = payment_method
-                order.payment_status = payment_status
-                order.status = status
-                if (
-                    status == Order.Status.PAID
-                    and old_status != Order.Status.PAID
-                    and order.paid_at is None
-                ):
-                    order.paid_at = timezone.now()
-
-                update_fields = [
-                    "workflow_status",
-                    "settlement_type",
-                    "payment_method",
-                    "payment_status",
-                    "status",
-                ]
-                if order.paid_at != old_snapshot["paid_at"]:
-                    update_fields.append("paid_at")
-
-                logger.info(
-                    "order_status_update order_id=%s entering save() update_fields=%s new wf=%s settlement=%s pm=%s ps=%s status=%s paid_at=%s",
-                    order_id,
-                    update_fields,
-                    workflow,
-                    settlement,
-                    payment_method,
-                    payment_status,
-                    status,
-                    order.paid_at,
-                )
-                order.save(update_fields=update_fields)
-                logger.info(
-                    "order_status_update order_id=%s save() finished without DB error",
-                    order_id,
-                )
-
-                if (
-                    workflow == Order.WorkflowStatus.CONFIRMED
-                    and old_wf != Order.WorkflowStatus.CONFIRMED
-                ):
-                    logger.info(
-                        "order_status_update order_id=%s side_effect apply_credit_debt_if_needed",
-                        order_id,
-                    )
-                    apply_credit_debt_if_needed(order)
-                if (
-                    workflow == Order.WorkflowStatus.CANCELLED
-                    and old_wf != Order.WorkflowStatus.CANCELLED
-                ):
-                    logger.info(
-                        "order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (cancel)",
-                        order_id,
-                    )
-                    reverse_credit_debt_if_counted(order)
-                if status == Order.Status.PAID and old_status != Order.Status.PAID:
-                    logger.info(
-                        "order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (paid)",
-                        order_id,
-                    )
-                    reverse_credit_debt_if_counted(order)
-
-            logger.info(
-                "order_status_update order_id=%s transaction committed", order_id
-            )
-            if status == Order.Status.PAID and old_status != Order.Status.PAID:
-                messages.success(request, _MSG_SETTLED_RELEASE)
-            else:
-                messages.success(request, "Order saved.")
-            return redirect(
-                reverse("order-status-update", kwargs={"order_id": order_id})
-            )
+                o = Order.objects.select_for_update().get(pk=order_id)
+                if new_status != o.status:
+                    ok, msg = apply_transition(request.user, order_id, new_status)
+                    if not ok:
+                        messages.error(request, msg)
+                        return render(
+                            request,
+                            "order_status_update.html",
+                            _order_status_update_context(request, order),
+                        )
+                    o = Order.objects.select_for_update().get(pk=order_id)
+                o.settlement_type = settlement
+                o.payment_method = payment_method
+                o.payment_status = payment_status
+                o.save(update_fields=["settlement_type", "payment_method", "payment_status"])
         except ValidationError as exc:
-            logger.exception(
-                "order_status_update order_id=%s ValidationError transaction rolled back: %s",
-                order_id,
-                exc,
+            messages.error(request, f"Save failed: {exc}")
+            return render(
+                request,
+                "order_status_update.html",
+                _order_status_update_context(request, order),
             )
-            messages.error(request, f"Save failed (rolled back): {exc}")
-        except Exception as exc:
-            logger.exception(
-                "order_status_update order_id=%s unexpected error transaction rolled back: %s",
-                order_id,
-                exc,
-            )
-            messages.error(request, f"Save failed (rolled back): {exc}")
 
-        order = get_object_or_404(detail_qs, pk=order_id)
-        return render(
-            request, "order_status_update.html", _order_status_update_context(order)
-        )
+        messages.success(request, "Order saved.")
+        return redirect(reverse("order-status-update", kwargs={"order_id": order_id}))
 
-    order = get_object_or_404(detail_qs, pk=order_id)
     return render(
-        request, "order_status_update.html", _order_status_update_context(order)
+        request,
+        "order_status_update.html",
+        _order_status_update_context(request, order),
     )
+
+
+@login_required
+@role_required(
+    UserRole.Role.OWNER,
+    UserRole.Role.MANAGER,
+    UserRole.Role.WAREHOUSE,
+    UserRole.Role.DRIVER,
+)
+@require_POST
+def order_transition(request, order_id):
+    target = (request.POST.get("target_status") or "").strip()
+    ok, msg = apply_transition(request.user, order_id, target)
+    if not ok:
+        messages.error(request, msg)
+        refer = request.META.get("HTTP_REFERER")
+        if refer:
+            return redirect(refer)
+        return redirect("orders-list")
+    messages.success(request, "Order status updated.")
+    refer = request.META.get("HTTP_REFERER")
+    if refer:
+        return redirect(refer)
+    return redirect("orders-list")
 
 
 def _stripe_secret_key():
@@ -2669,24 +2578,9 @@ def stripe_success(request):
 
     session = stripe.checkout.Session.retrieve(session_id)
     if getattr(session, "payment_status", "") == "paid":
-        with transaction.atomic():
-            o = Order.objects.select_for_update().get(pk=order.id)
-            o.payment_method = "stripe"
-            o.payment_status = Order.PaymentStatus.PAID
-            o.paid_at = timezone.now()
-            o.status = Order.Status.PAID
-            if o.workflow_status == Order.WorkflowStatus.PENDING_CONFIRM:
-                o.workflow_status = Order.WorkflowStatus.CONFIRMED
-            o.save(
-                update_fields=[
-                    "payment_method",
-                    "payment_status",
-                    "paid_at",
-                    "status",
-                    "workflow_status",
-                ]
-            )
-            reverse_credit_debt_if_counted(o)
+        apply_payment_paid_system(
+            order.id, payment_method=Order.PaymentMethod.STRIPE
+        )
         messages.success(request, "Stripe payment successful.")
         return redirect("shop-order-success", order_id=order.id)
 
@@ -2949,42 +2843,26 @@ def product_csv_import(request):
 @role_required(UserRole.Role.DRIVER)
 @require_http_methods(["GET", "POST"])
 def driver_orders(request):
-    """Driver V1: orders where assigned_driver is the current user."""
+    """Driver: orders assigned to this user; shipping → completed only."""
     if request.method == "POST":
         order_id = (request.POST.get("order_id") or "").strip()
         action = (request.POST.get("action") or "").strip()
-        if not order_id or action not in ("start_delivery", "mark_completed"):
+        if not order_id or action != "mark_completed":
             messages.error(request, "Invalid request.")
             return redirect("driver-orders")
-        order = get_object_or_404(Order, pk=order_id, assigned_driver=request.user)
-        if action == "start_delivery":
-            # V1 state transition guard:
-            # assigned -> delivering only.
-            if order.delivery_status != "assigned":
-                messages.error(
-                    request,
-                    "Cannot start delivery: order is not in 'Assigned' state.",
-                )
-                return redirect("driver-orders")
-            order.delivery_status = "delivering"
-            order.save(update_fields=["delivery_status"])
-            messages.success(request, "Delivery status updated to Delivering.")
-        else:
-            # V1 state transition guard:
-            # delivering -> completed only.
-            if order.delivery_status != "delivering":
-                messages.error(
-                    request,
-                    "Cannot complete delivery: order is not in 'Delivering' state.",
-                )
-                return redirect("driver-orders")
-            order.delivery_status = "completed"
-            order.save(update_fields=["delivery_status"])
-            messages.success(request, "Delivery status updated to Completed.")
+        ok, msg = apply_transition(
+            request.user, int(order_id), Order.OrderStatus.COMPLETED
+        )
+        if not ok:
+            messages.error(request, msg)
+            return redirect("driver-orders")
+        messages.success(request, "Delivery completed.")
         return redirect("driver-orders")
 
     orders = (
-        Order.objects.filter(assigned_driver=request.user)
+        Order.objects.filter(
+            assigned_driver=request.user, status=Order.OrderStatus.SHIPPING
+        )
         .select_related("customer", "assigned_vehicle")
         .order_by("-created_at")
     )

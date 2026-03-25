@@ -454,7 +454,6 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
         "delivery_date",
         "ordered_by",
         "guest_session_key",
-        "workflow_status",
         "settlement_type",
         "payment_method",
         "payment_status",
@@ -478,7 +477,6 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
         "guest_session_key",
     )
     list_filter = (
-        "workflow_status",
         "status",
         "settlement_type",
         "payment_method",
@@ -489,7 +487,7 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
         "ordered_by",
         "delivery_status",
     )
-    list_editable = ("workflow_status", "status", "settlement_type", "payment_method", "payment_status")
+    list_editable = ("status", "settlement_type", "payment_method", "payment_status")
     autocomplete_fields = ("assigned_vehicle", "assigned_driver")
     fieldsets = (
         (
@@ -500,7 +498,6 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
                     "customer",
                     "ordered_by",
                     "guest_session_key",
-                    "workflow_status",
                     "status",
                     "settlement_type",
                     "payment_method",
@@ -569,9 +566,9 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
         for oid in queryset.values_list("pk", flat=True):
             with transaction.atomic():
                 o = Order.objects.select_for_update().get(pk=oid)
-                if o.status == Order.Status.PAID:
+                if o.status == Order.OrderStatus.PAID:
                     continue
-                o.status = Order.Status.PAID
+                o.status = Order.OrderStatus.PAID
                 o.payment_status = Order.PaymentStatus.PAID
                 o.paid_at = now
                 o.save(update_fields=["status", "payment_status", "paid_at"])
@@ -685,7 +682,6 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
         if change and obj.pk:
             try:
                 prev = Order.objects.filter(pk=obj.pk).values(
-                    "workflow_status",
                     "settlement_type",
                     "payment_method",
                     "payment_status",
@@ -695,9 +691,8 @@ class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
                 prev = None
             if prev:
                 logger.info(
-                    "OrderAdmin.save_model order_id=%s before wf=%s settlement=%s pm=%s ps=%s status=%s",
+                    "OrderAdmin.save_model order_id=%s before settlement=%s pm=%s ps=%s status=%s",
                     obj.pk,
-                    prev["workflow_status"],
                     prev["settlement_type"],
                     prev["payment_method"],
                     prev["payment_status"],

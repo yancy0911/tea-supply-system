@@ -459,23 +459,25 @@
               <td>{{ o.customer.name|default:"—" }}</td>
               {% if show_financial_kpis %}<td>{{ o.total_revenue|floatformat:2 }}</td>{% endif %}
               <td>
-                {% if o.status == "paid" %}
-                  <span class="pill green">已支付</span>
-                {% elif o.workflow_status == "cancelled" %}
+                {% if o.status == "cancelled" %}
                   <span class="pill">已取消</span>
+                {% elif o.status == "completed" %}
+                  <span class="pill green">{{ o.get_status_display }}</span>
+                {% elif o.status == "paid" %}
+                  <span class="pill green">{{ o.get_status_display }}</span>
                 {% else %}
-                  <span class="pill blue">{{ o.get_workflow_status_display }}</span>
+                  <span class="pill blue">{{ o.get_status_display }}</span>
                 {% endif %}
               </td>
               <td class="actions">
-                {% if o.status == "paid" or o.workflow_status == "cancelled" %}
+                {% if o.status == "cancelled" or o.status == "completed" %}
                   <span class="muted">—</span>
-                {% elif o.workflow_status == "pending_confirm" %}
+                {% elif o.status == "pending" %}
                   <div class="row-actions">
                     <a class="btn-mini primary" href="{% url 'order-confirm' o.id %}">确认</a>
                     <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
                   </div>
-                {% elif o.workflow_status == "confirmed" and o.status != "paid" %}
+                {% elif o.status == "confirmed" %}
                   <div class="row-actions">
                     <a class="btn-mini success" href="{% url 'order_paid' o.id %}">标记收款</a>
                     <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
@@ -514,17 +516,17 @@
               <td>{{ o.customer.name|default:"—" }}</td>
               {% if show_financial_kpis %}<td>{{ o.total_revenue|floatformat:2 }}</td>{% endif %}
               <td>
-                <span class="pill orange">{{ o.get_workflow_status_display }}</span>
+                <span class="pill orange">{{ o.get_status_display }}</span>
               </td>
               <td class="actions">
-                {% if o.workflow_status == "cancelled" %}
+                {% if o.status == "cancelled" %}
                   <span class="muted">—</span>
-                {% elif o.workflow_status == "pending_confirm" %}
+                {% elif o.status == "pending" %}
                   <div class="row-actions">
                     <a class="btn-mini primary" href="{% url 'order-confirm' o.id %}">确认</a>
                     <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
                   </div>
-                {% elif o.workflow_status == "confirmed" %}
+                {% elif o.status == "confirmed" %}
                   <div class="row-actions">
                     <a class="btn-mini success" href="{% url 'order_paid' o.id %}">标记收款</a>
                     <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
@@ -553,25 +555,24 @@
             <div class="dispatch-card__row">
               <a href="{% url 'order-status-update' o.id %}" class="dispatch-link">#{{ o.id }}</a>
               <div>
+                <span class="pill blue">{{ o.get_status_display }}</span>
                 {% if o.delivery_status == "assigned" %}
-                  <span class="pill blue">已分配</span>
+                  <span class="pill blue">司机已分配</span>
                 {% elif o.delivery_status == "delivering" %}
-                  <span class="pill orange">配送中</span>
-                {% else %}
-                  <span class="pill">{{ o.delivery_status }}</span>
+                  <span class="pill orange">在途</span>
                 {% endif %}
               </div>
             </div>
             <div class="dispatch-card__customer">{{ o.customer.name|default:"—" }}</div>
             <div class="row-actions row-actions-left">
               <a class="btn-mini secondary" href="/admin/tea_supply/order/{{ o.id }}/change/">分配司机</a>
-              {% if o.delivery_status == "assigned" %}
+              {% if o.status == "paid" or o.status == "picking" %}
                 <form method="post" action="{% url 'boss-start-delivery' o.id %}" class="inline-form">
                   {% csrf_token %}
-                  <button type="submit" class="btn-mini success">开始配送</button>
+                  <button type="submit" class="btn-mini success">发往配送</button>
                 </form>
               {% else %}
-                <button type="button" class="btn-mini secondary" disabled>开始配送</button>
+                <button type="button" class="btn-mini secondary" disabled>发往配送</button>
               {% endif %}
             </div>
           </div>

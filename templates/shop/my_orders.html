@@ -37,17 +37,17 @@
                 </div>
               </div>
               <div>
-                {% if order.workflow_status == "pending_confirm" %}
+                {% if order.status == "pending" %}
                   <span class="badge">Pending confirmation</span>
-                {% elif order.workflow_status == "confirmed" %}
+                {% elif order.status == "confirmed" %}
                   <span class="badge">Confirmed</span>
-                {% elif order.workflow_status == "preparing" %}
+                {% elif order.status == "picking" %}
                   <span class="badge">Preparing</span>
-                {% elif order.workflow_status == "shipped" %}
+                {% elif order.status == "shipping" %}
                   <span class="badge">Shipped</span>
-                {% elif order.workflow_status == "completed" %}
+                {% elif order.status == "completed" %}
                   <span class="badge">Completed</span>
-                {% elif order.workflow_status == "cancelled" %}
+                {% elif order.status == "cancelled" %}
                   <span class="badge">Cancelled</span>
                 {% else %}
                   <span class="badge">Processing</span>
