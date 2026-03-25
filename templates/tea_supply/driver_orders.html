@@ -41,22 +41,31 @@
               <td>{{ order.get_delivery_status_display }}</td>
               <td style="max-width: 180px; white-space: pre-wrap">{{ order.delivery_notes|default:"" }}</td>
               <td>
-                <form method="post" style="display: inline-block; margin-bottom: 6px">
-                  {% csrf_token %}
-                  <input type="hidden" name="order_id" value="{{ order.id }}" />
-                  <input type="hidden" name="action" value="start_delivery" />
-                  <button type="submit" class="btn" style="border: none; cursor: pointer; font-size: 13px">
-                    Start Delivery
-                  </button>
-                </form>
-                <form method="post" style="display: inline-block">
-                  {% csrf_token %}
-                  <input type="hidden" name="order_id" value="{{ order.id }}" />
-                  <input type="hidden" name="action" value="mark_completed" />
-                  <button type="submit" class="btn secondary" style="border: none; cursor: pointer; font-size: 13px">
-                    Mark Completed
-                  </button>
-                </form>
+                {% if order.delivery_status == "assigned" %}
+                  <form method="post" style="display: inline-block; margin-bottom: 6px">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" value="{{ order.id }}" />
+                    <input type="hidden" name="action" value="start_delivery" />
+                    <button type="submit" class="btn" style="border: none; cursor: pointer; font-size: 13px">
+                      Start Delivery
+                    </button>
+                  </form>
+                {% elif order.delivery_status == "delivering" %}
+                  <form method="post" style="display: inline-block; margin-bottom: 6px">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" value="{{ order.id }}" />
+                    <input type="hidden" name="action" value="mark_completed" />
+                    <button type="submit" class="btn secondary" style="border: none; cursor: pointer; font-size: 13px">
+                      Mark Completed
+                    </button>
+                  </form>
+                {% elif order.delivery_status == "completed" %}
+                  <span class="muted" style="display:inline-block; padding: 6px 0;">Completed</span>
+                {% elif order.delivery_status == "pending" %}
+                  <span class="muted" style="display:inline-block; padding: 6px 0;">Waiting for dispatch</span>
+                {% else %}
+                  <span class="muted" style="display:inline-block; padding: 6px 0;">{{ order.get_delivery_status_display }}</span>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}

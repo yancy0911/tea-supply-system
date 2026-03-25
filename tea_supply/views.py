@@ -2580,10 +2580,26 @@ def driver_orders(request):
             return redirect("driver-orders")
         order = get_object_or_404(Order, pk=order_id, assigned_driver_id=request.user.id)
         if action == "start_delivery":
+            # V1 state transition guard:
+            # assigned -> delivering only.
+            if order.delivery_status != "assigned":
+                messages.error(
+                    request,
+                    "Cannot start delivery: order is not in 'Assigned' state.",
+                )
+                return redirect("driver-orders")
             order.delivery_status = "delivering"
             order.save(update_fields=["delivery_status"])
             messages.success(request, "Delivery status updated to Delivering.")
         else:
+            # V1 state transition guard:
+            # delivering -> completed only.
+            if order.delivery_status != "delivering":
+                messages.error(
+                    request,
+                    "Cannot complete delivery: order is not in 'Delivering' state.",
+                )
+                return redirect("driver-orders")
             order.delivery_status = "completed"
             order.save(update_fields=["delivery_status"])
             messages.success(request, "Delivery status updated to Completed.")
