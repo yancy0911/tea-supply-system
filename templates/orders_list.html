@@ -276,38 +276,63 @@
                 {% endif %}
               </td>
               <td>
-                {% if row.order.status == "pending" %}
-                  {% if row.order.workflow_status != "confirmed" and row.order.workflow_status != "cancelled" %}
-                    {% if row.cost_missing %}
-                      <span
-                        class="btn secondary"
-                        style="padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed;"
-                        title="Cost not set"
-                      >Confirm (no cost)</span>
-                    {% elif row.profit is not None and row.profit < 0 %}
-                      <span
-                        class="btn secondary"
-                        style="padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed;"
-                        title="Negative profit"
-                      >Confirm (loss)</span>
-                    {% elif row.profit_rate is not None and row.profit_rate < 5 %}
-                      <a
-                        href="{% url 'order-confirm' row.order.id %}"
-                        class="btn"
-                        style="padding: 6px 10px; font-size: 12px; margin-right: 6px"
-                        onclick="return confirm('Low margin. Continue?');"
-                      >Confirm</a>
-                    {% else %}
-                      <a href="{% url 'order-confirm' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">Confirm</a>
-                    {% endif %}
-                    <a href="{% url 'order-cancel' row.order.id %}" class="btn secondary" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">Cancel</a>
-                  {% endif %}
-                  <a href="{% url 'order_paid' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">Mark paid</a>
-                  <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">Edit</a>
-                {% elif row.order.status == "paid" %}
-                  <span style="color: #15803d; font-weight: 600">Settled</span>
+                {% if row.order.status == "paid" %}
+                  <span
+                    style="display:inline-block; padding:2px 8px; border-radius:999px; background:#f3f4f6; color:#4b5563; font-weight:700;"
+                  >
+                    Paid ✔
+                  </span>
+                {% elif row.order.workflow_status == "cancelled" %}
+                  <span
+                    style="display:inline-block; padding:2px 8px; border-radius:999px; background:#fee2e2; color:#991b1b; font-weight:700;"
+                  >
+                    Cancelled
+                  </span>
                 {% else %}
-                  <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">Edit</a>
+                  <div style="display:flex; align-items:center; justify-content:space-between; gap: 10px;">
+                    <div>
+                      {% if row.order.workflow_status == "pending_confirm" or row.order.workflow_status == "pending" %}
+                        {% if row.cost_missing %}
+                          <span
+                            style="display:inline-block; padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed; border-radius:10px; background:#2563eb; color:#fff; font-weight:800;"
+                            title="Cost not set"
+                          >Confirm (no cost)</span>
+                        {% elif row.profit is not None and row.profit < 0 %}
+                          <span
+                            style="display:inline-block; padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed; border-radius:10px; background:#2563eb; color:#fff; font-weight:800;"
+                            title="Negative profit"
+                          >Confirm (loss)</span>
+                        {% elif row.profit_rate is not None and row.profit_rate < 5 %}
+                          <a
+                            href="{% url 'order-confirm' row.order.id %}"
+                            style="display:inline-block; padding: 6px 10px; font-size: 12px; margin-right: 6px; border-radius:10px; background:#2563eb; color:#fff; font-weight:800; text-decoration:none;"
+                            onclick="return confirm('Low margin. Continue?');"
+                          >Confirm</a>
+                        {% else %}
+                          <a
+                            href="{% url 'order-confirm' row.order.id %}"
+                            style="display:inline-block; padding: 6px 10px; font-size: 12px; margin-right: 6px; border-radius:10px; background:#2563eb; color:#fff; font-weight:800; text-decoration:none;"
+                          >Confirm</a>
+                        {% endif %}
+                        <a
+                          href="{% url 'order-cancel' row.order.id %}"
+                          style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; background:#dc2626; color:#fff; font-weight:800; text-decoration:none;"
+                        >Cancel</a>
+                      {% elif row.order.workflow_status == "confirmed" %}
+                        <a
+                          href="{% url 'order_paid' row.order.id %}"
+                          style="display:inline-block; padding: 6px 10px; font-size: 12px; border-radius:10px; background:#15803d; color:#fff; font-weight:800; text-decoration:none;"
+                        >Mark paid</a>
+                      {% endif %}
+                    </div>
+                    <a
+                      class="btn secondary"
+                      href="{% url 'order-status-update' row.order.id %}"
+                      style="padding: 6px 10px; font-size: 12px; background:#f3f4f6; color:#6b7280; border: 1px solid #d1d5db; border-radius:10px; font-weight:700; text-decoration:none;"
+                    >
+                      Edit
+                    </a>
+                  </div>
                 {% endif %}
               </td>
             </tr>
