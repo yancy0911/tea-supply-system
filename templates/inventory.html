@@ -30,6 +30,7 @@
             <th>Product</th>
             <th>On hand</th>
             <th>Safety stock</th>
+            <th>Reorder qty</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -56,6 +57,7 @@
                 {{ row.current_stock|floatformat:2 }}
               </td>
               <td>{{ row.safety_stock|floatformat:2 }}</td>
+              <td>{{ row.reorder_qty|floatformat:2 }}</td>
               <td>
                 {% if row.severe_stock %}
                   <span style="color: #dc2626; font-weight: 800">Severe</span>

@@ -539,5 +539,51 @@
       Tip: Update stock in Admin. Severe = stock &lt; safety_stock / 2.
     </div>
   </div>
+
+  <div style="margin-top: 12px;" class="section">
+    <div class="section-head">
+      <h3 class="section-title">📦 Reorder suggestions</h3>
+      <span class="section-hint">Top 5</span>
+    </div>
+    <table class="mini-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Product</th>
+          <th>Stock</th>
+          <th>Reorder qty</th>
+          <th>Status</th>
+          <th class="actions">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in reorder_rows %}
+          <tr>
+            <td><strong>{{ row.sku }}</strong></td>
+            <td>{{ row.name }}</td>
+            <td>{{ row.stock|floatformat:2 }}</td>
+            <td><strong>{{ row.reorder_qty|floatformat:2 }}</strong></td>
+            <td>
+              {% if row.status == "Urgent" %}
+                <span class="pill" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;">Urgent</span>
+              {% elif row.status == "Reorder" %}
+                <span class="pill" style="background:#fffbeb;color:#92400e;border-color:#fde68a;">Reorder</span>
+              {% else %}
+                <span class="pill green">OK</span>
+              {% endif %}
+            </td>
+            <td class="actions">
+              <a class="btn-mini secondary" href="/admin/tea_supply/product/{{ row.product.id }}/change/">Adjust</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="muted">No suggestions</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="muted" style="margin-top: 10px; font-size: 12px;">
+      Reorder qty = max(0, avg_daily_sales × lead_time_days + safety_stock − stock).
+    </div>
+  </div>
 {% endblock %}
 

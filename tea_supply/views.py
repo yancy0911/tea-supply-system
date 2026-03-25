@@ -40,6 +40,7 @@ from .models import (
     Product,
     ProductCategory,
     UserRole,
+    calculate_reorder,
     deduct_stock_for_order,
     recalculate_order_totals,
     _stock_need_for_line,
@@ -1518,6 +1519,7 @@ def inventory_list(request):
         wl = float(p.safety_stock or 0.0)
         is_severe = wl > 0 and st < (wl / 2.0)
         is_low = st < wl and not is_severe
+        reorder_qty = calculate_reorder(p)
         if is_low:
             low_count += 1
         if is_severe:
@@ -1539,6 +1541,7 @@ def inventory_list(request):
                 "safety_stock": wl,
                 "low_stock": is_low,
                 "severe_stock": is_severe,
+                "reorder_qty": reorder_qty,
                 "status_label": status_label,
                 "status_level": status_level,
             }
@@ -2028,6 +2031,39 @@ def boss_dashboard(request):
             }
         )
 
+    reorder_rows = []
+    for p in Product.objects.filter(stock_enabled=True).order_by("sku", "id"):
+        reorder_qty = calculate_reorder(p)
+        if reorder_qty <= 0:
+            continue
+        st = float(getattr(p, "stock", 0.0) or 0.0)
+        wl = float(getattr(p, "safety_stock", 0.0) or 0.0)
+        is_urgent = wl > 0 and st < (wl / 2.0)
+        is_recommend = wl > 0 and st < wl
+        status = "OK"
+        if is_urgent:
+            status = "Urgent"
+        elif is_recommend:
+            status = "Reorder"
+        reorder_rows.append(
+            {
+                "product": p,
+                "sku": p.sku,
+                "name": p.name,
+                "stock": st,
+                "reorder_qty": reorder_qty,
+                "status": status,
+            }
+        )
+    reorder_rows.sort(
+        key=lambda r: (
+            0 if r["status"] == "Urgent" else (1 if r["status"] == "Reorder" else 2),
+            -float(r["reorder_qty"] or 0),
+            str(r["sku"] or ""),
+        )
+    )
+    reorder_rows = reorder_rows[:5]
+
     return render(
         request,
         "boss_dashboard.html",
@@ -2045,6 +2081,7 @@ def boss_dashboard(request):
             "product_top5": product_top5,
             "trend7": trend,
             "low_stock_rows": low_stock_rows,
+            "reorder_rows": reorder_rows,
         },
     )
 

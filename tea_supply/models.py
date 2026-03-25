@@ -70,6 +70,16 @@ class Product(models.Model):
         verbose_name="当前库存（供应链）",
         help_text="供应链库存（V1）：订单确认/收款后扣减；用于库存预警与补货。",
     )
+    avg_daily_sales = models.FloatField(
+        default=0,
+        verbose_name="平均日销量",
+        help_text="补货建议（V1）：用于估算 lead time 期间需求量。",
+    )
+    lead_time_days = models.PositiveSmallIntegerField(
+        default=7,
+        verbose_name="补货周期（天）",
+        help_text="补货建议（V1）：从下单到到货的周期天数。",
+    )
     safety_stock = models.FloatField(
         default=20,
         verbose_name="安全库存",
@@ -758,6 +768,21 @@ def deduct_stock_for_order(order_id):
             need = _stock_need_for_line(item, p)
             _apply_need_to_inventory(p, need, add_back=False, order=order)
         Order.objects.filter(pk=order_id).update(stock_deducted=True)
+
+
+def calculate_reorder(product):
+    # 预计需求
+    demand = float(getattr(product, "avg_daily_sales", 0) or 0) * float(
+        getattr(product, "lead_time_days", 0) or 0
+    )
+
+    # 建议库存 = 需求 + 安全库存
+    target_stock = demand + float(getattr(product, "safety_stock", 0) or 0)
+
+    # 建议补货量
+    reorder_qty = max(0.0, target_stock - float(getattr(product, "stock", 0) or 0))
+
+    return reorder_qty
 
 
 def release_stock_for_order(order_id):
