@@ -153,7 +153,7 @@ class CustomerProductPrice(models.Model):
 class Customer(models.Model):
     """商城/录单停单：使用 is_blocked（后台「是否停单」）。"""
 
-    ORDER_STOP_SUPPLIER_MESSAGE = "该客户已被暂停供货，请联系管理员"
+    ORDER_STOP_SUPPLIER_MESSAGE = "This account is suspended. Please contact us."
 
     class AccountStatus(models.TextChoices):
         PENDING = "pending", "待审核"
@@ -285,11 +285,11 @@ class Customer(models.Model):
     def shop_order_denial_reason(self):
         """商城下单被拒绝时的说明；空字符串表示可下单。"""
         if self.account_status == self.AccountStatus.PENDING:
-            return "账号审核中，请联系店家开通采购权限"
+            return "Your account is pending approval. Please contact us to enable ordering."
         if self.account_status == self.AccountStatus.DISABLED:
-            return "账号已禁用，无法下单，请联系店家"
+            return "This account is disabled. Please contact us."
         if not self.is_active:
-            return "客户档案已停用，无法下单，请联系店家"
+            return "This customer profile is inactive. Please contact us."
         if self.is_blocked:
             return self.ORDER_STOP_SUPPLIER_MESSAGE
         return ""
@@ -436,37 +436,68 @@ class UserRole(models.Model):
         return f"{self.user.username}({self.get_role_display()})"
 
 
+class Vehicle(models.Model):
+    """配送车辆（调度 V1）。"""
+
+    name = models.CharField(max_length=100, verbose_name="名称")
+    plate_number = models.CharField(max_length=32, blank=True, default="", verbose_name="车牌")
+    capacity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="载量",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="启用")
+    notes = models.TextField(blank=True, default="", verbose_name="备注")
+
+    class Meta:
+        verbose_name = "配送车辆"
+        verbose_name_plural = "配送车辆"
+        ordering = ("name",)
+
+    def __str__(self):
+        return self.name
+
+
 class Order(models.Model):
     class Status(models.TextChoices):
-        PENDING = "pending", "待处理"
-        PAID = "paid", "已结算"
+        PENDING = "pending", "Pending"
+        PAID = "paid", "Settled"
 
     class WorkflowStatus(models.TextChoices):
-        PENDING_CONFIRM = "pending_confirm", "待确认"
-        CONFIRMED = "confirmed", "已确认"
-        PREPARING = "preparing", "备货中"
-        SHIPPED = "shipped", "已发货"
-        COMPLETED = "completed", "已完成"
-        CANCELLED = "cancelled", "已取消"
+        PENDING_CONFIRM = "pending_confirm", "Pending confirm"
+        CONFIRMED = "confirmed", "Confirmed"
+        PREPARING = "preparing", "Preparing"
+        SHIPPED = "shipped", "Shipped"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
     class SettlementType(models.TextChoices):
-        CASH = "cash", "现结"
-        CREDIT = "credit", "挂账"
+        CASH = "cash", "Cash terms"
+        CREDIT = "credit", "On account"
 
     class PaymentMethod(models.TextChoices):
-        BANK_TRANSFER = "bank_transfer", "银行转账"
-        CHECK = "check", "支票"
-        CARD_ON_PICKUP = "card_on_pickup", "现场刷卡/取货付款"
-        CASH = "cash", "现金"
-        CREDIT = "credit", "挂账"
+        BANK_TRANSFER = "bank_transfer", "Bank transfer"
+        CHECK = "check", "Check"
+        CARD_ON_PICKUP = "card_on_pickup", "Card on pickup"
+        CASH = "cash", "Cash"
+        CREDIT = "credit", "On account"
 
     class PaymentStatus(models.TextChoices):
-        UNPAID = "unpaid", "未支付"
-        PENDING_CONFIRMATION = "pending_confirmation", "待确认"
-        PAID = "paid", "已支付"
-        PARTIAL = "partial", "部分付款"
-        CANCELLED = "cancelled", "已取消"
+        UNPAID = "unpaid", "Unpaid"
+        PENDING_CONFIRMATION = "pending_confirmation", "Pending confirmation"
+        PAID = "paid", "Paid"
+        PARTIAL = "partial", "Partial"
+        CANCELLED = "cancelled", "Cancelled"
 
-    name = models.CharField(max_length=100, default="批发订单", verbose_name="订单名称")
+    class DeliveryStatus(models.TextChoices):
+        PENDING = "Pending", "Pending"
+        ASSIGNED = "Assigned", "Assigned"
+        DELIVERING = "Delivering", "Delivering"
+        COMPLETED = "Completed", "Completed"
+
+    name = models.CharField(max_length=100, default="Wholesale order", verbose_name="订单名称")
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
@@ -535,6 +566,30 @@ class Order(models.Model):
     store_name = models.CharField(max_length=200, blank=True, default="", verbose_name="门店/公司")
     delivery_address = models.CharField(max_length=500, blank=True, default="", verbose_name="配送地址")
     order_note = models.TextField(blank=True, default="", verbose_name="订单备注")
+    assigned_vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+        verbose_name="分配车辆",
+    )
+    assigned_driver = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="delivery_orders",
+        verbose_name="配送司机",
+    )
+    delivery_status = models.CharField(
+        max_length=20,
+        choices=DeliveryStatus.choices,
+        default=DeliveryStatus.PENDING,
+        verbose_name="配送状态",
+    )
+    delivery_date = models.DateField(null=True, blank=True, verbose_name="配送日期")
+    delivery_notes = models.TextField(blank=True, default="", verbose_name="配送备注")
     stock_deducted = models.BooleanField(
         default=False,
         verbose_name="已扣库存",
@@ -719,8 +774,8 @@ def release_stock_for_order(order_id):
 
 class OrderItem(models.Model):
     class SaleType(models.TextChoices):
-        SINGLE = "single", "单品"
-        CASE = "case", "整箱"
+        SINGLE = "single", "Single"
+        CASE = "case", "Case"
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="商品")
@@ -925,15 +980,11 @@ def _discount_rates_for_level(level_key):
 
 
 def _format_discount_source(level_key, rate, kind_label):
-    """kind_label: 单品 / 整箱"""
+    """kind_label: e.g. Per bag / Per case (English for storefront)."""
     if abs(rate - 1.0) < 1e-9:
-        return f"{level_key}级原价（{kind_label}）"
-    pct = int(round(rate * 100))
-    if pct % 10 == 0:
-        zhe = f"{pct // 10}"
-    else:
-        zhe = f"{pct / 10:.1f}".rstrip("0").rstrip(".")
-    return f"{level_key}级{zhe}折（{kind_label}）"
+        return f"Tier {level_key} · base price ({kind_label})"
+    pct_off = int(round((1.0 - float(rate)) * 100))
+    return f"Tier {level_key} · {pct_off}% off ({kind_label})"
 
 
 def resolve_product_price_for_customer(product, customer, sale_type):
@@ -964,7 +1015,7 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     custom_found = False
     source = "base"
     final_price = base_price
-    pricing_note = "原价"
+    pricing_note = "Base price"
 
     if customer:
         custom_row = (
@@ -989,7 +1040,7 @@ def resolve_product_price_for_customer(product, customer, sale_type):
             if is_enabled and custom_price > Decimal("0.00"):
                 source = "custom"
                 final_price = custom_price
-                pricing_note = "客户专属价"
+                pricing_note = "Customer exclusive price"
         if source != "custom":
             level = (
                 getattr(customer, "customer_level", None)
@@ -1006,28 +1057,15 @@ def resolve_product_price_for_customer(product, customer, sale_type):
             rate = discount_map.get(level, Decimal("1.00"))
             final_price = (base_price * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             if level == "B":
-                pricing_note = "B级95折"
+                pricing_note = "Tier B (5% off)"
             elif level == "A":
-                pricing_note = "A级9折"
+                pricing_note = "Tier A (10% off)"
             elif level == "VIP":
-                pricing_note = "VIP85折"
+                pricing_note = "VIP (15% off)"
             else:
-                pricing_note = "原价"
+                pricing_note = "Base price"
             source = "tier" if rate < Decimal("1.00") else "base"
 
-    # 临时调试日志（用于排查专属价命中）
-    print(
-        "[pricing-debug]",
-        {
-            "customer_id": getattr(customer, "id", None),
-            "product_id": getattr(product, "id", None),
-            "sku": getattr(product, "sku", ""),
-            "sale_type": "case" if is_case else "single",
-            "custom_row_found": custom_found,
-            "source": source,
-            "final_price": str(final_price),
-        },
-    )
     return {
         "base_price": base_price,
         "original_price": money_float(base_price),

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1 style="margin-top: 0">My delivery orders</h1>
+  <p class="muted">Orders assigned to you as driver. Use the actions to update delivery status.</p>
+  {% if not orders %}
+    <p>No orders assigned to you yet.</p>
+  {% else %}
+    <div style="overflow-x: auto">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr>
+              <td>
+                <strong>#{{ order.id }}</strong>
+                {% if order.name %}
+                  <div class="muted" style="font-size: 12px">{{ order.name }}</div>
+                {% endif %}
+              </td>
+              <td>
+                {% if order.customer %}
+                  {{ order.customer.name }}
+                {% else %}
+                  {{ order.contact_name|default:order.store_name|default:"—" }}
+                {% endif %}
+              </td>
+              <td>{{ order.delivery_phone|default:"—" }}</td>
+              <td style="max-width: 220px">{{ order.delivery_address|default:"—" }}</td>
+              <td>{{ order.total_revenue }}</td>
+              <td>{{ order.get_delivery_status_display }}</td>
+              <td style="max-width: 180px; white-space: pre-wrap">{{ order.delivery_notes|default:"" }}</td>
+              <td>
+                <form method="post" style="display: inline-block; margin-bottom: 6px">
+                  {% csrf_token %}
+                  <input type="hidden" name="order_id" value="{{ order.id }}" />
+                  <input type="hidden" name="action" value="start_delivery" />
+                  <button type="submit" class="btn" style="border: none; cursor: pointer; font-size: 13px">
+                    Start Delivery
+                  </button>
+                </form>
+                <form method="post" style="display: inline-block">
+                  {% csrf_token %}
+                  <input type="hidden" name="order_id" value="{{ order.id }}" />
+                  <input type="hidden" name="action" value="mark_completed" />
+                  <button type="submit" class="btn secondary" style="border: none; cursor: pointer; font-size: 13px">
+                    Mark Completed
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

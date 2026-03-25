@@ -1,42 +1,42 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2 style="margin: 0 0 12px 0">基础报表</h2>
+  <h2 style="margin: 0 0 12px 0">Basic reports</h2>
 
   <div class="card-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px">
-    <div class="card"><div class="label">今日收入（Revenue）</div><div class="value">{{ kpi_today_sales|floatformat:2 }}</div></div>
-    <div class="card"><div class="label">今日利润（Profit）</div><div class="value">{{ kpi_today_profit|floatformat:2 }}</div></div>
-    <div class="card"><div class="label">待确认订单数</div><div class="value">{{ kpi_pending_confirm_count }}</div></div>
-    <div class="card"><div class="label">已确认未收款金额</div><div class="value">{{ kpi_confirmed_unpaid_amount|floatformat:2 }}</div></div>
-    <div class="card"><div class="label">本月收入（Revenue）</div><div class="value">{{ kpi_month_sales|floatformat:2 }}</div></div>
-    <div class="card"><div class="label">本月利润（Profit）</div><div class="value">{{ kpi_month_profit|floatformat:2 }}</div></div>
-    <div class="card"><div class="label">异常利润（Profit）订单数</div><div class="value" style="color:#b91c1c">{{ abnormal_profit_order_count }}</div></div>
-    <div class="card"><div class="label">未设置成本价商品数</div><div class="value" style="color:#b91c1c">{{ missing_cost_product_count }}</div></div>
+    <div class="card"><div class="label">Today revenue</div><div class="value">{{ kpi_today_sales|floatformat:2 }}</div></div>
+    <div class="card"><div class="label">Today profit</div><div class="value">{{ kpi_today_profit|floatformat:2 }}</div></div>
+    <div class="card"><div class="label">Pending confirmation</div><div class="value">{{ kpi_pending_confirm_count }}</div></div>
+    <div class="card"><div class="label">Confirmed, unpaid</div><div class="value">{{ kpi_confirmed_unpaid_amount|floatformat:2 }}</div></div>
+    <div class="card"><div class="label">Month revenue</div><div class="value">{{ kpi_month_sales|floatformat:2 }}</div></div>
+    <div class="card"><div class="label">Month profit</div><div class="value">{{ kpi_month_profit|floatformat:2 }}</div></div>
+    <div class="card"><div class="label">Abnormal profit orders</div><div class="value" style="color:#b91c1c">{{ abnormal_profit_order_count }}</div></div>
+    <div class="card"><div class="label">Products missing cost</div><div class="value" style="color:#b91c1c">{{ missing_cost_product_count }}</div></div>
   </div>
 
   <div class="row">
     <div class="card">
-      <h3 style="margin-top: 0">客户排行（收入 Revenue TOP10）</h3>
+      <h3 style="margin-top: 0">Customers — revenue TOP10</h3>
       <table class="table">
-        <thead><tr><th>客户</th><th>收入（Revenue）</th></tr></thead>
+        <thead><tr><th>Customer</th><th>Revenue</th></tr></thead>
         <tbody>
           {% for r in customer_sales_top %}
             <tr><td>{{ r.customer__name }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
           {% empty %}
-            <tr><td colspan="2" class="muted">暂无数据</td></tr>
+            <tr><td colspan="2" class="muted">No data</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     <div class="card">
-      <h3 style="margin-top: 0">客户排行（利润 Profit TOP10）</h3>
+      <h3 style="margin-top: 0">Customers — profit TOP10</h3>
       <table class="table">
-        <thead><tr><th>客户</th><th>利润（Profit）</th></tr></thead>
+        <thead><tr><th>Customer</th><th>Profit</th></tr></thead>
         <tbody>
           {% for r in customer_profit_top %}
             <tr><td>{{ r.customer__name }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
           {% empty %}
-            <tr><td colspan="2" class="muted">暂无数据</td></tr>
+            <tr><td colspan="2" class="muted">No data</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -44,14 +44,14 @@
   </div>
 
   <div class="card" style="margin-top: 12px">
-    <h3 style="margin-top: 0">客户排行（欠款 TOP10）</h3>
+    <h3 style="margin-top: 0">Customers — debt TOP10</h3>
     <table class="table">
-      <thead><tr><th>客户</th><th>欠款</th></tr></thead>
+      <thead><tr><th>Customer</th><th>Debt</th></tr></thead>
       <tbody>
         {% for r in customer_debt_top %}
           <tr><td>{{ r.name }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
         {% empty %}
-          <tr><td colspan="2" class="muted">暂无数据</td></tr>
+          <tr><td colspan="2" class="muted">No data</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -59,27 +59,27 @@
 
   <div class="row" style="margin-top: 12px">
     <div class="card">
-      <h3 style="margin-top: 0">商品排行（销量 TOP10）</h3>
+      <h3 style="margin-top: 0">Products — qty TOP10</h3>
       <table class="table">
-        <thead><tr><th>商品</th><th>SKU</th><th>销量</th></tr></thead>
+        <thead><tr><th>Product</th><th>SKU</th><th>Qty</th></tr></thead>
         <tbody>
           {% for r in product_qty_top %}
             <tr><td>{{ r.product__name }}</td><td>{{ r.product__sku }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
           {% empty %}
-            <tr><td colspan="3" class="muted">暂无数据</td></tr>
+            <tr><td colspan="3" class="muted">No data</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
     <div class="card">
-      <h3 style="margin-top: 0">商品排行（收入 Revenue TOP10）</h3>
+      <h3 style="margin-top: 0">Products — revenue TOP10</h3>
       <table class="table">
-        <thead><tr><th>商品</th><th>SKU</th><th>收入（Revenue）</th></tr></thead>
+        <thead><tr><th>Product</th><th>SKU</th><th>Revenue</th></tr></thead>
         <tbody>
           {% for r in product_sales_top %}
             <tr><td>{{ r.product__name }}</td><td>{{ r.product__sku }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
           {% empty %}
-            <tr><td colspan="3" class="muted">暂无数据</td></tr>
+            <tr><td colspan="3" class="muted">No data</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -87,44 +87,44 @@
   </div>
 
   <div class="card" style="margin-top: 12px">
-    <h3 style="margin-top: 0">商品排行（利润 Profit TOP10）</h3>
+    <h3 style="margin-top: 0">Products — profit TOP10</h3>
     <table class="table">
-      <thead><tr><th>商品</th><th>SKU</th><th>利润（Profit）</th></tr></thead>
+      <thead><tr><th>Product</th><th>SKU</th><th>Profit</th></tr></thead>
       <tbody>
         {% for r in product_profit_top %}
           <tr><td>{{ r.product__name }}</td><td>{{ r.product__sku }}</td><td>{{ r.value|floatformat:2 }}</td></tr>
         {% empty %}
-          <tr><td colspan="3" class="muted">暂无数据</td></tr>
+          <tr><td colspan="3" class="muted">No data</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
   <div class="card" style="margin-top: 12px">
-    <h3 style="margin-top: 0">利润（Profit）低于 0 订单（TOP10）</h3>
+    <h3 style="margin-top: 0">Orders with profit &lt; 0 (TOP10)</h3>
     <table class="table">
-      <thead><tr><th>订单</th><th>客户</th><th>收入（Revenue）</th><th>成本（Cost）</th><th>利润（Profit）</th><th>时间</th></tr></thead>
+      <thead><tr><th>Order</th><th>Customer</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Time</th></tr></thead>
       <tbody>
         {% for o in negative_profit_orders %}
           <tr>
             <td>#{{ o.id }}</td>
-            <td>{% if o.customer %}{{ o.customer.name }}{% else %}未指定客户{% endif %}</td>
+            <td>{% if o.customer %}{{ o.customer.name }}{% else %}No customer{% endif %}</td>
             <td>{{ o.total_revenue|floatformat:2 }}</td>
             <td>{{ o.total_cost|floatformat:2 }}</td>
             <td style="color:#b91c1c;font-weight:700;">{{ o.profit|floatformat:2 }}</td>
             <td>{{ o.created_at|date:"Y-m-d H:i:s" }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="muted">暂无异常利润订单</td></tr>
+          <tr><td colspan="6" class="muted">No orders</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
   <div class="card" style="margin-top: 12px">
-    <h3 style="margin-top: 0">未设置成本（Cost）价商品（TOP10）</h3>
+    <h3 style="margin-top: 0">Products missing cost (TOP10)</h3>
     <table class="table">
-      <thead><tr><th>商品</th><th>SKU</th><th>单品成本</th><th>整箱成本</th></tr></thead>
+      <thead><tr><th>Product</th><th>SKU</th><th>Single cost</th><th>Case cost</th></tr></thead>
       <tbody>
         {% for p in missing_cost_products %}
           <tr>
@@ -134,7 +134,7 @@
             <td>{{ p.cost_price_case|floatformat:2 }}</td>
           </tr>
         {% empty %}
-          <tr><td colspan="4" class="muted">暂无缺失成本价商品</td></tr>
+          <tr><td colspan="4" class="muted">None</td></tr>
         {% endfor %}
       </tbody>
     </table>

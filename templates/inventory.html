@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2 style="margin: 0 0 8px 0">库存预警看板</h2>
+  <h2 style="margin: 0 0 8px 0">Inventory alerts</h2>
   <p class="muted" style="margin: 0 0 16px 0; font-size: 14px">
-    数据来源：Product.current_stock / Product.safety_stock（与补货预警中心一致）。
+    Source: Product.current_stock / Product.safety_stock (same as replenishment dashboard).
   </p>
 
   <div class="card-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr))">
     <div class="card">
-      <div class="label">商品总数</div>
+      <div class="label">Total SKUs</div>
       <div class="value" style="color: #111827">{{ stats.total }}</div>
     </div>
     <div class="card">
-      <div class="label">低库存数量</div>
+      <div class="label">Low stock</div>
       <div class="value" style="color: #dc2626">{{ stats.low }}</div>
     </div>
     <div class="card">
-      <div class="label">正常库存数量</div>
+      <div class="label">OK</div>
       <div class="value" style="color: #15803d">{{ stats.normal }}</div>
     </div>
   </div>
@@ -27,10 +27,10 @@
         <thead>
           <tr>
             <th>SKU</th>
-            <th>商品名称</th>
-            <th>当前库存</th>
-            <th>安全库存</th>
-            <th>库存状态</th>
+            <th>Product</th>
+            <th>On hand</th>
+            <th>Safety stock</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -54,9 +54,9 @@
               <td>{{ row.safety_stock|floatformat:2 }}</td>
               <td>
                 {% if row.low_stock %}
-                  <span style="color: #dc2626; font-weight: 700">低库存</span>
+                  <span style="color: #dc2626; font-weight: 700">Low</span>
                 {% else %}
-                  <span style="color: #15803d; font-weight: 600">正常</span>
+                  <span style="color: #15803d; font-weight: 600">OK</span>
                 {% endif %}
               </td>
             </tr>
@@ -64,7 +64,7 @@
         </tbody>
       </table>
     {% else %}
-      <p class="muted" style="margin: 0">暂无商品</p>
+      <p class="muted" style="margin: 0">No products</p>
     {% endif %}
   </div>
 {% endblock %}

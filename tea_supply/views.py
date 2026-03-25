@@ -60,14 +60,15 @@ def tier_discount_map_for_wholesale():
 
 
 def tier_rules_banner_text():
-    """商城页眉小字：等级折扣说明（与代码常量一致）。"""
+    """Tier discount line for shop header (aligned with CUSTOMER_LEVEL_DISCOUNT_RATES)."""
     parts = []
     for lvl in ["C", "B", "A", "VIP"]:
         r = float(CUSTOMER_LEVEL_DISCOUNT_RATES.get(lvl, 1.0))
         if abs(r - 1.0) < 1e-9:
-            parts.append(f"{lvl}原价")
+            parts.append(f"{lvl} base price")
         else:
-            parts.append(f"{lvl}{int(round(r * 100))}折")
+            pct_off = int(round((1.0 - r) * 100))
+            parts.append(f"{lvl} {pct_off}% off")
     return " · ".join(parts)
 
 
@@ -97,7 +98,7 @@ def internal_user_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not _is_internal_user(request.user):
-            return HttpResponseForbidden("无权限访问内部页面")
+            return HttpResponseForbidden("You do not have access to this page.")
         return view_func(request, *args, **kwargs)
 
     return _wrapped
@@ -107,7 +108,9 @@ def boss_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not _is_boss(request.user):
-            return HttpResponseForbidden("仅老板可访问该页面")
+            return HttpResponseForbidden(
+                "Only the business owner may access this page."
+            )
         return view_func(request, *args, **kwargs)
 
     return _wrapped
@@ -134,7 +137,9 @@ def _days_since_earliest_pending(earliest_created_at):
     return max(0, (today - dt.date()).days)
 
 
-def _make_order_submit_signature(*, prefix: str, customer_id: str, lines_json: str, extra=None):
+def _make_order_submit_signature(
+    *, prefix: str, customer_id: str, lines_json: str, extra=None
+):
     """
     用于服务端防重复提交（不改变业务流程）：签名同一请求体在很短时间内重复则拒绝。
     """
@@ -148,7 +153,9 @@ def _make_order_submit_signature(*, prefix: str, customer_id: str, lines_json: s
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _check_and_set_submit_lock(*, request, lock_key: str, signature: str, window_seconds: int = 5) -> bool:
+def _check_and_set_submit_lock(
+    *, request, lock_key: str, signature: str, window_seconds: int = 5
+) -> bool:
     """
     返回 True 表示检测到重复提交；False 表示写入锁并允许继续。
     """
@@ -192,7 +199,15 @@ def _guest_order_session_key(request, explicit=None):
     return secrets.token_hex(20)[:40]
 
 
-def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, shipping=None, guest_session_key=None):
+def submit_order_from_lines(
+    request,
+    customer_obj,
+    lines,
+    *,
+    from_shop=False,
+    shipping=None,
+    guest_session_key=None,
+):
     """
     从购物车明细创建订单（批发录单 / 客户商城共用逻辑）。
     request: 可为 None（店员录单）；商城下单传入 request 以绑定 session。
@@ -201,13 +216,24 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
     """
     try:
         if not isinstance(lines, list) or len(lines) == 0:
-            raise ValidationError("请至少添加一条订单明细后再提交")
+            raise ValidationError("Add at least one line item before submitting.")
 
         shipping = shipping or {}
-        settlement_type = str(shipping.get("settlement_type") or Order.SettlementType.CASH).strip().lower()
-        if settlement_type not in (Order.SettlementType.CASH, Order.SettlementType.CREDIT):
+        settlement_type = (
+            str(shipping.get("settlement_type") or Order.SettlementType.CASH)
+            .strip()
+            .lower()
+        )
+        if settlement_type not in (
+            Order.SettlementType.CASH,
+            Order.SettlementType.CREDIT,
+        ):
             settlement_type = Order.SettlementType.CASH
-        payment_method = str(shipping.get("payment_method") or Order.PaymentMethod.BANK_TRANSFER).strip().lower()
+        payment_method = (
+            str(shipping.get("payment_method") or Order.PaymentMethod.BANK_TRANSFER)
+            .strip()
+            .lower()
+        )
         valid_payment_methods = {
             Order.PaymentMethod.BANK_TRANSFER,
             Order.PaymentMethod.CHECK,
@@ -226,23 +252,25 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             phone = (shipping.get("delivery_phone") or "").strip()
             addr = (shipping.get("delivery_address") or "").strip()
             if not cn:
-                raise ValidationError("请填写收货人")
+                raise ValidationError("Contact name is required.")
             if not phone:
-                raise ValidationError("请填写联系电话")
+                raise ValidationError("Phone number is required.")
             if not addr:
-                raise ValidationError("请填写配送地址")
+                raise ValidationError("Delivery address is required.")
             if customer_obj is not None:
                 reason = customer_obj.shop_order_denial_reason()
                 if reason:
                     raise ValidationError(reason)
         else:
             if customer_obj is None:
-                raise ValidationError("请选择客户")
+                raise ValidationError("Please select a customer.")
 
         if customer_obj is not None and customer_obj.is_blocked:
             raise ValidationError(Customer.ORDER_STOP_SUPPLIER_MESSAGE)
 
-        current_unsettled = money_float(customer_obj.current_debt) if customer_obj else 0.0
+        current_unsettled = (
+            money_float(customer_obj.current_debt) if customer_obj else 0.0
+        )
         credit_limit = money_float(customer_obj.credit_limit) if customer_obj else 0.0
 
         order_total = money_dec(0)
@@ -250,7 +278,7 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         profit_risk_warnings = []
         for raw in lines:
             if raw.get("product_id") is None:
-                raise ValidationError("订单明细缺少商品")
+                raise ValidationError("A line item is missing a product.")
             pid = int(raw["product_id"])
             sale_type = raw.get("sale_type", OrderItem.SaleType.SINGLE)
             qraw = raw.get("quantity", 1)
@@ -261,15 +289,20 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             if qty <= 0:
                 qty = 1.0
             if sale_type not in (OrderItem.SaleType.SINGLE, OrderItem.SaleType.CASE):
-                raise ValidationError("无效的销售方式")
+                raise ValidationError("Invalid sale type.")
 
             p = Product.objects.get(pk=pid)
             if not p.is_active:
-                raise ValidationError(f"商品「{p.name}」已停用")
+                raise ValidationError(f'Product "{p.name}" is inactive.')
             if sale_type == OrderItem.SaleType.SINGLE and not p.can_split_sale:
-                raise ValidationError(f"商品「{p.name}」不可拆卖，请选择整箱")
+                raise ValidationError(
+                    f'"{p.name}" cannot be sold in single units. Choose case.'
+                )
             if qty < float(p.minimum_order_qty):
-                raise ValidationError(f"「{p.name}」数量不能低于起订量 {p.minimum_order_qty}")
+                raise ValidationError(
+                    'Quantity for "%s" cannot be below MOQ %s'
+                    % (p.name, p.minimum_order_qty)
+                )
 
             price_info = resolve_product_price_for_customer(
                 product=p,
@@ -279,12 +312,14 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             assert price_info["source"] in ["custom", "tier", "base"]
             final_unit_price = money_dec(price_info["final_price"])
             if money_float(final_unit_price) <= 0:
-                raise ValidationError(f"商品「{p.name}」无有效价格（请询价），无法下单")
+                raise ValidationError(
+                    f'No valid price for "{p.name}". Request a quote.'
+                )
             final_subtotal = money_q2(money_dec(qty) * final_unit_price)
             final_pricing_note = str(price_info.get("pricing_note") or "")
             source = str(price_info.get("source") or "")
             if source == "custom":
-                final_pricing_note = "客户专属价"
+                final_pricing_note = "Customer exclusive price"
             auto_cost_updated = False
             if not p.cost_price_single or float(p.cost_price_single) == 0:
                 p.cost_price_single = float(
@@ -322,20 +357,24 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 },
             )
             cost_unit_price = money_dec(
-                p.cost_price_case if sale_type == OrderItem.SaleType.CASE else p.cost_price_single
+                p.cost_price_case
+                if sale_type == OrderItem.SaleType.CASE
+                else p.cost_price_single
             )
-            if sale_type == OrderItem.SaleType.SINGLE and cost_unit_price <= money_dec(0):
-                raise ValidationError("该商品未设置单品成本价，暂时无法下单")
+            if sale_type == OrderItem.SaleType.SINGLE and cost_unit_price <= money_dec(
+                0
+            ):
+                raise ValidationError("Single-unit cost is not set for this product.")
             if sale_type == OrderItem.SaleType.CASE and cost_unit_price <= money_dec(0):
-                raise ValidationError("该商品未设置整箱成本价，暂时无法下单")
+                raise ValidationError("Case cost is not set for this product.")
             unit_profit = money_q2(final_unit_price - cost_unit_price)
             if unit_profit < money_dec(0):
                 risk_msg = (
-                    f"当前售价低于成本，请检查定价：{p.sku} "
-                    f"(售价{money_float(final_unit_price):.2f} < 成本{money_float(cost_unit_price):.2f})"
+                    f"Price below cost for {p.sku} "
+                    f"(sale {money_float(final_unit_price):.2f} < cost {money_float(cost_unit_price):.2f})"
                 )
                 if PROFIT_PROTECTION_MODE == "block":
-                    raise ValidationError("当前售价低于成本，无法下单")
+                    raise ValidationError("Sale price is below cost; order blocked.")
                 profit_risk_warnings.append(risk_msg)
             order_total += final_subtotal
             validated.append(
@@ -355,7 +394,9 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
         needs = defaultdict(float)
         for v in validated:
             p = Product.objects.get(pk=v["product_id"])
-            probe = OrderItem(product=p, quantity=v["quantity"], sale_type=v["sale_type"])
+            probe = OrderItem(
+                product=p, quantity=v["quantity"], sale_type=v["sale_type"]
+            )
             needs[v["product_id"]] += float(_stock_need_for_line(probe, p))
         for pid, need in needs.items():
             if need <= 0:
@@ -365,61 +406,81 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
                 continue
             cur = float(getattr(p, "current_stock", 0.0))
             if cur < need:
-                raise ValidationError(f"库存不足：{p.sku}")
+                raise ValidationError(f"Insufficient stock: {p.sku}")
 
         if settlement_type == Order.SettlementType.CREDIT:
             if customer_obj is None:
-                raise ValidationError("挂账订单必须绑定客户")
+                raise ValidationError("Credit orders must have a customer.")
             if not customer_obj.allow_credit:
-                raise ValidationError("不允许挂账")
+                raise ValidationError("Credit is not allowed for this order.")
             if credit_limit <= 0:
-                raise ValidationError("超出信用额度，无法下单")
+                raise ValidationError("Over credit limit; order cannot be placed.")
             if current_unsettled >= credit_limit:
-                raise ValidationError("超出信用额度，无法下单")
+                raise ValidationError("Over credit limit; order cannot be placed.")
             if money_dec(current_unsettled) + order_total > money_dec(credit_limit):
-                raise ValidationError("超出信用额度，无法下单")
+                raise ValidationError("Over credit limit; order cannot be placed.")
 
         with transaction.atomic():
             customer_locked = None
             if customer_obj is not None:
-                customer_locked = Customer.objects.select_for_update().get(pk=customer_obj.pk)
+                customer_locked = Customer.objects.select_for_update().get(
+                    pk=customer_obj.pk
+                )
 
             # 1) 先组装订单头字段（每次提交只创建一条 Order）
             create_kwargs = {"confirmed": False}
             if customer_locked is not None:
                 create_kwargs["customer"] = customer_locked
-            if request is not None and getattr(request, "user", None) and request.user.is_authenticated:
+            if (
+                request is not None
+                and getattr(request, "user", None)
+                and request.user.is_authenticated
+            ):
                 create_kwargs["ordered_by"] = request.user
             elif customer_locked is not None and customer_locked.user_id:
                 create_kwargs["ordered_by_id"] = customer_locked.user_id
             if from_shop:
                 ts = timezone.now().strftime("%m%d%H%M")
                 if customer_locked is not None:
-                    create_kwargs["name"] = f"商城-{customer_locked.name}-{ts}"
+                    create_kwargs["name"] = f"Shop-{customer_locked.name}-{ts}"
                     create_kwargs["guest_session_key"] = ""
                 else:
-                    create_kwargs["name"] = f"商城-游客-{ts}"
-                    create_kwargs["guest_session_key"] = _guest_order_session_key(request, guest_session_key)
+                    create_kwargs["name"] = f"Shop-Guest-{ts}"
+                    create_kwargs["guest_session_key"] = _guest_order_session_key(
+                        request, guest_session_key
+                    )
                 create_kwargs["workflow_status"] = Order.WorkflowStatus.PENDING_CONFIRM
                 create_kwargs["settlement_type"] = settlement_type
                 create_kwargs["payment_method"] = payment_method
-                create_kwargs["payment_status"] = Order.PaymentStatus.PENDING_CONFIRMATION
-                create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[:100]
-                create_kwargs["delivery_phone"] = (shipping.get("delivery_phone") or "")[:30]
+                create_kwargs["payment_status"] = (
+                    Order.PaymentStatus.PENDING_CONFIRMATION
+                )
+                create_kwargs["contact_name"] = (shipping.get("contact_name") or "")[
+                    :100
+                ]
+                create_kwargs["delivery_phone"] = (
+                    shipping.get("delivery_phone") or ""
+                )[:30]
                 create_kwargs["store_name"] = (shipping.get("store_name") or "")[:200]
-                create_kwargs["delivery_address"] = (shipping.get("delivery_address") or "")[:500]
+                create_kwargs["delivery_address"] = (
+                    shipping.get("delivery_address") or ""
+                )[:500]
                 note = (shipping.get("order_note") or "")[:2000]
                 check_no = (shipping.get("check_number") or "").strip()
                 if payment_method == Order.PaymentMethod.CARD_ON_PICKUP:
-                    note = (note + "\n到仓库刷卡/取货付款").strip()
+                    note = (note + "\nPay at warehouse / pickup").strip()
                 elif payment_method == Order.PaymentMethod.CASH:
-                    note = (note + "\n现金支付").strip()
+                    note = (note + "\nCash payment").strip()
                 elif payment_method == Order.PaymentMethod.CREDIT:
-                    note = (note + "\n挂账，待财务确认").strip()
+                    note = (
+                        note + "\nOn account — pending finance confirmation"
+                    ).strip()
                 elif payment_method == Order.PaymentMethod.CHECK and check_no:
-                    note = (note + f"\n支票号: {check_no[:100]}").strip()
+                    note = (note + f"\nCheck no.: {check_no[:100]}").strip()
                 create_kwargs["order_note"] = note[:2000]
-                create_kwargs["transfer_reference"] = (shipping.get("transfer_reference") or "")[:255]
+                create_kwargs["transfer_reference"] = (
+                    shipping.get("transfer_reference") or ""
+                )[:255]
             else:
                 create_kwargs["customer"] = customer_locked
                 create_kwargs["settlement_type"] = settlement_type
@@ -429,7 +490,9 @@ def submit_order_from_lines(request, customer_obj, lines, *, from_shop=False, sh
             order = Order.objects.create(**create_kwargs)
             if profit_risk_warnings:
                 warning_text = "\n".join(profit_risk_warnings)
-                order.order_note = ((order.order_note or "").strip() + "\n" + warning_text).strip()[:2000]
+                order.order_note = (
+                    (order.order_note or "").strip() + "\n" + warning_text
+                ).strip()[:2000]
                 order.save(update_fields=["order_note"])
 
             # 3) 明细只写 OrderItem（不重复建 Order）
@@ -498,8 +561,8 @@ def ensure_customer_profile(user):
         "contact_name": username[:100],
         "phone": username[:30],
         "shop_name": username[:200],
-        "address": "待完善",
-        "delivery_zone": "待分配",
+        "address": "To be completed",
+        "delivery_zone": "Unassigned",
         "customer_level": Customer.Level.C,
         "allow_credit": False,
         "credit_limit": 0.0,
@@ -511,7 +574,9 @@ def ensure_customer_profile(user):
     }
     try:
         with transaction.atomic():
-            customer, _created = Customer.objects.get_or_create(user=user, defaults=defaults)
+            customer, _created = Customer.objects.get_or_create(
+                user=user, defaults=defaults
+            )
         return customer
     except IntegrityError:
         return Customer.objects.filter(user_id=user.id).first()
@@ -525,7 +590,9 @@ def get_shop_customer(request):
 
 
 def _ensure_customer_role(user):
-    UserRole.objects.update_or_create(user=user, defaults={"role": UserRole.Role.CUSTOMER})
+    UserRole.objects.update_or_create(
+        user=user, defaults={"role": UserRole.Role.CUSTOMER}
+    )
 
 
 def shop_order_permission(customer):
@@ -535,7 +602,10 @@ def shop_order_permission(customer):
     仅已登录且绑定客户档案的用户可下单。
     """
     if not customer:
-        return False, "请先登录后下单（没有账号可先注册）"
+        return (
+            False,
+            "Please sign in to place an order (register if you have no account).",
+        )
     reason = customer.shop_order_denial_reason()
     if reason:
         return False, reason
@@ -581,12 +651,15 @@ def _shop_product_row(customer, p):
     stock_disp = float(getattr(p, "current_stock", 0.0))
     safety = float(getattr(p, "safety_stock", 10.0))
     enabled = bool(getattr(p, "stock_enabled", True))
-    if "客户专属价" in (note_s, note_c):
-        price_note = "客户专属价"
+    excl = "Customer exclusive price"
+    if excl in (note_s, note_c) or "客户专属价" in (note_s, note_c):
+        price_note = excl
     else:
-        price_note = (f"单品:{note_s} · 整箱:{note_c}" if note_s != note_c else note_s)
+        price_note = (
+            f"Per bag: {note_s} · Per case: {note_c}" if note_s != note_c else note_s
+        )
     if customer is None:
-        price_note = "原价"
+        price_note = "Base price"
     row = {
         "id": p.id,
         "category_id": int(p.category_id) if p.category_id else None,
@@ -637,43 +710,43 @@ def _dunning_time_and_supply(amount, credit_limit, days_since_earliest):
     no_limit = cl <= 0
     if cl > 0 and amt > cl:
         return {
-            "dunning_status": "高风险",
-            "supply_advice": "暂停供货",
+            "dunning_status": "High risk",
+            "supply_advice": "Suspend supply",
             "style": "high_risk",
             "no_limit": False,
         }
     if amt <= 0:
         return {
-            "dunning_status": "正常",
-            "supply_advice": "可继续供货",
+            "dunning_status": "OK",
+            "supply_advice": "May continue supply",
             "style": "normal",
             "no_limit": no_limit,
         }
     d = int(days_since_earliest)
     if d < 3:
         return {
-            "dunning_status": "正常",
-            "supply_advice": "现结交易" if no_limit else "可继续供货",
+            "dunning_status": "OK",
+            "supply_advice": "Cash terms" if no_limit else "May continue supply",
             "style": "normal",
             "no_limit": no_limit,
         }
     if d <= 7:
         return {
-            "dunning_status": "提醒",
-            "supply_advice": "提醒对账",
+            "dunning_status": "Reminder",
+            "supply_advice": "Reconcile account",
             "style": "watch",
             "no_limit": no_limit,
         }
     if d <= 15:
         return {
-            "dunning_status": "催款",
-            "supply_advice": "优先催款",
+            "dunning_status": "Collection",
+            "supply_advice": "Prioritize collection",
             "style": "dunning",
             "no_limit": no_limit,
         }
     return {
-        "dunning_status": "严重催款",
-        "supply_advice": "立即催收并评估停供",
+        "dunning_status": "Urgent collection",
+        "supply_advice": "Collect now; consider stopping supply",
         "style": "severe",
         "no_limit": no_limit,
     }
@@ -683,8 +756,14 @@ def _dunning_time_and_supply(amount, credit_limit, days_since_earliest):
 @internal_user_required
 def wholesale_order_entry(request):
     customers = Customer.objects.all().order_by("name")
-    categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
-    products = Product.objects.filter(is_active=True).select_related("category").order_by("category", "name")
+    categories = ProductCategory.objects.filter(is_active=True).order_by(
+        "sort_order", "id"
+    )
+    products = (
+        Product.objects.filter(is_active=True)
+        .select_related("category")
+        .order_by("category", "name")
+    )
     products_data = []
     for p in products:
         products_data.append(
@@ -721,29 +800,40 @@ def wholesale_order_entry(request):
             )
             lock_key = f"submit_lock::wholesale::{customer_id}"
             lock_set = False
-            if _check_and_set_submit_lock(request=request, lock_key=lock_key, signature=sig):
-                messages.error(request, "检测到重复提交，请不要重复点击“录单成功”。")
+            if _check_and_set_submit_lock(
+                request=request, lock_key=lock_key, signature=sig
+            ):
+                messages.error(
+                    request,
+                    "Duplicate submit detected. Please do not click submit twice.",
+                )
                 return redirect("wholesale-order-entry")
             lock_set = True
 
             lines = json.loads(lines_raw)
             customer_obj = Customer.objects.get(pk=customer_id)
             submit_order_from_lines(request, customer_obj, lines)
-            _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-            messages.success(request, "录单成功")
+            _clear_submit_lock_if_matches(
+                request=request, lock_key=lock_key, signature=sig
+            )
+            messages.success(request, "Order saved.")
             return redirect("wholesale-order-entry")
         except Customer.DoesNotExist as exc:
             print(exc)
-            messages.error(request, "客户或商品不存在，请刷新重试")
+            messages.error(
+                request, "Customer or product not found. Refresh and try again."
+            )
         except Product.DoesNotExist as exc:
             print(exc)
-            messages.error(request, "客户或商品不存在，请刷新重试")
+            messages.error(
+                request, "Customer or product not found. Refresh and try again."
+            )
         except (ValueError, TypeError, ValidationError) as exc:
             print(exc)
             messages.error(request, str(exc))
         except json.JSONDecodeError as exc:
             print(exc)
-            messages.error(request, "订单明细格式错误")
+            messages.error(request, "Invalid line item format.")
         finally:
             # 失败也清锁，允许用户修正后重试
             # （只有签名一致才会清除，避免误删其他请求的锁）
@@ -752,7 +842,9 @@ def wholesale_order_entry(request):
                 lock_key = locals().get("lock_key")
                 lock_set = locals().get("lock_set", False)
                 if sig and lock_key and lock_set:
-                    _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
+                    _clear_submit_lock_if_matches(
+                        request=request, lock_key=lock_key, signature=sig
+                    )
             except Exception:
                 pass
 
@@ -773,7 +865,9 @@ def wholesale_order_entry(request):
         "products": products,
         "products_data": products_data,
         "products_json": json.dumps(products_data, ensure_ascii=False),
-        "tier_discounts_json": json.dumps(tier_discount_map_for_wholesale(), ensure_ascii=False),
+        "tier_discounts_json": json.dumps(
+            tier_discount_map_for_wholesale(), ensure_ascii=False
+        ),
         "exclusive_prices_json": json.dumps(exclusive_map, ensure_ascii=False),
         "today_order_count": Order.objects.count(),
     }
@@ -782,7 +876,9 @@ def wholesale_order_entry(request):
 
 def shop_home(request):
     """客户前台商城（/shop/）：商品与分类均来自数据库；定价随 request.user 客户身份变化。"""
-    categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
+    categories = ProductCategory.objects.filter(is_active=True).order_by(
+        "sort_order", "id"
+    )
     customer = get_shop_customer(request)
     products = (
         Product.objects.filter(is_active=True)
@@ -815,7 +911,9 @@ def shop_home(request):
         "shop_unsettled": unsettled_amount_for_customer(customer) if customer else None,
         "shop_can_order": can_order,
         "shop_order_block_hint": order_hint,
-        "shop_logged_in": bool(getattr(request, "user", None) and request.user.is_authenticated),
+        "shop_logged_in": bool(
+            getattr(request, "user", None) and request.user.is_authenticated
+        ),
         "missing_images": missing_images,
         "missing_prices": missing_prices,
         "tier_rules_banner": tier_rules_banner_text(),
@@ -838,12 +936,16 @@ def register_view(request):
         return render(
             request,
             "shop/register.html",
-            {"error": "请填写用户名、密码和确认密码"},
+            {"error": "Username, password, and confirmation are required."},
         )
     if password != confirm:
-        return render(request, "shop/register.html", {"error": "两次输入的密码不一致"})
+        return render(
+            request, "shop/register.html", {"error": "Passwords do not match."}
+        )
     if User.objects.filter(username=username).exists():
-        return render(request, "shop/register.html", {"error": "该用户名已存在，请换一个"})
+        return render(
+            request, "shop/register.html", {"error": "That username is already taken."}
+        )
 
     with transaction.atomic():
         user = User.objects.create_user(username=username, password=password)
@@ -854,8 +956,8 @@ def register_view(request):
             contact_name=username[:100],
             phone=username[:30],
             shop_name=username[:200],
-            address="待完善",
-            delivery_zone="待分配",
+            address="To be completed",
+            delivery_zone="Unassigned",
             customer_level=Customer.Level.C,
             allow_credit=False,
             credit_limit=0.0,
@@ -889,7 +991,7 @@ def login_view(request):
     password = (request.POST.get("password") or "").strip()
     user = authenticate(request, username=username, password=password)
     if not user:
-        messages.error(request, "用户名或密码错误")
+        messages.error(request, "Invalid username or password.")
         return render(request, "shop/login.html")
     auth_login(request, user)
     _ensure_customer_role(user)
@@ -912,14 +1014,19 @@ def logout_view(request):
 def profile_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.info(request, "当前账号无商城客户档案（店员/管理员请在后台管理客户）")
+        messages.info(
+            request,
+            "No shop customer profile for this account. Staff: manage customers in Admin.",
+        )
         return redirect("shop-home")
     if request.method == "POST":
-        customer.contact_name = (request.POST.get("contact_name") or customer.contact_name or customer.name)[:100]
+        customer.contact_name = (
+            request.POST.get("contact_name") or customer.contact_name or customer.name
+        )[:100]
         customer.phone = (request.POST.get("phone") or customer.phone)[:30]
         customer.address = (request.POST.get("address") or customer.address)[:255]
         customer.save(update_fields=["contact_name", "phone", "address"])
-        messages.success(request, "已保存")
+        messages.success(request, "Saved.")
         return redirect("profile")
     current_debt = money_float(customer.current_debt or 0.0)
     return render(
@@ -933,7 +1040,7 @@ def profile_view(request):
 def my_orders_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.info(request, "当前账号无商城客户档案")
+        messages.info(request, "No shop customer profile for this account.")
         return redirect("shop-home")
     orders = (
         Order.objects.filter(ordered_by_id=request.user.id, customer_id=customer.pk)
@@ -951,33 +1058,47 @@ def my_orders_view(request):
 def credit_apply_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.info(request, "当前账号无商城客户档案")
+        messages.info(request, "No shop customer profile for this account.")
         return redirect("shop-home")
     if request.method == "GET":
-        latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
+        latest = (
+            CreditApplication.objects.filter(customer_id=customer.pk)
+            .order_by("-created_at")
+            .first()
+        )
         return render(
             request,
             "shop/credit_apply.html",
             {"shop_customer": customer, "latest_application": latest},
         )
 
-    monthly_purchase_estimate = float(request.POST.get("monthly_purchase_estimate") or 0)
+    monthly_purchase_estimate = float(
+        request.POST.get("monthly_purchase_estimate") or 0
+    )
     requested_credit_limit = float(request.POST.get("requested_credit_limit") or 0)
     if monthly_purchase_estimate <= 0 or requested_credit_limit <= 0:
-        messages.error(request, "月采购额与申请额度必须大于 0")
+        messages.error(
+            request,
+            "Monthly purchase amount and requested limit must be greater than 0.",
+        )
         return redirect("credit-apply")
 
     CreditApplication.objects.create(
         customer=customer,
         shop_name=(request.POST.get("shop_name") or customer.shop_name or "")[:200],
-        contact_name=(request.POST.get("contact_name") or customer.contact_name or customer.name or "")[:100],
+        contact_name=(
+            request.POST.get("contact_name")
+            or customer.contact_name
+            or customer.name
+            or ""
+        )[:100],
         phone=(request.POST.get("phone") or customer.phone or "")[:30],
         monthly_purchase_estimate=monthly_purchase_estimate,
         requested_credit_limit=requested_credit_limit,
         note=(request.POST.get("note") or "")[:2000],
         status=CreditApplication.Status.PENDING,
     )
-    messages.success(request, "信用额度申请已提交，等待老板审核")
+    messages.success(request, "Credit application submitted. Pending approval.")
     return redirect("credit-home")
 
 
@@ -985,10 +1106,14 @@ def credit_apply_view(request):
 def credit_home_view(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.info(request, "当前账号无商城客户档案")
+        messages.info(request, "No shop customer profile for this account.")
         return redirect("shop-home")
     current_debt = money_float(customer.current_debt or 0.0)
-    latest = CreditApplication.objects.filter(customer_id=customer.pk).order_by("-created_at").first()
+    latest = (
+        CreditApplication.objects.filter(customer_id=customer.pk)
+        .order_by("-created_at")
+        .first()
+    )
     return render(
         request,
         "shop/credit_home.html",
@@ -997,7 +1122,10 @@ def credit_home_view(request):
             "current_debt": current_debt,
             "used_credit": current_debt,
             "remaining_credit": money_float(
-                max(money_dec(0), money_dec(customer.credit_limit or 0.0) - money_dec(current_debt))
+                max(
+                    money_dec(0),
+                    money_dec(customer.credit_limit or 0.0) - money_dec(current_debt),
+                )
             ),
             "latest_application": latest,
         },
@@ -1010,7 +1138,9 @@ def shop_checkout(request):
         return redirect(f"/login/?next={request.path}")
     customer = get_shop_customer(request)
     can_order, order_hint = shop_order_permission(customer)
-    categories = ProductCategory.objects.filter(is_active=True).order_by("sort_order", "id")
+    categories = ProductCategory.objects.filter(is_active=True).order_by(
+        "sort_order", "id"
+    )
     products = (
         Product.objects.filter(is_active=True)
         .select_related("category", "ingredient")
@@ -1028,8 +1158,12 @@ def shop_checkout(request):
             "shop_order_block_hint": order_hint,
             "tier_rules_banner": tier_rules_banner_text(),
             "credit_allow": bool(customer and customer.allow_credit),
-            "credit_limit": money_float(customer.credit_limit or 0.0) if customer else 0.0,
-            "current_debt": money_float(customer.current_debt or 0.0) if customer else 0.0,
+            "credit_limit": (
+                money_float(customer.credit_limit or 0.0) if customer else 0.0
+            ),
+            "current_debt": (
+                money_float(customer.current_debt or 0.0) if customer else 0.0
+            ),
         },
     )
 
@@ -1037,9 +1171,11 @@ def shop_checkout(request):
 @require_GET
 def shop_product_detail(request, product_id):
     customer = get_shop_customer(request)
-    p = get_object_or_404(Product.objects.select_related("category", "ingredient"), pk=product_id)
+    p = get_object_or_404(
+        Product.objects.select_related("category", "ingredient"), pk=product_id
+    )
     if not p.is_active:
-        messages.error(request, "该商品已下架")
+        messages.error(request, "This product is unavailable.")
         return redirect("shop-home")
     row = _shop_product_row(customer, p)
     can_order, order_hint = shop_order_permission(customer)
@@ -1057,23 +1193,27 @@ def shop_product_detail(request, product_id):
 
 @require_GET
 def shop_order_success(request, order_id):
-    order = get_object_or_404(Order.objects.prefetch_related("items__product"), pk=order_id)
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items__product"), pk=order_id
+    )
     customer = get_shop_customer(request)
     if not customer or order.customer_id != customer.pk:
-        messages.error(request, "无权查看该订单")
+        messages.error(request, "You are not allowed to view this order.")
         return redirect("shop-home")
     if not request.user.is_authenticated or order.ordered_by_id != request.user.id:
-        messages.error(request, "无权查看该订单")
+        messages.error(request, "You are not allowed to view this order.")
         return redirect("shop-home")
     bank = getattr(settings, "BANK_TRANSFER_INFO", None) or {}
-    return render(request, "shop/shop_order_success.html", {"order": order, "bank_info": bank})
+    return render(
+        request, "shop/shop_order_success.html", {"order": order, "bank_info": bank}
+    )
 
 
 @require_GET
 def shop_orders(request):
     customer = get_shop_customer(request)
     if not customer:
-        messages.error(request, "请先登录客户账号查看订单")
+        messages.error(request, "Sign in with a customer account to view orders.")
         return redirect("shop-home")
     orders = (
         Order.objects.filter(ordered_by_id=request.user.id, customer_id=customer.pk)
@@ -1090,8 +1230,12 @@ def shop_orders(request):
 @require_POST
 def shop_submit_order(request):
     if not request.user.is_authenticated:
-        messages.error(request, "请先登录客户账号后再提交订单")
-        next_path = "/checkout/" if (request.POST.get("next") or "").strip() == "checkout" else "/shop/"
+        messages.error(request, "Sign in with a customer account to submit an order.")
+        next_path = (
+            "/checkout/"
+            if (request.POST.get("next") or "").strip() == "checkout"
+            else "/shop/"
+        )
         return redirect(f"/login/?next={next_path}")
     customer = get_shop_customer(request)
     can_order, hint = shop_order_permission(customer)
@@ -1109,8 +1253,12 @@ def shop_submit_order(request):
         "delivery_address": request.POST.get("delivery_address", ""),
         "order_note": request.POST.get("order_note", ""),
         "check_number": request.POST.get("check_number", ""),
-        "settlement_type": request.POST.get("settlement_type", Order.SettlementType.CASH),
-        "payment_method": request.POST.get("payment_method", Order.PaymentMethod.BANK_TRANSFER),
+        "settlement_type": request.POST.get(
+            "settlement_type", Order.SettlementType.CASH
+        ),
+        "payment_method": request.POST.get(
+            "payment_method", Order.PaymentMethod.BANK_TRANSFER
+        ),
         "transfer_reference": request.POST.get("transfer_reference", ""),
     }
     sig_id = str(customer.pk)
@@ -1122,13 +1270,17 @@ def shop_submit_order(request):
     )
     lock_key = f"submit_lock::shop::{sig_id}"
     if _check_and_set_submit_lock(request=request, lock_key=lock_key, signature=sig):
-        messages.error(request, "检测到重复提交，请不要重复点击“确认提交订单”。")
+        messages.error(
+            request, "Duplicate submit detected. Please do not click confirm twice."
+        )
         if (request.POST.get("next") or "").strip() == "checkout":
             return redirect("shop-checkout")
         return redirect("shop-home")
 
     fail_redirect = (
-        "shop-checkout" if (request.POST.get("next") or "").strip() == "checkout" else "shop-home"
+        "shop-checkout"
+        if (request.POST.get("next") or "").strip() == "checkout"
+        else "shop-home"
     )
 
     try:
@@ -1140,12 +1292,21 @@ def shop_submit_order(request):
             "delivery_address": request.POST.get("delivery_address", ""),
             "order_note": request.POST.get("order_note", ""),
             "check_number": request.POST.get("check_number", ""),
-            "settlement_type": request.POST.get("settlement_type", Order.SettlementType.CASH),
-            "payment_method": request.POST.get("payment_method", Order.PaymentMethod.BANK_TRANSFER),
+            "settlement_type": request.POST.get(
+                "settlement_type", Order.SettlementType.CASH
+            ),
+            "payment_method": request.POST.get(
+                "payment_method", Order.PaymentMethod.BANK_TRANSFER
+            ),
             "transfer_reference": request.POST.get("transfer_reference", ""),
         }
         order = submit_order_from_lines(
-            request, customer, lines, from_shop=True, shipping=shipping, guest_session_key=None
+            request,
+            customer,
+            lines,
+            from_shop=True,
+            shipping=shipping,
+            guest_session_key=None,
         )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
         messages.success(
@@ -1160,15 +1321,15 @@ def shop_submit_order(request):
     except json.JSONDecodeError as exc:
         print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        messages.error(request, "订单数据格式错误")
+        messages.error(request, "Invalid order data.")
     except Product.DoesNotExist as exc:
         print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        messages.error(request, "商品不存在，请刷新后重试")
+        messages.error(request, "Product not found. Refresh and try again.")
     except Exception as exc:
         print(exc)
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
-        messages.error(request, f"提交失败：{exc}")
+        messages.error(request, f"Submit failed: {exc}")
     return redirect(fail_redirect)
 
 
@@ -1213,8 +1374,8 @@ def _replenishment_risk_and_action(stock, sold_30d, days_cover):
     if sold_30d <= 1e-12:
         return {
             "level": "observe",
-            "label": "观察中",
-            "action": "暂无销量，继续观察",
+            "label": "Observing",
+            "action": "No sales yet — keep watching",
         }
 
     is_red = False
@@ -1224,7 +1385,11 @@ def _replenishment_risk_and_action(stock, sold_30d, days_cover):
         is_red = True
 
     if is_red:
-        return {"level": "red", "label": "红色预警", "action": "立即补货（重要）"}
+        return {
+            "level": "red",
+            "label": "Red alert",
+            "action": "Restock now (important)",
+        }
 
     is_yellow = False
     if days_cover is not None and days_cover <= 15:
@@ -1233,9 +1398,9 @@ def _replenishment_risk_and_action(stock, sold_30d, days_cover):
         is_yellow = True
 
     if is_yellow:
-        return {"level": "yellow", "label": "黄色关注", "action": "尽快补货"}
+        return {"level": "yellow", "label": "Yellow watch", "action": "Restock soon"}
 
-    return {"level": "green", "label": "库存安全", "action": "库存安全"}
+    return {"level": "green", "label": "Stock OK", "action": "Stock OK"}
 
 
 @login_required
@@ -1247,7 +1412,9 @@ def replenishment_dashboard(request):
     sold_7_map = _sales_units_by_product(7)
     sold_30_map = _sales_units_by_product(30)
 
-    products = Product.objects.select_related("category", "ingredient").order_by("category", "name")
+    products = Product.objects.select_related("category", "ingredient").order_by(
+        "category", "name"
+    )
     rows = []
     for p in products:
         s7 = float(sold_7_map.get(p.id, 0.0))
@@ -1262,7 +1429,7 @@ def replenishment_dashboard(request):
         level = ra["level"]
         if level == "observe":
             suggest_60 = 0.0
-            sales_note = "暂无销量参考"
+            sales_note = "No sales data yet"
         else:
             suggest_60 = max(0.0, 60.0 * daily_avg - stock)
             sales_note = ""
@@ -1314,11 +1481,17 @@ def replenishment_dashboard(request):
     }
 
     if stats["red"] > 0:
-        rep_banner = {"kind": "danger", "text": "⚠️ 有商品库存紧张，请优先处理"}
+        rep_banner = {
+            "kind": "danger",
+            "text": "⚠️ Some items are critically low — prioritize restocking.",
+        }
     elif stats["yellow"] > 0:
-        rep_banner = {"kind": "warn", "text": "有商品建议尽快补货，请关注黄色预警"}
+        rep_banner = {
+            "kind": "warn",
+            "text": "Some items should be restocked soon — check yellow alerts.",
+        }
     else:
-        rep_banner = {"kind": "safe", "text": "当前库存整体安全"}
+        rep_banner = {"kind": "safe", "text": "Overall stock levels look healthy."}
 
     return render(
         request,
@@ -1353,7 +1526,7 @@ def inventory_list(request):
                 "current_stock": st,
                 "safety_stock": wl,
                 "low_stock": is_low,
-                "status_label": "低库存" if is_low else "正常",
+                "status_label": "Low stock" if is_low else "OK",
             }
         )
     total_count = len(rows)
@@ -1369,9 +1542,9 @@ def inventory_list(request):
 @login_required
 @internal_user_required
 def orders_list(request):
-    unsettled_items = OrderItem.objects.filter(order__status__in=_unsettled_order_statuses()).select_related(
-        "order__customer", "product"
-    )
+    unsettled_items = OrderItem.objects.filter(
+        order__status__in=_unsettled_order_statuses()
+    ).select_related("order__customer", "product")
 
     amount_by_customer_id = defaultdict(lambda: money_dec(0))
     for item in unsettled_items:
@@ -1380,15 +1553,17 @@ def orders_list(request):
     customer_ids = [k for k in amount_by_customer_id.keys() if k is not None]
     customers_map = {c.id: c for c in Customer.objects.filter(pk__in=customer_ids)}
 
-    earliest_pending = Order.objects.filter(status=Order.Status.PENDING).values("customer_id").annotate(
-        m=Min("created_at")
+    earliest_pending = (
+        Order.objects.filter(status=Order.Status.PENDING)
+        .values("customer_id")
+        .annotate(m=Min("created_at"))
     )
     earliest_map = {row["customer_id"]: row["m"] for row in earliest_pending}
 
     customer_debts = []
     for cid, amount in sorted(amount_by_customer_id.items(), key=lambda x: -x[1]):
         if cid is None:
-            name = "未指定客户"
+            name = "No customer"
             credit_limit = 0.0
             tier_label = "—"
         else:
@@ -1411,7 +1586,11 @@ def orders_list(request):
             }
         )
 
-    orders_qs = Order.objects.select_related("customer").prefetch_related("items__product").order_by("-created_at")
+    orders_qs = (
+        Order.objects.select_related("customer")
+        .prefetch_related("items__product")
+        .order_by("-created_at")
+    )
     wf = (request.GET.get("workflow_status") or "").strip()
     st = (request.GET.get("status") or "").strip()
     q = (request.GET.get("q") or "").strip()
@@ -1464,7 +1643,7 @@ def orders_list(request):
         product_names = [it.product.name for it in items]
         preview = "、".join(product_names[:2])
         if item_count > 2:
-            preview = f"{preview} 等"
+            preview = f"{preview}, …"
         if not preview:
             preview = "-"
         amount = money_float(order.total_revenue or 0.0)
@@ -1510,12 +1689,12 @@ def _customer_risk_status_label(customer):
     debt = float(customer.current_debt or 0)
     limit = float(customer.credit_limit or 0)
     if customer.is_blocked:
-        return "已停单"
+        return "Suspended"
     if limit > 0 and debt >= limit:
-        return "超额度"
+        return "Over limit"
     if limit > 0 and debt / limit >= 0.8:
-        return "关注"
-    return "正常"
+        return "Watch"
+    return "OK"
 
 
 @login_required
@@ -1590,7 +1769,9 @@ def customer_insights_dashboard(request):
         )
 
     kpi_total_customers = Customer.objects.count()
-    kpi_customers_with_orders = valid_order_base.values("customer_id").distinct().count()
+    kpi_customers_with_orders = (
+        valid_order_base.values("customer_id").distinct().count()
+    )
     kpi_blocked_customers = Customer.objects.filter(is_blocked=True).count()
     kpi_customers_with_debt = Customer.objects.filter(current_debt__gt=0).count()
 
@@ -1619,7 +1800,9 @@ def reports_dashboard(request):
 
     valid_orders = Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
     today_orders = valid_orders.filter(created_at__date=today)
-    month_orders = valid_orders.filter(created_at__date__gte=month_start, created_at__date__lte=today)
+    month_orders = valid_orders.filter(
+        created_at__date__gte=month_start, created_at__date__lte=today
+    )
 
     today_agg = today_orders.aggregate(
         sales=Coalesce(Sum("total_revenue"), 0.0),
@@ -1629,9 +1812,13 @@ def reports_dashboard(request):
         sales=Coalesce(Sum("total_revenue"), 0.0),
         profit=Coalesce(Sum("profit"), 0.0),
     )
-    pending_confirm_count = Order.objects.filter(workflow_status=Order.WorkflowStatus.PENDING_CONFIRM).count()
+    pending_confirm_count = Order.objects.filter(
+        workflow_status=Order.WorkflowStatus.PENDING_CONFIRM
+    ).count()
     confirmed_unpaid_amount = (
-        Order.objects.filter(workflow_status=Order.WorkflowStatus.CONFIRMED, status=Order.Status.PENDING)
+        Order.objects.filter(
+            workflow_status=Order.WorkflowStatus.CONFIRMED, status=Order.Status.PENDING
+        )
         .aggregate(v=Coalesce(Sum("total_revenue"), 0.0))
         .get("v", 0.0)
     )
@@ -1656,19 +1843,18 @@ def reports_dashboard(request):
         .order_by("-value")[:10]
     )
 
-    product_base = (
-        OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
-        .values("product_id", "product__name", "product__sku")
-    )
-    product_qty_top = (
-        product_base.annotate(value=Coalesce(Sum("quantity"), 0.0)).order_by("-value")[:10]
-    )
-    product_sales_top = (
-        product_base.annotate(value=Coalesce(Sum("total_revenue"), 0.0)).order_by("-value")[:10]
-    )
-    product_profit_top = (
-        product_base.annotate(value=Coalesce(Sum("profit"), 0.0)).order_by("-value")[:10]
-    )
+    product_base = OrderItem.objects.exclude(
+        order__workflow_status=Order.WorkflowStatus.CANCELLED
+    ).values("product_id", "product__name", "product__sku")
+    product_qty_top = product_base.annotate(
+        value=Coalesce(Sum("quantity"), 0.0)
+    ).order_by("-value")[:10]
+    product_sales_top = product_base.annotate(
+        value=Coalesce(Sum("total_revenue"), 0.0)
+    ).order_by("-value")[:10]
+    product_profit_top = product_base.annotate(
+        value=Coalesce(Sum("profit"), 0.0)
+    ).order_by("-value")[:10]
     negative_profit_orders = list(
         Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
         .filter(profit__lt=0)
@@ -1713,8 +1899,8 @@ def reports_dashboard(request):
 
 
 _MSG_SETTLED_RELEASE = (
-    "结算成功：本笔应收账款已核销，该笔不再占用信用额度；"
-    "客户欠款与风险提示已实时更新，若此前因额度用满无法录单，现可继续下单。"
+    "Settlement recorded: this receivable is cleared and no longer uses credit limit. "
+    "Customer debt and risk views are updated; you may place new orders if you were blocked by limit."
 )
 
 
@@ -1741,9 +1927,9 @@ def _confirm_order_guard_reason(order):
 
     profit = money_q2(amount - total_cost)
     if has_missing_cost or total_cost <= money_dec(0):
-        return "未设置成本，不能确认订单"
+        return "Cost not set; order cannot be confirmed."
     if profit < money_dec(0):
-        return "亏损订单，不能确认订单"
+        return "Negative profit; order cannot be confirmed."
     return ""
 
 
@@ -1752,13 +1938,13 @@ def _confirm_order_guard_reason(order):
 def mark_order_paid(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     if order.status == Order.Status.PAID:
-        messages.info(request, "该订单已是「已结算」，未重复变更额度占用。")
+        messages.info(request, "Order was already settled; credit usage unchanged.")
         return redirect("orders-list")
     with transaction.atomic():
         # 禁止 select_related 可空外键与 select_for_update 混用（PostgreSQL：FOR UPDATE 不能锁 outer join 可空侧）
         order = Order.objects.select_for_update().get(pk=order_id)
         if order.status == Order.Status.PAID:
-            messages.info(request, "该订单已是「已结算」，未重复变更额度占用。")
+            messages.info(request, "Order was already settled; credit usage unchanged.")
             return redirect("orders-list")
         order.status = Order.Status.PAID
         order.payment_status = Order.PaymentStatus.PAID
@@ -1775,7 +1961,7 @@ def confirm_order(request, order_id):
     with transaction.atomic():
         order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
         if order.workflow_status == Order.WorkflowStatus.CANCELLED:
-            messages.error(request, "已取消订单不能确认")
+            messages.error(request, "Cancelled orders cannot be confirmed.")
             return redirect("orders-list")
         guard_reason = _confirm_order_guard_reason(order)
         if guard_reason:
@@ -1789,7 +1975,7 @@ def confirm_order(request, order_id):
         except ValidationError as exc:
             messages.error(request, str(exc))
             return redirect("orders-list")
-    messages.success(request, "订单已确认")
+    messages.success(request, "Order confirmed.")
     return redirect("orders-list")
 
 
@@ -1801,7 +1987,7 @@ def cancel_order(request, order_id):
         order.workflow_status = Order.WorkflowStatus.CANCELLED
         order.save(update_fields=["workflow_status"])
         reverse_credit_debt_if_counted(order)
-    messages.success(request, "订单已取消")
+    messages.success(request, "Order cancelled.")
     return redirect("orders-list")
 
 
@@ -1823,7 +2009,9 @@ def order_status_update(request, order_id):
     订单详情页保存入口：履约/结算方式/支付相关字段 + 结算状态（应收账款）。
     仅锁 Order 主表；联动欠款在同事务内执行，失败则整笔回滚并提示原因。
     """
-    detail_qs = Order.objects.select_related("customer").prefetch_related("items__product")
+    detail_qs = Order.objects.select_related("customer").prefetch_related(
+        "items__product"
+    )
 
     if request.method == "POST":
         workflow = (request.POST.get("workflow_status") or "").strip()
@@ -1856,10 +2044,12 @@ def order_status_update(request, order_id):
             )
             messages.error(
                 request,
-                "保存失败：提交的履约状态、结算方式、支付方式、支付状态或结算状态不合法，请重试。",
+                "Save failed: workflow, settlement, payment method, payment status, or settlement status is invalid.",
             )
             order = get_object_or_404(detail_qs, pk=order_id)
-            return render(request, "order_status_update.html", _order_status_update_context(order))
+            return render(
+                request, "order_status_update.html", _order_status_update_context(order)
+            )
 
         try:
             with transaction.atomic():
@@ -1890,7 +2080,11 @@ def order_status_update(request, order_id):
                 order.payment_method = payment_method
                 order.payment_status = payment_status
                 order.status = status
-                if status == Order.Status.PAID and old_status != Order.Status.PAID and order.paid_at is None:
+                if (
+                    status == Order.Status.PAID
+                    and old_status != Order.Status.PAID
+                    and order.paid_at is None
+                ):
                     order.paid_at = timezone.now()
 
                 update_fields = [
@@ -1915,56 +2109,100 @@ def order_status_update(request, order_id):
                     order.paid_at,
                 )
                 order.save(update_fields=update_fields)
-                logger.info("order_status_update order_id=%s save() finished without DB error", order_id)
+                logger.info(
+                    "order_status_update order_id=%s save() finished without DB error",
+                    order_id,
+                )
 
-                if workflow == Order.WorkflowStatus.CONFIRMED and old_wf != Order.WorkflowStatus.CONFIRMED:
-                    logger.info("order_status_update order_id=%s side_effect apply_credit_debt_if_needed", order_id)
+                if (
+                    workflow == Order.WorkflowStatus.CONFIRMED
+                    and old_wf != Order.WorkflowStatus.CONFIRMED
+                ):
+                    logger.info(
+                        "order_status_update order_id=%s side_effect apply_credit_debt_if_needed",
+                        order_id,
+                    )
                     apply_credit_debt_if_needed(order)
-                if workflow == Order.WorkflowStatus.CANCELLED and old_wf != Order.WorkflowStatus.CANCELLED:
-                    logger.info("order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (cancel)", order_id)
+                if (
+                    workflow == Order.WorkflowStatus.CANCELLED
+                    and old_wf != Order.WorkflowStatus.CANCELLED
+                ):
+                    logger.info(
+                        "order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (cancel)",
+                        order_id,
+                    )
                     reverse_credit_debt_if_counted(order)
                 if status == Order.Status.PAID and old_status != Order.Status.PAID:
-                    logger.info("order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (paid)", order_id)
+                    logger.info(
+                        "order_status_update order_id=%s side_effect reverse_credit_debt_if_counted (paid)",
+                        order_id,
+                    )
                     reverse_credit_debt_if_counted(order)
 
-            logger.info("order_status_update order_id=%s transaction committed", order_id)
+            logger.info(
+                "order_status_update order_id=%s transaction committed", order_id
+            )
             if status == Order.Status.PAID and old_status != Order.Status.PAID:
                 messages.success(request, _MSG_SETTLED_RELEASE)
             else:
-                messages.success(request, "订单已保存")
-            return redirect(reverse("order-status-update", kwargs={"order_id": order_id}))
+                messages.success(request, "Order saved.")
+            return redirect(
+                reverse("order-status-update", kwargs={"order_id": order_id})
+            )
         except ValidationError as exc:
             logger.exception(
                 "order_status_update order_id=%s ValidationError transaction rolled back: %s",
                 order_id,
                 exc,
             )
-            messages.error(request, f"保存失败（已回滚）：{exc}")
+            messages.error(request, f"Save failed (rolled back): {exc}")
         except Exception as exc:
             logger.exception(
                 "order_status_update order_id=%s unexpected error transaction rolled back: %s",
                 order_id,
                 exc,
             )
-            messages.error(request, f"保存失败（已回滚）：{exc}")
+            messages.error(request, f"Save failed (rolled back): {exc}")
 
         order = get_object_or_404(detail_qs, pk=order_id)
-        return render(request, "order_status_update.html", _order_status_update_context(order))
+        return render(
+            request, "order_status_update.html", _order_status_update_context(order)
+        )
 
     order = get_object_or_404(detail_qs, pk=order_id)
-    return render(request, "order_status_update.html", _order_status_update_context(order))
+    return render(
+        request, "order_status_update.html", _order_status_update_context(order)
+    )
 
 
 def _stripe_secret_key():
-    return (os.environ.get("STRIPE_SECRET_KEY") or getattr(settings, "STRIPE_SECRET_KEY", "") or "").strip()
+    return (
+        os.environ.get("STRIPE_SECRET_KEY")
+        or getattr(settings, "STRIPE_SECRET_KEY", "")
+        or ""
+    ).strip()
 
 
 def _bank_transfer_info():
     return {
-        "bank_name": (os.environ.get("BANK_NAME") or getattr(settings, "BANK_NAME", "") or "").strip(),
-        "account_name": (os.environ.get("BANK_ACCOUNT_NAME") or getattr(settings, "BANK_ACCOUNT_NAME", "") or "").strip(),
-        "account_number": (os.environ.get("BANK_ACCOUNT_NUMBER") or getattr(settings, "BANK_ACCOUNT_NUMBER", "") or "").strip(),
-        "routing_number": (os.environ.get("BANK_ROUTING_NUMBER") or getattr(settings, "BANK_ROUTING_NUMBER", "") or "").strip(),
+        "bank_name": (
+            os.environ.get("BANK_NAME") or getattr(settings, "BANK_NAME", "") or ""
+        ).strip(),
+        "account_name": (
+            os.environ.get("BANK_ACCOUNT_NAME")
+            or getattr(settings, "BANK_ACCOUNT_NAME", "")
+            or ""
+        ).strip(),
+        "account_number": (
+            os.environ.get("BANK_ACCOUNT_NUMBER")
+            or getattr(settings, "BANK_ACCOUNT_NUMBER", "")
+            or ""
+        ).strip(),
+        "routing_number": (
+            os.environ.get("BANK_ROUTING_NUMBER")
+            or getattr(settings, "BANK_ROUTING_NUMBER", "")
+            or ""
+        ).strip(),
     }
 
 
@@ -1973,25 +2211,32 @@ def _bank_transfer_info():
 def stripe_create_session(request, order_id):
     order = get_object_or_404(Order, pk=order_id, ordered_by_id=request.user.id)
     if str(order.payment_method) != "stripe":
-        messages.error(request, "该订单不是 Stripe 支付方式")
+        messages.error(request, "This order is not using Stripe payment.")
         return redirect("shop-order-success", order_id=order.id)
     secret_key = _stripe_secret_key()
     if not secret_key:
-        messages.error(request, "未配置 Stripe 密钥，请联系管理员")
+        messages.error(request, "Stripe is not configured. Contact an administrator.")
         return redirect("shop-checkout")
     try:
         import stripe
     except Exception:
-        messages.error(request, "Stripe SDK 未安装，请联系管理员")
+        messages.error(
+            request, "Stripe SDK is not installed. Contact an administrator."
+        )
         return redirect("shop-checkout")
 
     stripe.api_key = secret_key
-    success_url = request.build_absolute_uri(reverse("stripe-success")) + f"?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}"
-    cancel_url = request.build_absolute_uri(reverse("stripe-cancel")) + f"?order_id={order.id}"
+    success_url = (
+        request.build_absolute_uri(reverse("stripe-success"))
+        + f"?session_id={{CHECKOUT_SESSION_ID}}&order_id={order.id}"
+    )
+    cancel_url = (
+        request.build_absolute_uri(reverse("stripe-cancel")) + f"?order_id={order.id}"
+    )
 
     amount = int(round(float(order.total_revenue or 0.0) * 100))
     if amount <= 0:
-        messages.error(request, "订单金额无效，无法发起支付")
+        messages.error(request, "Invalid order amount; cannot start payment.")
         return redirect("shop-checkout")
 
     session = stripe.checkout.Session.create(
@@ -2003,7 +2248,7 @@ def stripe_create_session(request, order_id):
             {
                 "price_data": {
                     "currency": "cny",
-                    "product_data": {"name": f"订单 #{order.id}"},
+                    "product_data": {"name": f"Order #{order.id}"},
                     "unit_amount": amount,
                 },
                 "quantity": 1,
@@ -2011,7 +2256,9 @@ def stripe_create_session(request, order_id):
         ],
         metadata={"order_id": str(order.id), "user_id": str(request.user.id)},
     )
-    Order.objects.filter(pk=order.id).update(stripe_session_id=session.id, payment_status=Order.PaymentStatus.UNPAID)
+    Order.objects.filter(pk=order.id).update(
+        stripe_session_id=session.id, payment_status=Order.PaymentStatus.UNPAID
+    )
     return redirect(session.url, permanent=False)
 
 
@@ -2021,24 +2268,26 @@ def stripe_success(request):
     order_id = request.GET.get("order_id")
     session_id = (request.GET.get("session_id") or "").strip()
     if not order_id or not str(order_id).isdigit():
-        return HttpResponseBadRequest("缺少订单号")
+        return HttpResponseBadRequest("Missing order id")
     order = get_object_or_404(Order, pk=int(order_id), ordered_by_id=request.user.id)
 
     secret_key = _stripe_secret_key()
     if not secret_key:
-        messages.error(request, "未配置 Stripe 密钥，请联系管理员")
+        messages.error(request, "Stripe is not configured. Contact an administrator.")
         return redirect("shop-checkout")
     try:
         import stripe
     except Exception:
-        messages.error(request, "Stripe SDK 未安装，请联系管理员")
+        messages.error(
+            request, "Stripe SDK is not installed. Contact an administrator."
+        )
         return redirect("shop-checkout")
     stripe.api_key = secret_key
 
     if not session_id:
         session_id = order.stripe_session_id or ""
     if not session_id:
-        messages.error(request, "未获取到支付会话，请重试")
+        messages.error(request, "Could not start payment session. Try again.")
         return redirect("shop-checkout")
 
     session = stripe.checkout.Session.retrieve(session_id)
@@ -2061,11 +2310,13 @@ def stripe_success(request):
                 ]
             )
             reverse_credit_debt_if_counted(o)
-        messages.success(request, "Stripe 支付成功")
+        messages.success(request, "Stripe payment successful.")
         return redirect("shop-order-success", order_id=order.id)
 
-    Order.objects.filter(pk=order.id).update(payment_status=Order.PaymentStatus.CANCELLED)
-    messages.error(request, "支付未完成，请重试")
+    Order.objects.filter(pk=order.id).update(
+        payment_status=Order.PaymentStatus.CANCELLED
+    )
+    messages.error(request, "Payment not completed. Try again.")
     return redirect("shop-checkout")
 
 
@@ -2077,7 +2328,7 @@ def stripe_cancel(request):
         Order.objects.filter(pk=int(order_id), ordered_by_id=request.user.id).update(
             payment_status=Order.PaymentStatus.UNPAID
         )
-    messages.warning(request, "已取消支付，你可以重新发起支付")
+    messages.warning(request, "Payment cancelled. You can start again.")
     return redirect("shop-checkout")
 
 
@@ -2107,7 +2358,7 @@ def update_transfer_reference(request, order_id):
         order.save(update_fields=["transfer_reference", "payment_status"])
     else:
         order.save(update_fields=["transfer_reference"])
-    messages.success(request, "转账参考号已保存")
+    messages.success(request, "Transfer reference saved.")
     return redirect("my-orders")
 
 
@@ -2117,7 +2368,7 @@ def mark_order_payment_failed(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     order.payment_status = Order.PaymentStatus.CANCELLED
     order.save(update_fields=["payment_status"])
-    messages.success(request, "已标记为已取消")
+    messages.success(request, "Marked as cancelled.")
     return redirect("orders-list")
 
 
@@ -2144,7 +2395,7 @@ def _csv_parse_bool(val):
         return True
     if s in ("0", "false", "no", "off", "n", ""):
         return False
-    raise ValueError(f"无法解析布尔值: {val!r}")
+    raise ValueError(f"Cannot parse boolean: {val!r}")
 
 
 def _csv_parse_float(val):
@@ -2173,21 +2424,21 @@ def product_csv_import(request):
             request,
             "admin/tea_supply/product/import_csv.html",
             {
-                "title": "商品 CSV 导入",
+                "title": "Product CSV import",
                 "header_line": ",".join(PRODUCT_CSV_HEADER),
             },
         )
 
     upload = request.FILES.get("csv_file")
     if not upload:
-        messages.error(request, "请选择要上传的 CSV 文件")
+        messages.error(request, "Please choose a CSV file to upload.")
         return render(
             request,
             "admin/tea_supply/product/import_csv.html",
             {
-                "title": "商品 CSV 导入",
+                "title": "Product CSV import",
                 "header_line": ",".join(PRODUCT_CSV_HEADER),
-                "import_error": "未选择文件",
+                "import_error": "No file selected.",
             },
         )
 
@@ -2202,9 +2453,9 @@ def product_csv_import(request):
             request,
             "admin/tea_supply/product/import_csv.html",
             {
-                "title": "商品 CSV 导入",
+                "title": "Product CSV import",
                 "header_line": ",".join(PRODUCT_CSV_HEADER),
-                "import_error": "文件无法按 UTF-8 解码，请保存为 UTF-8 编码",
+                "import_error": "File is not valid UTF-8. Save the CSV as UTF-8.",
             },
         )
 
@@ -2216,9 +2467,9 @@ def product_csv_import(request):
             request,
             "admin/tea_supply/product/import_csv.html",
             {
-                "title": "商品 CSV 导入",
+                "title": "Product CSV import",
                 "header_line": ",".join(PRODUCT_CSV_HEADER),
-                "import_error": "CSV 为空",
+                "import_error": "CSV is empty.",
             },
         )
 
@@ -2228,9 +2479,9 @@ def product_csv_import(request):
             request,
             "admin/tea_supply/product/import_csv.html",
             {
-                "title": "商品 CSV 导入",
+                "title": "Product CSV import",
                 "header_line": ",".join(PRODUCT_CSV_HEADER),
-                "import_error": f"表头必须完全一致（含顺序）。期望：{','.join(PRODUCT_CSV_HEADER)}",
+                "import_error": f"Header must match exactly (including order). Expected: {','.join(PRODUCT_CSV_HEADER)}",
             },
         )
 
@@ -2253,7 +2504,7 @@ def product_csv_import(request):
             name = str(row["name"]).strip()
             sku = str(row["sku"]).strip()
             if not cat_name or not name or not sku:
-                raise ValueError("category、name、sku 不能为空")
+                raise ValueError("category, name, and sku are required")
 
             unit_label = str(row.get("unit_label") or "").strip()
             case_label = str(row.get("case_label") or "").strip()
@@ -2261,11 +2512,11 @@ def product_csv_import(request):
             price_case = _csv_parse_float(row.get("price_case"))
             shelf_life_months = _csv_parse_int(row.get("shelf_life_months"))
             if shelf_life_months < 0:
-                raise ValueError("shelf_life_months 无效")
+                raise ValueError("shelf_life_months is invalid")
             can_split_sale = _csv_parse_bool(row.get("can_split_sale"))
             minimum_order_qty = _csv_parse_float(row.get("minimum_order_qty"))
             if minimum_order_qty <= 0:
-                raise ValueError("minimum_order_qty 必须大于 0")
+                raise ValueError("minimum_order_qty must be greater than 0")
             is_active = _csv_parse_bool(row.get("is_active"))
 
             with transaction.atomic():
@@ -2305,7 +2556,7 @@ def product_csv_import(request):
         request,
         "admin/tea_supply/product/import_csv.html",
         {
-            "title": "商品 CSV 导入结果",
+            "title": "Product CSV import result",
             "header_line": ",".join(PRODUCT_CSV_HEADER),
             "import_result": {
                 "created": created,
@@ -2315,3 +2566,32 @@ def product_csv_import(request):
             },
         },
     )
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["GET", "POST"])
+def driver_orders(request):
+    """Driver V1: orders where assigned_driver is the current user."""
+    if request.method == "POST":
+        order_id = (request.POST.get("order_id") or "").strip()
+        action = (request.POST.get("action") or "").strip()
+        if not order_id or action not in ("start_delivery", "mark_completed"):
+            messages.error(request, "Invalid request.")
+            return redirect("driver-orders")
+        order = get_object_or_404(Order, pk=order_id, assigned_driver_id=request.user.id)
+        if action == "start_delivery":
+            order.delivery_status = Order.DeliveryStatus.DELIVERING
+            order.save(update_fields=["delivery_status"])
+            messages.success(request, "Delivery status updated to Delivering.")
+        else:
+            order.delivery_status = Order.DeliveryStatus.COMPLETED
+            order.save(update_fields=["delivery_status"])
+            messages.success(request, "Delivery status updated to Completed.")
+        return redirect("driver-orders")
+
+    orders = (
+        Order.objects.filter(assigned_driver_id=request.user.id)
+        .select_related("customer", "assigned_vehicle")
+        .order_by("-created_at")
+    )
+    return render(request, "tea_supply/driver_orders.html", {"orders": orders})

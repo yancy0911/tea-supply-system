@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {# 安全嵌入商品 JSON，避免名称中的 </script> 等破坏内联脚本 #}
+  {# Embed product JSON safely for inline script #}
   {{ products_data|json_script:"wholesale-products-data" }}
   <script>
     const PRODUCTS = (function () {
@@ -11,7 +11,7 @@
         var parsed = JSON.parse(el.textContent);
         return Array.isArray(parsed) ? parsed : [];
       } catch (e) {
-        console.error("wholesale PRODUCTS JSON 解析失败", e);
+        console.error("wholesale PRODUCTS JSON parse failed", e);
         return [];
       }
     })();
@@ -19,10 +19,10 @@
     const EXCLUSIVE_PRICES = {{ exclusive_prices_json|safe }};
   </script>
 
-  <h2 style="margin: 0 0 12px 0">批发录单（商品目录）</h2>
+  <h2 style="margin: 0 0 12px 0">Wholesale order (catalog)</h2>
   <div class="card" style="max-width: 900px">
     <p class="muted" style="margin-top: 0">
-      今日订单总数：<strong>{{ today_order_count }}</strong>
+      Orders today: <strong>{{ today_order_count }}</strong>
     </p>
 
     {% if messages %}
@@ -51,10 +51,10 @@
       <input type="hidden" name="lines_json" id="lines_json" value="[]" />
 
       <div style="margin-bottom: 12px">
-        <label for="customer" class="muted" style="display: block; margin-bottom: 6px">1. 客户</label>
+        <label for="customer" class="muted" style="display: block; margin-bottom: 6px">1. Customer</label>
         {% if customer_rows %}
           <select id="customer" name="customer" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-            <option value="">请选择客户</option>
+            <option value="">Select customer</option>
             {% for row in customer_rows %}
               <option
                 value="{{ row.customer.id }}"
@@ -74,38 +74,38 @@
             class="muted"
             style="display: none; margin-top: 10px; padding: 12px; border-radius: 10px; background: #f9fafb; border: 1px solid #e5e7eb; font-size: 14px; line-height: 1.7"
           >
-            <div><strong>客户等级：</strong><span id="cc-level">-</span></div>
-            <div><strong>是否允许欠款：</strong><span id="cc-allow">-</span></div>
-            <div><strong>信用额度：</strong><span id="cc-limit">-</span></div>
-            <div><strong>当前未结金额：</strong><span id="cc-unsettled">-</span></div>
-            <div><strong>结算周期：</strong><span id="cc-cycle">-</span></div>
+            <div><strong>Tier: </strong><span id="cc-level">-</span></div>
+            <div><strong>Credit allowed: </strong><span id="cc-allow">-</span></div>
+            <div><strong>Credit limit: </strong><span id="cc-limit">-</span></div>
+            <div><strong>Outstanding: </strong><span id="cc-unsettled">-</span></div>
+            <div><strong>Payment cycle: </strong><span id="cc-cycle">-</span></div>
             <div id="cc-blocked-wrap" style="display: none; margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-weight: 600">
-              该客户已被暂停供货，请联系管理员（后台取消「是否停单」后可恢复录单）
+              This account is suspended. Contact an administrator (Admin can unblock).
             </div>
           </div>
         {% else %}
           <div style="padding: 10px 12px; border-radius: 10px; background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa;">
-            暂无客户，请先去后台添加客户
+            No customers — add one in Admin.
           </div>
         {% endif %}
       </div>
 
       <div style="border-top: 1px solid #eef2f7; padding-top: 14px; margin-top: 8px">
-        <p class="muted" style="margin: 0 0 10px 0; font-weight: 600">2. 添加明细</p>
+        <p class="muted" style="margin: 0 0 10px 0; font-weight: 600">2. Add lines</p>
         <div style="display: grid; gap: 10px">
           <div>
-            <label class="muted" style="display: block; margin-bottom: 6px">分类</label>
+            <label class="muted" style="display: block; margin-bottom: 6px">Category</label>
             <select id="cat_sel" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-              <option value="">全部分类</option>
+              <option value="">All categories</option>
               {% for c in categories %}
                 <option value="{{ c.id }}">{{ c.name }}</option>
               {% endfor %}
             </select>
           </div>
           <div>
-            <label class="muted" style="display: block; margin-bottom: 6px">商品</label>
+            <label class="muted" style="display: block; margin-bottom: 6px">Product</label>
             <select id="prod_sel" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
-              <option value="">请选择商品</option>
+              <option value="">Select product</option>
               {% for p in products %}
                 <option value="{{ p.id }}" data-category-id="{{ p.category_id }}">{{ p.name }}（{{ p.sku }}）</option>
               {% endfor %}
@@ -113,58 +113,58 @@
           </div>
           <div id="prod_meta" class="muted" style="font-size: 13px; line-height: 1.6; display: none"></div>
           <div>
-            <span class="muted" style="display: block; margin-bottom: 6px">销售方式</span>
-            <label style="margin-right: 16px"><input type="radio" name="sale_type" value="single" checked /> 单品</label>
-            <label><input type="radio" name="sale_type" value="case" /> 整箱</label>
+            <span class="muted" style="display: block; margin-bottom: 6px">Sale type</span>
+            <label style="margin-right: 16px"><input type="radio" name="sale_type" value="single" checked /> Single</label>
+            <label><input type="radio" name="sale_type" value="case" /> Case</label>
           </div>
           <div>
-            <label class="muted" style="display: block; margin-bottom: 6px">数量</label>
+            <label class="muted" style="display: block; margin-bottom: 6px">Qty</label>
             <input id="line_qty" type="number" step="0.01" min="0.01" value="1" style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db" />
           </div>
           <div style="font-size: 14px; line-height: 1.6">
             <div class="muted" style="margin-bottom: 4px">
-              基础单品价：<strong id="line_price_single">-</strong>
-              &nbsp;&nbsp;基础整箱价：<strong id="line_price_case">-</strong>
+              Base single: <strong id="line_price_single">-</strong>
+              &nbsp;&nbsp;Base case: <strong id="line_price_case">-</strong>
             </div>
             <div style="margin-bottom: 4px">
-              <span class="muted">当前成交价：</span><strong id="line_unit_price">-</strong>
+              <span class="muted">Unit price: </span><strong id="line_unit_price">-</strong>
               &nbsp;|&nbsp;
-              <span class="muted">折扣来源：</span><strong id="line_price_source">-</strong>
+              <span class="muted">Pricing note: </span><strong id="line_price_source">-</strong>
             </div>
             <div>
-              <span class="muted">本行金额：</span><strong id="line_line_amt">-</strong>
+              <span class="muted">Line total: </span><strong id="line_line_amt">-</strong>
             </div>
           </div>
           <div>
-            <button type="button" class="btn secondary" id="btn_add_line" style="padding: 10px 14px">加入订单明细</button>
+            <button type="button" class="btn secondary" id="btn_add_line" style="padding: 10px 14px">Add line</button>
           </div>
         </div>
       </div>
 
       <div style="border-top: 1px solid #eef2f7; padding-top: 14px; margin-top: 16px">
-        <p class="muted" style="margin: 0 0 10px 0; font-weight: 600">3. 订单明细</p>
+        <p class="muted" style="margin: 0 0 10px 0; font-weight: 600">3. Lines</p>
         <table class="table" id="cart_table" style="margin: 0">
           <thead>
             <tr>
               <th>SKU</th>
-              <th>商品名</th>
-              <th>方式</th>
-              <th>成交单价</th>
-              <th>折扣来源</th>
-              <th>数量</th>
-              <th>金额</th>
+              <th>Product</th>
+              <th>Type</th>
+              <th>Unit price</th>
+              <th>Note</th>
+              <th>Qty</th>
+              <th>Amount</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="cart_body"></tbody>
         </table>
         <p style="margin: 12px 0 0 0; font-size: 16px">
-          <strong>订单总金额：</strong><span id="order_total" style="color: #111827; font-weight: 800">0</span>
+          <strong>Order total:</strong><span id="order_total" style="color: #111827; font-weight: 800">0</span>
         </p>
       </div>
 
       <div style="margin-top: 18px">
-        <button type="submit" class="btn" id="btn_submit">提交订单</button>
+        <button type="submit" class="btn" id="btn_submit">Submit order</button>
       </div>
     </form>
   </div>
@@ -198,7 +198,7 @@
           panel.style.display = "block";
           document.getElementById("cc-level").textContent = opt.getAttribute("data-level") || "-";
           document.getElementById("cc-allow").textContent =
-            opt.getAttribute("data-allow-credit") === "1" ? "是" : "否";
+            opt.getAttribute("data-allow-credit") === "1" ? "Yes" : "No";
           document.getElementById("cc-limit").textContent = fmt(opt.getAttribute("data-credit-limit"));
           document.getElementById("cc-unsettled").textContent = fmt(opt.getAttribute("data-unsettled"));
           document.getElementById("cc-cycle").textContent = opt.getAttribute("data-cycle") || "-";
@@ -206,7 +206,7 @@
           if (blockedWrap) blockedWrap.style.display = blocked ? "block" : "none";
           if (btnSubmit) {
             btnSubmit.disabled = blocked;
-            btnSubmit.title = blocked ? "该客户已被暂停供货，请联系管理员" : "";
+            btnSubmit.title = blocked ? "This account is suspended. Contact an administrator." : "";
           }
         }
 
@@ -222,7 +222,7 @@
   <script>
     (function () {
       if (typeof PRODUCTS === "undefined" || !Array.isArray(PRODUCTS)) {
-        console.error("PRODUCTS 未加载");
+        console.error("PRODUCTS not loaded");
         return;
       }
 
@@ -272,12 +272,7 @@
         return v != null && !isNaN(parseFloat(v)) ? parseFloat(v) : 1;
       }
 
-      /**
-       * 与后端 resolve_product_price_for_customer 一致：
-       * 1 专属价优先
-       * 2 否则等级价 VIP×0.90 / A×0.95 / B×0.98 / C×1.00（单品整箱同系数）
-       * 3 无客户 → 商品原价
-       */
+      /** Mirrors backend resolve_product_price_for_customer (exclusive > tier > base). */
       function computeLinePricing() {
         var p = getSelectedProduct(productSelect.value);
         if (!p) return null;
@@ -292,7 +287,7 @@
         if (!customerSelect || !customerSelect.value) {
           return {
             unit: base,
-            priceSource: "无客户",
+            priceSource: "No customer",
             baseSingle: ps,
             baseCase: pc,
             p: p,
@@ -307,7 +302,7 @@
           if (isNaN(u)) u = 0;
           return {
             unit: u,
-            priceSource: "专属价",
+            priceSource: "Exclusive price",
             baseSingle: ps,
             baseCase: pc,
             p: p,
@@ -322,8 +317,8 @@
         if (isNaN(unit)) unit = 0;
         var priceSource =
           d >= 1
-            ? "无折扣"
-            : "等级折扣·" + level + "（×" + d + "）";
+            ? "No discount"
+            : "Tier " + level + " (×" + d + ")";
         return {
           unit: unit,
           priceSource: priceSource,
@@ -367,12 +362,12 @@
         var warn = "";
         if (!res.isCase && !res.p.can_split_sale) {
           warn =
-            '<br/><span style="color:#b45309;font-weight:600">提示：该商品不可拆卖，加入明细时请选「整箱」。</span>';
+            '<br/><span style="color:#b45309;font-weight:600">This SKU is case-only — choose Case.</span>';
         }
         prodMeta.innerHTML =
-          "<strong>SKU：</strong>" +
+          "<strong>SKU:</strong>" +
           (res.p.sku || "") +
-          "<br/><strong>规格：</strong>" +
+          "<br/><strong>Spec:</strong>" +
           (res.p.unit_label || "—") +
           (res.p.case_label ? " / " + res.p.case_label : "") +
           warn;
@@ -388,7 +383,7 @@
         return String(pid) === String(selectedCategory);
       }
 
-      /** 用 PRODUCTS 重建下拉（分类为空时显示全部） */
+      /** Rebuild product &lt;select&gt; from PRODUCTS */
       function renderProductOptionsFromProducts() {
         var selectedCategory = catSel.value;
         var list = PRODUCTS.filter(function (p) {
@@ -397,7 +392,7 @@
         productSelect.innerHTML = "";
         var ph = document.createElement("option");
         ph.value = "";
-        ph.textContent = "请选择商品";
+        ph.textContent = "Select product";
         productSelect.appendChild(ph);
         for (var i = 0; i < list.length; i++) {
           var p = list[i];
@@ -413,7 +408,7 @@
         updatePrice();
       }
 
-      /** PRODUCTS 未加载时：用首次进入页面时备份的 option 按分类重建（避免 innerHTML 变空） */
+      /** When PRODUCTS is empty, filter server-rendered options */
       var serverProductOptionsBackup = null;
       function initServerProductOptionsBackup() {
         if (serverProductOptionsBackup !== null) return;
@@ -435,7 +430,7 @@
         productSelect.innerHTML = "";
         var ph = document.createElement("option");
         ph.value = "";
-        ph.textContent = "请选择商品";
+        ph.textContent = "Select product";
         productSelect.appendChild(ph);
         for (var i = 0; i < serverProductOptionsBackup.length; i++) {
           var row = serverProductOptionsBackup[i];
@@ -486,7 +481,7 @@
             "</td><td>" +
             row.name +
             "</td><td>" +
-            (row.sale_type === "case" ? "整箱" : "单品") +
+            (row.sale_type === "case" ? "Case" : "Single") +
             "</td><td>" +
             row.unit_price.toFixed(2) +
             "</td><td>" +
@@ -497,7 +492,7 @@
             row.amount.toFixed(2) +
             '</td><td><button type="button" class="btn secondary" data-idx="' +
             i +
-            '" style="padding:4px 8px;font-size:12px">删除</button></td>';
+            '" style="padding:4px 8px;font-size:12px">Remove</button></td>';
           cartBody.appendChild(tr);
         }
         cartBody.querySelectorAll("button[data-idx]").forEach(function (btn) {
@@ -524,32 +519,32 @@
 
       document.getElementById("btn_add_line").addEventListener("click", function () {
         if (!customerSelect || !customerSelect.value) {
-          alert("请先选择客户");
+          alert("Select a customer first");
           return;
         }
         var opt0 = customerSelect.options[customerSelect.selectedIndex];
         if (opt0 && opt0.getAttribute("data-is-blocked") === "1") {
-          alert("该客户已被暂停供货，请联系管理员");
+          alert("This account is suspended. Contact an administrator.");
           return;
         }
         var p = getSelectedProduct(productSelect.value);
         if (!p) {
-          alert("请选择商品");
+          alert("Select a product");
           return;
         }
         var st = getSaleTypeValue();
         if (st === "single" && !p.can_split_sale) {
-          alert("该商品不可拆卖，请选择整箱");
+          alert("This product is case-only. Choose Case.");
           return;
         }
         var q = parseFloat(quantityInput.value);
         if (isNaN(q) || q < p.minimum_order_qty) {
-          alert("数量不能低于起订量 " + p.minimum_order_qty);
+          alert("Qty below MOQ " + p.minimum_order_qty);
           return;
         }
         var res = computeLinePricing();
         if (!res) {
-          alert("无法计算价格");
+          alert("Could not compute price");
           return;
         }
         var up = res.unit;
@@ -566,7 +561,7 @@
         renderCart();
       });
 
-      // 有 PRODUCTS 时由数据渲染（与后端列表一致）；无则保留后端已渲染的 option，避免被空数组清空
+      // Render from PRODUCTS when available; else keep server options
       if (PRODUCTS.length > 0) {
         renderProductOptionsFromProducts();
       }
@@ -574,14 +569,14 @@
       document.getElementById("wholesale-form").addEventListener("submit", function (e) {
         if (lines.length === 0) {
           e.preventDefault();
-          alert("请至少添加一条订单明细");
+          alert("Add at least one line");
           return false;
         }
         if (customerSelect && customerSelect.value) {
           var optS = customerSelect.options[customerSelect.selectedIndex];
           if (optS && optS.getAttribute("data-is-blocked") === "1") {
             e.preventDefault();
-            alert("该客户已被暂停供货，请联系管理员");
+            alert("This account is suspended. Contact an administrator.");
             return false;
           }
         }

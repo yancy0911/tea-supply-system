@@ -87,76 +87,22 @@
     </div>
     <script>
       (function () {
-        function translatePricingFragment(str) {
-          if (str == null || str === "") return "";
-          var s = String(str).trim();
-          var exact = {};
-          exact["\u5ba2\u6237\u4e13\u5c5e\u4ef7"] = "Customer exclusive price";
-          exact["\u539f\u4ef7"] = "Base Price";
-          exact["B\u7ea795\u6298"] = "Tier B (5% off)";
-          exact["A\u7ea79\u6298"] = "Tier A (10% off)";
-          exact["VIP85\u6298"] = "VIP (15% off)";
-          if (exact[s]) return exact[s];
-          var m = s.match(/^([A-Z]+)\u7ea7\u539f\u4ef7\uff08(\u5355\u54c1|\u6574\u7bb1)\uff09$/);
-          if (m) {
-            var kind = m[2] === "\u5355\u54c1" ? "Per Bag" : "Per Case";
-            return "Tier " + m[1] + " · Base Price (" + kind + ")";
-          }
-          m = s.match(/^([A-Z]+)\u7ea7(\d{1,3})\u6298\uff08(\u5355\u54c1|\u6574\u7bb1)\uff09$/);
-          if (m) {
-            var tier = m[1];
-            var z = m[2];
-            var kind = m[3] === "\u5355\u54c1" ? "Per Bag" : "Per Case";
-            var zn = parseInt(z, 10);
-            var off = z.length >= 2 || zn > 10 ? 100 - zn : 100 - zn * 10;
-            return "Tier " + tier + " (" + off + "% off) (" + kind + ")";
-          }
-          var out = s;
-          [
-            ["VIP85\u6298", "VIP (15% off)"],
-            ["B\u7ea795\u6298", "Tier B (5% off)"],
-            ["A\u7ea79\u6298", "Tier A (10% off)"],
-          ].forEach(function (pair) {
-            out = out.split(pair[0]).join(pair[1]);
-          });
-          out = out.replace(/([A-Z])\u7ea7\u539f\u4ef7(?![\uff08])/g, "Tier $1 · Base Price");
-          out = out.replace(/\uff08\u5355\u54c1\uff09/g, "(Per Bag)").replace(/\uff08\u6574\u7bb1\uff09/g, "(Per Case)");
-          out = out.replace(/\u5355\u54c1/g, "Per Bag").replace(/\u6574\u7bb1/g, "Per Case");
-          out = out.replace(/\u539f\u4ef7/g, "Base Price");
-          out = out.replace(/(\d{2,3})\u6298/g, function (_, d) {
-            return 100 - parseInt(d, 10) + "% off";
-          });
-          out = out.replace(/([1-9])\u6298/g, function (_, d) {
-            return 100 - parseInt(d, 10) * 10 + "% off";
-          });
-          out = out.replace(/([A-Z])\u7ea7/g, "Tier $1 · ");
-          return out;
+        var CJK_RE = /[\u4e00-\u9fff]/;
+        function containsCjk(s) {
+          return CJK_RE.test(String(s || ""));
         }
         function priceNoteEn(raw) {
           if (raw == null || raw === "") return "";
-          var s = String(raw);
-          var exact = {};
-          exact["\u5ba2\u6237\u4e13\u5c5e\u4ef7"] = "Customer exclusive price";
-          exact["\u539f\u4ef7"] = "Base Price";
-          exact["B\u7ea795\u6298"] = "Tier B (5% off)";
-          exact["A\u7ea79\u6298"] = "Tier A (10% off)";
-          exact["VIP85\u6298"] = "VIP (15% off)";
-          if (exact[s]) return exact[s];
-          var sep = " \u00b7 \u6574\u7bb1:";
-          if (s.indexOf("\u5355\u54c1:") === 0 && s.indexOf(sep) > 0) {
-            var ix = s.indexOf(sep);
-            return (
-              "Per Bag: " +
-              translatePricingFragment(s.slice(3, ix)) +
-              " · Per Case: " +
-              translatePricingFragment(s.slice(ix + sep.length))
-            );
-          }
-          return translatePricingFragment(s);
+          if (containsCjk(raw)) return "";
+          return String(raw);
         }
         document.querySelectorAll(".js-pricing-note").forEach(function (el) {
           var raw = el.getAttribute("data-note");
-          if (raw) el.textContent = priceNoteEn(raw);
+          if (raw) {
+            var t = priceNoteEn(raw);
+            el.textContent = t;
+            if (!t) el.style.display = "none";
+          }
         });
       })();
     </script>

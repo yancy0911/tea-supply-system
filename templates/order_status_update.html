@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2 style="margin: 0 0 12px 0">订单详情 / 状态</h2>
+  <h2 style="margin: 0 0 12px 0">Order detail / status</h2>
 
   <div class="card" style="max-width: 900px">
     {% if messages %}
@@ -26,50 +26,50 @@
     {% endif %}
 
     <div style="margin-bottom: 16px; line-height: 1.85; font-size: 14px">
-      <div><strong>订单号：</strong>#{{ order.id }} · {{ order.name }}</div>
-      <div><strong>客户：</strong>{% if order.customer %}{{ order.customer.name }}（{{ order.customer.phone }}）{% else %}未指定客户{% endif %}</div>
-      <div><strong>创建时间：</strong>{{ order.created_at|date:"Y-m-d H:i:s" }}</div>
-      <div><strong>收货人：</strong>{{ order.contact_name|default:"—" }} · {{ order.delivery_phone|default:"—" }}</div>
-      <div><strong>门店/公司：</strong>{{ order.store_name|default:"—" }}</div>
-      <div><strong>配送地址：</strong>{{ order.delivery_address|default:"—" }}</div>
+      <div><strong>Order:</strong>#{{ order.id }} · {{ order.name }}</div>
+      <div><strong>Customer:</strong>{% if order.customer %}{{ order.customer.name }} ({{ order.customer.phone }}){% else %}No customer{% endif %}</div>
+      <div><strong>Created:</strong>{{ order.created_at|date:"Y-m-d H:i:s" }}</div>
+      <div><strong>Contact:</strong>{{ order.contact_name|default:"—" }} · {{ order.delivery_phone|default:"—" }}</div>
+      <div><strong>Store / company:</strong>{{ order.store_name|default:"—" }}</div>
+      <div><strong>Address:</strong>{{ order.delivery_address|default:"—" }}</div>
       {% if order.order_note %}
-        <div><strong>备注：</strong>{{ order.order_note }}</div>
+        <div><strong>Note:</strong>{{ order.order_note }}</div>
       {% endif %}
     </div>
 
-    <h3 style="margin: 0 0 8px; font-size: 15px">商品明细</h3>
+    <h3 style="margin: 0 0 8px; font-size: 15px">Line items</h3>
     <table class="table" style="margin-bottom: 16px">
       <thead>
         <tr>
-          <th>商品</th>
-          <th>规格</th>
-          <th>数量</th>
-          <th>单价</th>
-          <th>小计</th>
+          <th>Product</th>
+          <th>Type</th>
+          <th>Qty</th>
+          <th>Unit price</th>
+          <th>Line total</th>
         </tr>
       </thead>
       <tbody>
         {% for item in order.items.all %}
           <tr>
             <td>{{ item.product.name }} <span class="muted" style="font-size: 12px">{{ item.product.sku }}</span></td>
-            <td>{% if item.sale_type == "case" %}整箱{% else %}单品{% endif %}</td>
+            <td>{% if item.sale_type == "case" %}Case{% else %}Single{% endif %}</td>
             <td>{{ item.quantity }}</td>
             <td>¥{{ item.unit_price|floatformat:2 }}</td>
             <td>¥{{ item.total_revenue|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="5" class="muted">无明细</td>
+            <td colspan="5" class="muted">No lines</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
-    <p style="text-align: right; font-size: 16px; font-weight: 700">订单金额：¥{{ order.total_revenue|floatformat:2 }}</p>
+    <p style="text-align: right; font-size: 16px; font-weight: 700">Total: ¥{{ order.total_revenue|floatformat:2 }}</p>
 
     <form method="post">
       {% csrf_token %}
       <div style="margin-bottom: 12px">
-        <label for="workflow_status" class="muted" style="display: block; margin-bottom: 6px">履约状态（发货进度）</label>
+        <label for="workflow_status" class="muted" style="display: block; margin-bottom: 6px">Workflow status</label>
         <select id="workflow_status" name="workflow_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
           {% for value, label in workflow_choices %}
             <option value="{{ value }}" {% if order.workflow_status == value %}selected{% endif %}>{{ label }}</option>
@@ -77,7 +77,7 @@
         </select>
       </div>
       <div style="margin-bottom: 12px">
-        <label for="settlement_type" class="muted" style="display: block; margin-bottom: 6px">结算方式</label>
+        <label for="settlement_type" class="muted" style="display: block; margin-bottom: 6px">Settlement</label>
         <select id="settlement_type" name="settlement_type" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
           {% for value, label in settlement_choices %}
             <option value="{{ value }}" {% if order.settlement_type == value %}selected{% endif %}>{{ label }}</option>
@@ -85,7 +85,7 @@
         </select>
       </div>
       <div style="margin-bottom: 12px">
-        <label for="payment_method" class="muted" style="display: block; margin-bottom: 6px">支付方式</label>
+        <label for="payment_method" class="muted" style="display: block; margin-bottom: 6px">Payment method</label>
         <select id="payment_method" name="payment_method" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
           {% for value, label in payment_method_choices %}
             <option value="{{ value }}" {% if order.payment_method == value %}selected{% endif %}>{{ label }}</option>
@@ -93,7 +93,7 @@
         </select>
       </div>
       <div style="margin-bottom: 12px">
-        <label for="payment_status" class="muted" style="display: block; margin-bottom: 6px">支付状态</label>
+        <label for="payment_status" class="muted" style="display: block; margin-bottom: 6px">Payment status</label>
         <select id="payment_status" name="payment_status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
           {% for value, label in payment_status_choices %}
             <option value="{{ value }}" {% if order.payment_status == value %}selected{% endif %}>{{ label }}</option>
@@ -101,7 +101,7 @@
         </select>
       </div>
       <div style="margin-bottom: 12px">
-        <label for="status" class="muted" style="display: block; margin-bottom: 6px">结算状态（应收账款）</label>
+        <label for="status" class="muted" style="display: block; margin-bottom: 6px">Settlement status (A/R)</label>
         <select id="status" name="status" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #d1d5db">
           {% for value, label in status_choices %}
             <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
@@ -109,8 +109,8 @@
         </select>
       </div>
 
-      <button type="submit" class="btn">保存</button>
-      <a href="/orders/" class="btn secondary" style="margin-left: 8px">返回列表</a>
+      <button type="submit" class="btn">Save</button>
+      <a href="/orders/" class="btn secondary" style="margin-left: 8px">Back to list</a>
     </form>
   </div>
 {% endblock %}

@@ -1,4 +1,5 @@
 {% comment %}Catalog product card — e-commerce layout; names/units from DB{% endcomment %}
+{% load shop_tags %}
 <div
   class="catalog-card ecom-card"
   data-product-id="{{ product.id }}"
@@ -22,18 +23,18 @@
 
   <div class="catalog-card__body ecom-card__body">
     <div class="ecom-card__meta">
-      {% if product.category_name %}
-        <span class="ecom-card__category-pill">{{ product.category_name }}</span>
+      {% if product.category_name and product.category_name|spec_en != "—" %}
+        <span class="ecom-card__category-pill">{{ product.category_name|spec_en }}</span>
       {% endif %}
       <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
       <p class="ecom-card__sku catalog-card__sku">
         <span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}
       </p>
       <div class="ecom-card__specs" aria-label="Unit specifications">
-        <span class="ecom-card__spec">{{ product.unit_label|default:"—" }}</span>
-        {% if product.case_label %}
+        <span class="ecom-card__spec">{{ product.unit_label|spec_en }}</span>
+        {% if product.case_label and product.case_label|spec_en != "—" %}
           <span class="ecom-card__spec-sep" aria-hidden="true">·</span>
-          <span class="ecom-card__spec">{{ product.case_label }}</span>
+          <span class="ecom-card__spec">{{ product.case_label|spec_en }}</span>
         {% endif %}
       </div>
     </div>
@@ -52,7 +53,7 @@
       <div class="catalog-card__prices ecom-card__prices" aria-label="Unit pricing">
         <div class="price-block" data-price-type="bag">
           <div class="price-block__label">Per Bag Price</div>
-          <div class="price-block__unit">{{ product.unit_label|default:"—" }}</div>
+          <div class="price-block__unit">{{ product.unit_label|spec_en }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_single %}
               <span class="price-block__empty">—</span>
@@ -68,7 +69,7 @@
         </div>
         <div class="price-block" data-price-type="case">
           <div class="price-block__label">Per Case Price</div>
-          <div class="price-block__unit">{{ product.case_label|default:"—" }}</div>
+          <div class="price-block__unit">{{ product.case_label|spec_en }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_case %}
               <span class="price-block__empty">—</span>
@@ -87,7 +88,7 @@
 
     {% if not product.price_on_request %}
       <div class="catalog-card__note-row">
-        {% if product.price_note %}
+        {% if product.price_note and not product.price_note|contains_cjk %}
           <span
             class="catalog-chip catalog-chip--muted js-shop-price-note"
             data-price-note-src="{{ product.price_note|escapejs }}"

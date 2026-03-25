@@ -125,7 +125,7 @@
     .rep-table tbody tr:last-child td {
       border-bottom: none;
     }
-    /* 红色：整行浅红 + 左侧粗红条 */
+    /* Red row */
     .rep-table tbody tr.row-red {
       background: #fef2f2;
       box-shadow: inset 6px 0 0 #dc2626;
@@ -133,7 +133,7 @@
     .rep-table tbody tr.row-red td {
       border-bottom-color: #fecaca;
     }
-    /* 黄色：整行浅黄 + 左侧粗黄条 */
+    /* Yellow row */
     .rep-table tbody tr.row-yellow {
       background: #fffbeb;
       box-shadow: inset 6px 0 0 #f59e0b;
@@ -141,7 +141,7 @@
     .rep-table tbody tr.row-yellow td {
       border-bottom-color: #fde68a;
     }
-    /* 绿色：保持简洁白底 + 细绿条 */
+    /* Green row */
     .rep-table tbody tr.row-green {
       background: #fff;
       box-shadow: inset 4px 0 0 #22c55e;
@@ -230,30 +230,30 @@
   </style>
 
   <div class="rep-page">
-    <h2>补货预警中心</h2>
+    <h2>Replenishment</h2>
 
     <div class="rep-banner-top {{ rep_banner.kind }}">{{ rep_banner.text }}</div>
 
     <p class="rep-lead">
-      <strong>先看顶部提示与红/黄行</strong>：红色＝优先处理；黄色＝尽快关注。<br />
-      <strong>库存</strong>：无原材料关联看「可售库存」；有关联则看「原材料库存」。<strong>销量</strong>：订单明细（已排除「待确认」「已取消」）。<strong>建议采购量</strong>：60 天预估需求 − 当前库存。
+      <strong>Red / yellow rows first</strong>: red = act now; yellow = watch soon.<br />
+      <strong>Stock</strong>: sellable stock or ingredient stock if linked. <strong>Sales</strong>: from order lines (excludes pending confirm &amp; cancelled). <strong>Suggested buy</strong>: 60-day need minus on hand.
     </p>
 
     <div class="rep-summary">
       <div class="rep-stat total">
-        <div class="k">商品总数</div>
+        <div class="k">Total SKUs</div>
         <div class="v">{{ stats.total }}</div>
       </div>
       <div class="rep-stat danger">
-        <div class="k">红色预警</div>
+        <div class="k">Red alerts</div>
         <div class="v">{{ stats.red }}</div>
       </div>
       <div class="rep-stat warn">
-        <div class="k">黄色关注</div>
+        <div class="k">Yellow watch</div>
         <div class="v">{{ stats.yellow }}</div>
       </div>
       <div class="rep-stat action">
-        <div class="k">建议立即补货</div>
+        <div class="k">Restock now</div>
         <div class="v">{{ stats.immediate }}</div>
       </div>
     </div>
@@ -262,16 +262,16 @@
       <table class="rep-table">
         <thead>
           <tr>
-            <th>风险状态</th>
-            <th>建议动作</th>
-            <th>商品</th>
+            <th>Risk</th>
+            <th>Action</th>
+            <th>Product</th>
             <th>SKU</th>
-            <th class="num">当前库存</th>
-            <th class="num">近7天销量</th>
-            <th class="num">近30天销量</th>
-            <th class="num">日均销量</th>
-            <th class="num">预计可卖天数</th>
-            <th class="num">建议采购量</th>
+            <th class="num">On hand</th>
+            <th class="num">7d sales</th>
+            <th class="num">30d sales</th>
+            <th class="num">Daily avg</th>
+            <th class="num">Days cover</th>
+            <th class="num">Suggested qty</th>
           </tr>
         </thead>
         <tbody>
@@ -281,13 +281,13 @@
             >
               <td>
                 {% if r.risk_level == "red" %}
-                  <span class="badge badge-red">🔴 红色 · 优先处理</span>
+                  <span class="badge badge-red">🔴 Red · priority</span>
                 {% elif r.risk_level == "yellow" %}
-                  <span class="badge badge-yellow">🟡 黄色 · 需关注</span>
+                  <span class="badge badge-yellow">🟡 Yellow · watch</span>
                 {% elif r.risk_level == "green" %}
-                  <span class="badge badge-green">🟢 库存安全</span>
+                  <span class="badge badge-green">🟢 OK</span>
                 {% else %}
-                  <span class="badge badge-observe">⚪ 观察中</span>
+                  <span class="badge badge-observe">⚪ Observing</span>
                 {% endif %}
               </td>
               <td class="action-cell {% if r.risk_level == 'red' %}a-red{% elif r.risk_level == 'yellow' %}a-yellow{% elif r.risk_level == 'green' %}a-green{% else %}a-observe{% endif %}">
@@ -316,11 +316,11 @@
                   <span class="muted">—</span>
                 {% elif r.days_cover is not None %}
                   {% if r.days_cover_ui == "critical" %}
-                    <span class="dc-critical">⚠️ {{ r.days_cover|floatformat:1 }} 天</span>
+                    <span class="dc-critical">⚠️ {{ r.days_cover|floatformat:1 }} d</span>
                   {% elif r.days_cover_ui == "warn" %}
-                    <span class="dc-warn">{{ r.days_cover|floatformat:1 }} 天</span>
+                    <span class="dc-warn">{{ r.days_cover|floatformat:1 }} d</span>
                   {% else %}
-                    <span class="dc-ok">{{ r.days_cover|floatformat:1 }} 天</span>
+                    <span class="dc-ok">{{ r.days_cover|floatformat:1 }} d</span>
                   {% endif %}
                 {% else %}
                   —
@@ -336,7 +336,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="10" class="muted" style="text-align: center; padding: 32px">暂无商品</td>
+              <td colspan="10" class="muted" style="text-align: center; padding: 32px">No products</td>
             </tr>
           {% endfor %}
         </tbody>

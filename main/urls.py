@@ -6,6 +6,7 @@ from tea_supply.views import (
     credit_apply_view,
     credit_home_view,
     demo_landing,
+    driver_orders,
     inventory_list,
     login_view,
     mark_order_paid,
@@ -77,4 +78,5 @@ urlpatterns = [
     path("order/<int:order_id>/confirm/", confirm_order, name="order-confirm"),
     path("order/<int:order_id>/cancel/", cancel_order, name="order-cancel"),
     path("orders/<int:order_id>/status/", order_status_update, name="order-status-update"),
+    path("driver/orders/", driver_orders, name="driver-orders"),
 ]

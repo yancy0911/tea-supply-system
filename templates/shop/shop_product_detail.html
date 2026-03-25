@@ -204,7 +204,6 @@
         var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
         var shopLoggedIn = {% if shop_customer %}true{% else %}false{% endif %};
         var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
-        var STORAGE_KEY = "tea_shop_cart_v1";
         var p = {};
         try {
           var el = document.getElementById("shop-product-data");
@@ -223,73 +222,41 @@
           return x.toFixed(2);
         }
 
-        function translatePricingFragment(str) {
-          if (str == null || str === "") return "";
-          var s = String(str).trim();
-          var exact = {};
-          exact["\u5ba2\u6237\u4e13\u5c5e\u4ef7"] = "Customer exclusive price";
-          exact["\u539f\u4ef7"] = "Base Price";
-          exact["B\u7ea795\u6298"] = "Tier B (5% off)";
-          exact["A\u7ea79\u6298"] = "Tier A (10% off)";
-          exact["VIP85\u6298"] = "VIP (15% off)";
-          if (exact[s]) return exact[s];
-          var m = s.match(/^([A-Z]+)\u7ea7\u539f\u4ef7\uff08(\u5355\u54c1|\u6574\u7bb1)\uff09$/);
-          if (m) {
-            var kind = m[2] === "\u5355\u54c1" ? "Per Bag" : "Per Case";
-            return "Tier " + m[1] + " · Base Price (" + kind + ")";
-          }
-          m = s.match(/^([A-Z]+)\u7ea7(\d{1,3})\u6298\uff08(\u5355\u54c1|\u6574\u7bb1)\uff09$/);
-          if (m) {
-            var tier = m[1];
-            var z = m[2];
-            var kind = m[3] === "\u5355\u54c1" ? "Per Bag" : "Per Case";
-            var zn = parseInt(z, 10);
-            var off = z.length >= 2 || zn > 10 ? 100 - zn : 100 - zn * 10;
-            return "Tier " + tier + " (" + off + "% off) (" + kind + ")";
-          }
-          var out = s;
-          [
-            ["VIP85\u6298", "VIP (15% off)"],
-            ["B\u7ea795\u6298", "Tier B (5% off)"],
-            ["A\u7ea79\u6298", "Tier A (10% off)"],
-          ].forEach(function (pair) {
-            out = out.split(pair[0]).join(pair[1]);
-          });
-          out = out.replace(/([A-Z])\u7ea7\u539f\u4ef7(?![\uff08])/g, "Tier $1 · Base Price");
-          out = out.replace(/\uff08\u5355\u54c1\uff09/g, "(Per Bag)").replace(/\uff08\u6574\u7bb1\uff09/g, "(Per Case)");
-          out = out.replace(/\u5355\u54c1/g, "Per Bag").replace(/\u6574\u7bb1/g, "Per Case");
-          out = out.replace(/\u539f\u4ef7/g, "Base Price");
-          out = out.replace(/(\d{2,3})\u6298/g, function (_, d) {
-            return 100 - parseInt(d, 10) + "% off";
-          });
-          out = out.replace(/([1-9])\u6298/g, function (_, d) {
-            return 100 - parseInt(d, 10) * 10 + "% off";
-          });
-          out = out.replace(/([A-Z])\u7ea7/g, "Tier $1 · ");
-          return out;
+        var CJK_RE = /[\u4e00-\u9fff]/;
+        function containsCjk(s) {
+          return CJK_RE.test(String(s || ""));
         }
-
         function priceNoteEn(raw) {
           if (raw == null || raw === "") return "";
-          var s = String(raw);
-          var exact = {};
-          exact["\u5ba2\u6237\u4e13\u5c5e\u4ef7"] = "Customer exclusive price";
-          exact["\u539f\u4ef7"] = "Base Price";
-          exact["B\u7ea795\u6298"] = "Tier B (5% off)";
-          exact["A\u7ea79\u6298"] = "Tier A (10% off)";
-          exact["VIP85\u6298"] = "VIP (15% off)";
-          if (exact[s]) return exact[s];
-          var sep = " \u00b7 \u6574\u7bb1:";
-          if (s.indexOf("\u5355\u54c1:") === 0 && s.indexOf(sep) > 0) {
-            var ix = s.indexOf(sep);
-            return (
-              "Per Bag: " +
-              translatePricingFragment(s.slice(3, ix)) +
-              " · Per Case: " +
-              translatePricingFragment(s.slice(ix + sep.length))
-            );
+          if (containsCjk(raw)) return "";
+          return String(raw);
+        }
+
+        function getCart() {
+          try {
+            var raw = localStorage.getItem("cart");
+            if (!raw) return [];
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch (e) {
+            try {
+              localStorage.removeItem("cart");
+            } catch (e2) {}
+            return [];
           }
-          return translatePricingFragment(s);
+        }
+
+        function saveCart(c) {
+          try {
+            localStorage.setItem("cart", JSON.stringify(c));
+          } catch (e) {}
+        }
+
+        function lineKey(line) {
+          var sku = String(line.sku != null ? line.sku : "").trim().toUpperCase();
+          var st = line.sale_type === "case" ? "case" : "single";
+          if (!sku) return String(line.product_id) + "_" + st;
+          return sku + "_" + st;
         }
 
         var img = document.getElementById("pimg");
@@ -301,13 +268,20 @@
 
         document.getElementById("pname").textContent = p.name || "";
         document.getElementById("psku").textContent = "SKU: " + (p.sku || "");
+        function specOrDash(v) {
+          var s = (v || "").trim();
+          if (!s) return "—";
+          return containsCjk(s) ? "—" : s;
+        }
         document.getElementById("pspec").innerHTML =
           "Category: " +
-          (p.category_name && String(p.category_name).trim() ? p.category_name : "—") +
+          (p.category_name && String(p.category_name).trim() && !containsCjk(p.category_name)
+            ? p.category_name
+            : "—") +
           "<br/>Unit: " +
-          (p.unit_label || "—") +
+          specOrDash(p.unit_label) +
           "<br/>Case pack: " +
-          (p.case_label || "—") +
+          specOrDash(p.case_label) +
           "<br/>Stock: " +
           (p.stock_enabled ? fmtMoney(p.current_stock) : "Unlimited") +
           (p.stock_enabled && p.current_stock <= 0
@@ -330,7 +304,10 @@
             '</span> <small style="color:#6b7280">Per Case</small></div>';
         }
         document.getElementById("pprice").innerHTML = priceHtml;
-        document.getElementById("pnote").textContent = p.price_on_request ? "Price TBD" : priceNoteEn(p.price_note || "");
+        var pnoteEl = document.getElementById("pnote");
+        var pnoteTxt = p.price_on_request ? "Price TBD" : priceNoteEn(p.price_note || "");
+        pnoteEl.textContent = pnoteTxt;
+        pnoteEl.style.display = pnoteTxt ? "" : "none";
 
         var canSingle = p.can_split_sale && p.can_quote_single;
         var canCase = p.can_quote_case;
@@ -406,34 +383,40 @@
             alert("Invalid price");
             return;
           }
-          var cart = [];
-          try {
-            var raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) cart = JSON.parse(raw) || [];
-          } catch (e) {}
+          var cart = getCart();
           var pid = Number(p.id);
-          var found = cart.find(function (l) {
-            return l.product_id === pid && l.sale_type === st;
-          });
+          var wantKey = lineKey({ sku: p.sku, sale_type: st, product_id: pid });
+          var found = null;
+          for (var ci = 0; ci < cart.length; ci++) {
+            if (lineKey(cart[ci]) === wantKey) {
+              found = cart[ci];
+              break;
+            }
+          }
           if (found) {
-            found.quantity += qty;
+            found.qty = (parseFloat(found.qty) || parseFloat(found.quantity) || 0) + qty;
+            found.quantity = found.qty;
+            found.unit_price = parseFloat(found.unit_price) || parseFloat(found.price) || unit;
+            found.price = found.unit_price;
             found.subtotal = found.quantity * found.unit_price;
           } else {
             cart.push({
               product_id: pid,
-              sale_type: st,
+              sku: String(p.sku != null ? p.sku : ""),
+              name: p.name || "",
+              price: unit,
+              qty: qty,
               quantity: qty,
-              name: p.name,
-              sku: p.sku,
+              sale_type: st,
               unit_price: unit,
               price_note: p.price_note,
               min_qty: minQ,
-              spec_label: st === "case" ? "Case" : "Single",
+              spec_label: st === "case" ? "Per Case" : "Per Bag",
               spec_detail: st === "case" ? p.case_label || "—" : p.unit_label || "—",
               subtotal: qty * unit,
             });
           }
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+          saveCart(cart);
           alert("Added to cart");
           window.location.href = "/shop/#shop-cart-anchor";
         };

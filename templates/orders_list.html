@@ -3,36 +3,36 @@
 {% block content %}
   <div class="card-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr))">
     <div class="card">
-      <div class="label">今日总收入</div>
+      <div class="label">Today revenue</div>
       <div class="value" style="color: #15803d">{{ today_stats.revenue|floatformat:2 }}</div>
     </div>
     <div class="card">
-      <div class="label">今日总成本</div>
+      <div class="label">Today cost</div>
       <div class="value" style="color: #b45309">{{ today_stats.cost|floatformat:2 }}</div>
     </div>
     <div class="card">
-      <div class="label">今日总利润</div>
+      <div class="label">Today profit</div>
       <div class="value" style="color: #2563eb">{{ today_stats.profit|floatformat:2 }}</div>
     </div>
   </div>
 
   <div class="card" style="margin-bottom: 16px">
-    <h3 style="margin: 0 0 4px 0; font-size: 18px">客户对账统计</h3>
-    <p class="muted" style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600">客户欠款排行榜（按欠款金额从高到低）</p>
+    <h3 style="margin: 0 0 4px 0; font-size: 18px">Customer A/R</h3>
+    <p class="muted" style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600">Outstanding debt (highest first)</p>
     <p class="muted" style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.5">
-      仅统计「待处理」订单的未结应收账款。催款状态：超信用额度为「高风险」；否则按「最早一笔待处理订单」未结算天数分档（&lt;3天正常，3～7天提醒，8～15天催款，&gt;15天严重催款）。
+      Pending orders only. Dunning: over credit limit = high risk; else by age of oldest pending order (&lt;3d OK, 3–7d reminder, 8–15d collection, &gt;15d urgent).
     </p>
     {% if customer_debts %}
       <table class="table" style="margin: 0">
         <thead>
           <tr>
-            <th>客户名称</th>
-            <th>当前等级</th>
-            <th>欠款金额</th>
-            <th>信用额度</th>
-            <th>催款状态</th>
-            <th>供货建议</th>
-            <th>催款</th>
+            <th>Customer</th>
+            <th>Tier</th>
+            <th>Debt</th>
+            <th>Limit</th>
+            <th>Dunning</th>
+            <th>Supply</th>
+            <th>Remind</th>
           </tr>
         </thead>
         <tbody>
@@ -49,7 +49,7 @@
               </td>
               <td>
                 {% if row.no_limit %}
-                  <span class="muted">无授信</span>
+                  <span class="muted">No credit</span>
                 {% else %}
                   {{ row.credit_limit|floatformat:2 }}
                 {% endif %}
@@ -95,7 +95,7 @@
                   data-limit="{{ row.credit_limit }}"
                   onclick="teaShowDunningMessage(this)"
                 >
-                  一键催款
+                  Remind
                 </button>
               </td>
             </tr>
@@ -103,7 +103,7 @@
         </tbody>
       </table>
     {% else %}
-      <p class="muted" style="margin: 0">暂无未结清对账数据</p>
+      <p class="muted" style="margin: 0">No open A/R</p>
     {% endif %}
   </div>
 
@@ -113,27 +113,26 @@
       var amount = btn.getAttribute("data-amount") || "0";
       var noLimit = btn.getAttribute("data-nolimit") === "1";
       var limit = btn.getAttribute("data-limit") || "0";
-      var limitLine = noLimit ? "当前信用额度为 无授信。" : "当前信用额度为 $" + limit + "。";
+      var limitLine = noLimit ? "No credit limit on file." : "Credit limit: $" + limit + ".";
       var text =
         "Hi " +
         name +
-        "，\n\n" +
-        "您当前未结算金额为 $" +
+        ",\n\n" +
+        "Outstanding balance: $" +
         amount +
-        "，\n" +
+        ".\n" +
         limitLine +
         "\n\n" +
-        "请尽快安排付款，\n" +
-        "以确保原材料正常供应。\n\n" +
-        "谢谢。";
+        "Please arrange payment soon so we can keep supplying materials.\n\n" +
+        "Thank you.";
       alert(text);
     }
   </script>
 
-  <h2 style="margin: 0 0 12px 0">订单列表</h2>
+  <h2 style="margin: 0 0 12px 0">Orders</h2>
 
   <form method="get" class="card" style="margin-bottom: 16px">
-    <p class="muted" style="margin: 0 0 10px; font-size: 13px">按时间、履约状态、结算状态、客户筛选</p>
+    <p class="muted" style="margin: 0 0 10px; font-size: 13px">Filter by date, workflow, settlement, customer</p>
     <div
       style="
         display: grid;
@@ -144,47 +143,47 @@
       "
     >
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">关键词</div>
-        <input type="text" name="q" value="{{ filter_q }}" placeholder="客户名/手机/订单号" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db" />
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Search</div>
+        <input type="text" name="q" value="{{ filter_q }}" placeholder="Name / phone / order #" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db" />
       </div>
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">客户</div>
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Customer</div>
         <select name="customer_id" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db">
-          <option value="" {% if not filter_customer_id %}selected{% endif %}>全部</option>
+          <option value="" {% if not filter_customer_id %}selected{% endif %}>All</option>
           {% for c in filter_customers %}
             <option value="{{ c.id }}" {% if c.id|stringformat:"s" == filter_customer_id %}selected{% endif %}>{{ c.name }}</option>
           {% endfor %}
         </select>
       </div>
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">履约状态</div>
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Workflow</div>
         <select name="workflow_status" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db">
-          <option value="">全部</option>
+          <option value="">All</option>
           {% for value, label in workflow_choices %}
             <option value="{{ value }}" {% if filter_workflow == value %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">结算状态</div>
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">Settlement</div>
         <select name="status" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db">
-          <option value="">全部</option>
+          <option value="">All</option>
           {% for value, label in status_choices %}
             <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">开始日期</div>
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">From</div>
         <input type="date" name="date_from" value="{{ filter_date_from }}" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db" />
       </div>
       <div>
-        <div class="muted" style="font-size: 12px; margin-bottom: 4px">结束日期</div>
+        <div class="muted" style="font-size: 12px; margin-bottom: 4px">To</div>
         <input type="date" name="date_to" value="{{ filter_date_to }}" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db" />
       </div>
     </div>
-    <button type="submit" class="btn" style="padding: 8px 16px; font-size: 14px">筛选</button>
-    <a href="/orders/" class="btn secondary" style="padding: 8px 16px; font-size: 14px; margin-left: 8px">重置</a>
+    <button type="submit" class="btn" style="padding: 8px 16px; font-size: 14px">Apply</button>
+    <a href="/orders/" class="btn secondary" style="padding: 8px 16px; font-size: 14px; margin-left: 8px">Reset</a>
   </form>
 
   <div class="card">
@@ -192,18 +191,18 @@
       <table class="table">
         <thead>
           <tr>
-            <th>订单ID</th>
-            <th>客户名称</th>
-            <th>商品信息</th>
-            <th>订单金额</th>
-            <th>成本</th>
-            <th>利润</th>
-            <th>创建时间</th>
-            <th>履约</th>
-            <th>结算</th>
-            <th>结算方式</th>
-            <th>收款状态</th>
-            <th>操作</th>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th>Amount</th>
+            <th>Cost</th>
+            <th>Profit</th>
+            <th>Created</th>
+            <th>Workflow</th>
+            <th>Settlement</th>
+            <th>Terms</th>
+            <th>Paid</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -216,7 +215,7 @@
                 {% if row.order.customer %}
                   {{ row.order.customer.name }}
                 {% else %}
-                  未指定客户
+                  No customer
                 {% endif %}
               </td>
               <td>
@@ -228,52 +227,52 @@
               <td>
                 <span style="font-weight: 600; color: #2563eb">{{ row.profit|floatformat:2 }}</span>
                 {% if row.profit is not None and row.profit < 0 %}
-                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">异常利润</span>
+                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">Loss</span>
                 {% endif %}
                 {% if row.profit_rate is not None and row.profit_rate < 10 %}
-                  <span style="margin-left:6px;color:#ea580c;font-weight:700;">利润率偏低</span>
+                  <span style="margin-left:6px;color:#ea580c;font-weight:700;">Low margin</span>
                 {% endif %}
                 {% if row.cost_missing %}
-                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">未设置成本</span>
+                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">No cost</span>
                 {% endif %}
               </td>
               <td>{{ row.order.created_at|date:"Y-m-d H:i:s" }}</td>
               <td>
                 {% if row.order.workflow_status == "cancelled" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-weight: 600">已取消</span>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-weight: 600">Cancelled</span>
                 {% elif row.order.workflow_status == "pending_confirm" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-weight: 600">待确认</span>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-weight: 600">Pending</span>
                 {% elif row.order.workflow_status == "preparing" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fff7ed; color: #9a3412; font-weight: 600">备货中</span>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fff7ed; color: #9a3412; font-weight: 600">Preparing</span>
                 {% elif row.order.workflow_status == "shipped" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ede9fe; color: #5b21b6; font-weight: 600">已发货</span>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ede9fe; color: #5b21b6; font-weight: 600">Shipped</span>
                 {% elif row.order.workflow_status == "completed" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-weight: 600">已完成</span>
+                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-weight: 600">Done</span>
                 {% else %}
                   <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #4b5563">{{ row.order.get_workflow_status_display }}</span>
                 {% endif %}
               </td>
               <td>
                 {% if row.order.status == "pending" %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#e5e7eb;color:#374151;">待处理</span>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#e5e7eb;color:#374151;">Pending</span>
                 {% elif row.order.status == "paid" %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">已结算</span>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">Settled</span>
                 {% else %}
                   <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#4b5563;">{{ row.order.status }}</span>
                 {% endif %}
               </td>
               <td>
                 {% if row.order.settlement_type == "credit" %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#fff7ed;color:#9a3412;">挂账</span>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#fff7ed;color:#9a3412;">Credit</span>
                 {% else %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">现结</span>
+                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">Cash</span>
                 {% endif %}
               </td>
               <td>
                 {% if row.order.status == "paid" %}
-                  <span style="color:#15803d;font-weight:600;">已收款</span>
+                  <span style="color:#15803d;font-weight:600;">Paid</span>
                 {% else %}
-                  <span style="color:#b45309;font-weight:600;">未收款</span>
+                  <span style="color:#b45309;font-weight:600;">Unpaid</span>
                 {% endif %}
               </td>
               <td>
@@ -283,32 +282,32 @@
                       <span
                         class="btn secondary"
                         style="padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed;"
-                        title="未设置成本"
-                      >确认订单（未设置成本）</span>
+                        title="Cost not set"
+                      >Confirm (no cost)</span>
                     {% elif row.profit is not None and row.profit < 0 %}
                       <span
                         class="btn secondary"
                         style="padding: 6px 10px; font-size: 12px; margin-right: 6px; opacity: .55; cursor: not-allowed;"
-                        title="亏损订单"
-                      >确认订单（亏损订单）</span>
+                        title="Negative profit"
+                      >Confirm (loss)</span>
                     {% elif row.profit_rate is not None and row.profit_rate < 5 %}
                       <a
                         href="{% url 'order-confirm' row.order.id %}"
                         class="btn"
                         style="padding: 6px 10px; font-size: 12px; margin-right: 6px"
-                        onclick="return confirm('利润过低，是否继续？');"
-                      >确认订单</a>
+                        onclick="return confirm('Low margin. Continue?');"
+                      >Confirm</a>
                     {% else %}
-                      <a href="{% url 'order-confirm' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">确认订单</a>
+                      <a href="{% url 'order-confirm' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">Confirm</a>
                     {% endif %}
-                    <a href="{% url 'order-cancel' row.order.id %}" class="btn secondary" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">取消订单</a>
+                    <a href="{% url 'order-cancel' row.order.id %}" class="btn secondary" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">Cancel</a>
                   {% endif %}
-                  <a href="{% url 'order_paid' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">标记已收款</a>
-                  <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">更新状态</a>
+                  <a href="{% url 'order_paid' row.order.id %}" class="btn" style="padding: 6px 10px; font-size: 12px; margin-right: 6px">Mark paid</a>
+                  <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">Edit</a>
                 {% elif row.order.status == "paid" %}
-                  <span style="color: #15803d; font-weight: 600">已结算</span>
+                  <span style="color: #15803d; font-weight: 600">Settled</span>
                 {% else %}
-                  <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">更新状态</a>
+                  <a class="btn secondary" href="{% url 'order-status-update' row.order.id %}" style="padding: 6px 10px; font-size: 12px">Edit</a>
                 {% endif %}
               </td>
             </tr>
@@ -316,8 +315,7 @@
         </tbody>
       </table>
     {% else %}
-      <p class="muted" style="margin: 0">暂无订单</p>
+      <p class="muted" style="margin: 0">No orders</p>
     {% endif %}
   </div>
 {% endblock %}
-

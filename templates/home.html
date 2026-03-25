@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>奶茶点单系统</title>
+    <title>Boba order demo</title>
     <style>
         * {
             box-sizing: border-box;
@@ -11,7 +11,7 @@
 
         body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
             background: #f5f5f5;
             color: #222;
         }
@@ -185,21 +185,21 @@
     </style>
 </head>
 <body>
-    <div class="topbar">🧋 奶茶点单系统</div>
+    <div class="topbar">🧋 Boba order demo</div>
 
     <div class="page">
         <aside class="sidebar">
             <h3>Categories</h3>
-            <div class="category">招牌奶茶</div>
-            <div class="category">热门推荐</div>
-            <div class="category">今日主推</div>
+            <div class="category">Signature</div>
+            <div class="category">Popular</div>
+            <div class="category">Today’s picks</div>
         </aside>
 
         <main class="content">
-            <h2>精选饮品</h2>
+            <h2>Drinks</h2>
 
             <div class="status-bar">
-                <div class="status-box">🛒 今日已点：{{ count }} 杯</div>
+                <div class="status-box">🛒 Cups today: {{ count }}</div>
             </div>
 
             {% if message %}
@@ -209,22 +209,22 @@
             {% endif %}
 
             <div class="tip">
-                点击“立即下单”后，系统会自动创建订单，并按配方自动扣减库存。
+                Tap Order to create an order and deduct stock from recipes.
             </div>
 
             <div class="grid">
                 <div class="card">
                     <div class="drink-image">🥤</div>
-                    <div class="drink-title">奶茶1号</div>
+                    <div class="drink-title">Boba #1</div>
                     <div class="drink-desc">
-                        经典奶香口味，顺滑好喝，适合大多数顾客。
+                        Classic milk tea — smooth and easy to drink.
                     </div>
                     <div class="bottom-row">
                         <div class="price">¥18</div>
                         <form method="post" style="margin:0;">
                             {% csrf_token %}
-                            <button class="buy-btn" name="drink" value="奶茶1号" type="submit">
-                                立即下单
+                            <button class="buy-btn" name="drink" value="Boba #1" type="submit">
+                                Order
                             </button>
                         </form>
                     </div>
@@ -232,16 +232,16 @@
 
                 <div class="card">
                     <div class="drink-image">🧋</div>
-                    <div class="drink-title">奶茶2号</div>
+                    <div class="drink-title">Boba #2</div>
                     <div class="drink-desc">
-                        奶味更浓，口感更厚实，适合喜欢重奶香的顾客。
+                        Richer milk flavor for those who like it creamy.
                     </div>
                     <div class="bottom-row">
                         <div class="price">¥22</div>
                         <form method="post" style="margin:0;">
                             {% csrf_token %}
-                            <button class="buy-btn" name="drink" value="奶茶2号" type="submit">
-                                立即下单
+                            <button class="buy-btn" name="drink" value="Boba #2" type="submit">
+                                Order
                             </button>
                         </form>
                     </div>

@@ -27,6 +27,7 @@ from .models import (
     ProductCategory,
     StockLog,
     UserRole,
+    Vehicle,
 )
 from .money_utils import money_float
 from .resources import ProductCategoryResource, ProductResource
@@ -404,6 +405,13 @@ class OrderItemInline(admin.TabularInline):
         return False
 
 
+@admin.register(Vehicle)
+class VehicleAdmin(admin.ModelAdmin):
+    list_display = ("name", "plate_number", "capacity", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name", "plate_number")
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     inlines = (OrderItemInline,)
@@ -425,6 +433,10 @@ class OrderAdmin(admin.ModelAdmin):
         "calc_profit_display",
         "profit_rate_display",
         "created_at",
+        "delivery_status",
+        "assigned_vehicle",
+        "assigned_driver",
+        "delivery_date",
     )
     search_fields = (
         "name",
@@ -445,8 +457,10 @@ class OrderAdmin(admin.ModelAdmin):
         "created_at",
         "customer",
         "ordered_by",
+        "delivery_status",
     )
     list_editable = ("workflow_status", "status", "settlement_type", "payment_method", "payment_status")
+    raw_id_fields = ("assigned_vehicle", "assigned_driver")
     fields = (
         "name",
         "customer",
@@ -464,6 +478,11 @@ class OrderAdmin(admin.ModelAdmin):
         "contact_name",
         "store_name",
         "delivery_address",
+        "assigned_vehicle",
+        "assigned_driver",
+        "delivery_status",
+        "delivery_date",
+        "delivery_notes",
         "stripe_session_id",
         "stock_deducted",
         "total_revenue_display",
