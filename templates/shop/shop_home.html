@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -10,6 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="{% static 'css/ui-system.css' %}" />
     {{ products|json_script:"shop-products-data" }}
     <style>
       :root {
@@ -154,6 +156,44 @@
       }
       .shop-user a:hover {
         color: var(--accent);
+      }
+      .shop-user-link-ghost {
+        margin-left: 8px;
+        opacity: 0.8;
+      }
+      .shop-link-btn {
+        text-decoration: none;
+        text-align: center;
+      }
+      .shop-link-btn + .shop-link-btn {
+        margin-left: 6px;
+      }
+      .shop-cart-mini.profile-link {
+        margin-left: 8px;
+      }
+      .shop-tier-note {
+        max-width: 1320px;
+        margin: 6px auto 0;
+        padding: 0 20px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+      .shop-empty {
+        color: var(--muted);
+        margin: 0;
+        grid-column: 1 / -1;
+        font-size: 14px;
+      }
+      .cart-head-note {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .modal-hint {
+        margin: -6px 0 12px;
+        font-size: 13px;
+        color: var(--muted);
       }
       .shop-layout {
         max-width: 1320px;
@@ -1148,8 +1188,8 @@
           🛒 Cart <strong id="cart-badge">0</strong>
         </a>
         {% if shop_logged_in %}
-          <a href="{% url 'my-orders' %}" class="shop-cart-mini" style="text-decoration: none">Orders</a>
-          <a href="{% url 'profile' %}" class="shop-cart-mini" style="text-decoration: none; margin-left: 8px">Profile</a>
+          <a href="{% url 'my-orders' %}" class="shop-cart-mini shop-link-btn">Orders</a>
+          <a href="{% url 'profile' %}" class="shop-cart-mini shop-link-btn profile-link">Profile</a>
         {% endif %}
         <div class="shop-user">
           {% if shop_logged_in %}
@@ -1158,14 +1198,14 @@
             <a href="{% url 'profile' %}">Profile</a>
             <a href="{% url 'logout' %}">Logout</a>
           {% else %}
-            <a href="{% url 'login' %}" class="btn-go" style="text-decoration: none; text-align: center">Sign in</a>
-            <a href="{% url 'register' %}" class="btn-go" style="text-decoration: none; text-align: center; margin-left: 6px">Register</a>
+            <a href="{% url 'login' %}" class="btn-go shop-link-btn">Sign in</a>
+            <a href="{% url 'register' %}" class="btn-go shop-link-btn">Register</a>
           {% endif %}
-          <a href="/" style="margin-left: 8px; opacity: 0.8">Staff Portal</a>
+          <a href="/" class="shop-user-link-ghost">Staff Portal</a>
         </div>
       </div>
     </header>
-    <p style="max-width: 1320px; margin: 6px auto 0; padding: 0 20px; font-size: 12px; color: var(--muted); text-align: center">
+    <p class="shop-tier-note">
       Tier pricing: C (Base) · B (5% off) · A (10% off) · VIP (15% off)
     </p>
 
@@ -1214,7 +1254,7 @@
           {% for product in products %}
             {% include "shop/_product_card.html" with product=product shop_customer=shop_customer shop_can_order=shop_can_order shop_order_block_hint=shop_order_block_hint %}
           {% empty %}
-            <p id="shop-catalog-empty" style="color: var(--muted); margin: 0; grid-column: 1 / -1; font-size: 14px">No products</p>
+            <p id="shop-catalog-empty" class="shop-empty">No products</p>
           {% endfor %}
         </div>
       </main>
@@ -1222,7 +1262,7 @@
       <aside class="shop-cart-panel" id="shop-cart-anchor">
         <h3>
           Cart
-          <span style="font-size: 12px; font-weight: 500; color: var(--muted)">
+          <span class="cart-head-note">
             {% if not shop_customer %}
               (Sign in to place an order)
             {% elif shop_can_order %}
@@ -1249,7 +1289,7 @@
       <div class="order-modal-backdrop" id="order-modal-backdrop"></div>
       <div class="order-modal-box" role="dialog" aria-labelledby="order-modal-title">
         <h3 id="order-modal-title">Confirm order</h3>
-        <p style="margin: -6px 0 12px; font-size: 13px; color: var(--muted)">Enter shipping details. Your wholesale order will be created after submit.</p>
+        <p class="modal-hint">Enter shipping details. Your wholesale order will be created after submit.</p>
         <form method="post" action="{% url 'shop-submit-order' %}" id="shop-order-form-modal">
           {% csrf_token %}
           <input type="hidden" name="next" value="home" />
