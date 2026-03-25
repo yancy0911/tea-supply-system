@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="card-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr))">
+  <div
+    class="card-grid"
+    style="margin-bottom: 16px; grid-template-columns: {% if hide_financial_fields %}1fr{% else %}repeat(3, minmax(0, 1fr)){% endif %}"
+  >
     <div class="card">
       <div class="label">Today revenue</div>
       <div class="value" style="color: #15803d">{{ today_stats.revenue|floatformat:2 }}</div>
     </div>
+    {% if not hide_financial_fields %}
     <div class="card">
       <div class="label">Today cost</div>
       <div class="value" style="color: #b45309">{{ today_stats.cost|floatformat:2 }}</div>
@@ -14,8 +18,10 @@
       <div class="label">Today profit</div>
       <div class="value" style="color: #2563eb">{{ today_stats.profit|floatformat:2 }}</div>
     </div>
+    {% endif %}
   </div>
 
+  {% if not hide_financial_fields %}
   <div class="card" style="margin-bottom: 16px">
     <h3 style="margin: 0 0 4px 0; font-size: 18px">Customer A/R</h3>
     <p class="muted" style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600">Outstanding debt (highest first)</p>
@@ -106,6 +112,7 @@
       <p class="muted" style="margin: 0">No open A/R</p>
     {% endif %}
   </div>
+  {% endif %}
 
   <script>
     function teaShowDunningMessage(btn) {

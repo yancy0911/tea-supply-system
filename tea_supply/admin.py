@@ -879,3 +879,19 @@ class CreditApplicationAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return bool(request.user.is_authenticated and request.user.is_superuser)
+
+
+def _tea_admin_site_has_permission(request):
+    """Only owner (or superuser) may use Django admin; manager/warehouse/driver blocked."""
+    if not request.user.is_authenticated or not request.user.is_active:
+        return False
+    if request.user.is_superuser:
+        return True
+    if not request.user.is_staff:
+        return False
+    rp = getattr(request.user, "role_profile", None)
+    role = getattr(rp, "role", None) if rp else None
+    return role == UserRole.Role.OWNER
+
+
+admin.site.has_permission = _tea_admin_site_has_permission

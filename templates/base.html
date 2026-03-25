@@ -25,19 +25,30 @@
         <div class="topbar-brand">Boba Supply</div>
         <div class="nav">
           <a href="/shop/">Wholesale Shop</a>
-          {% if user.is_authenticated and user.is_staff %}
-          <a href="/">Staff Portal</a>
-          {% if user.is_superuser %}
-          <a href="/dashboard/">Dashboard</a>
-          {% endif %}
-          <a href="/orders/">Orders</a>
-          <a href="/reports/">Reports</a>
-          <a href="/reports/customers/">Customer insights</a>
-          {% if user.is_superuser %}
-          <a href="/inventory/">Inventory</a>
-          <a href="/replenishment/">Replenishment</a>
-          <a href="/admin/">Admin</a>
-          {% endif %}
+          {% if user.is_authenticated %}
+            {% if is_portal_owner %}
+              <a href="/">Staff Portal</a>
+              <a href="/dashboard/">Dashboard</a>
+              <a href="/orders/">Orders</a>
+              <a href="/reports/">Reports</a>
+              <a href="/reports/customers/">Customer insights</a>
+              <a href="/inventory/">Inventory</a>
+              <a href="/replenishment/">Replenishment</a>
+              <a href="/driver/orders/">Driver</a>
+              {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
+            {% elif is_portal_manager %}
+              <a href="/">Staff Portal</a>
+              <a href="/dashboard/">Dashboard</a>
+              <a href="/orders/">Orders</a>
+            {% elif is_portal_warehouse %}
+              <a href="/inventory/">Inventory</a>
+              <a href="/replenishment/">Replenishment</a>
+            {% elif is_portal_driver %}
+              <a href="/driver/orders/">Driver orders</a>
+            {% elif is_portal_customer %}
+              <a href="/my-orders/">My orders</a>
+              <a href="/profile/">Profile</a>
+            {% endif %}
           {% endif %}
         </div>
         <div class="topbar-right">

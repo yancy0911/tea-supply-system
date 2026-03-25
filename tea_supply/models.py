@@ -498,7 +498,9 @@ class InventoryLog(models.Model):
 class UserRole(models.Model):
     class Role(models.TextChoices):
         OWNER = "owner", "老板"
-        STAFF = "staff", "员工"
+        MANAGER = "manager", "经理"
+        WAREHOUSE = "warehouse", "仓库"
+        DRIVER = "driver", "司机"
         CUSTOMER = "customer", "客户"
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="role_profile")

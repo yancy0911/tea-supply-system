@@ -32,6 +32,8 @@ from django.middleware.csrf import get_token
 from .credit_debt import apply_credit_debt_if_needed, reverse_credit_debt_if_counted
 from .money_utils import money_dec, money_float, money_q2
 from tea_supply.utils.pricing import resolve_product_price_for_customer
+from tea_supply.rbac import get_effective_role, owner_required, role_required
+
 from .models import (
     CUSTOMER_LEVEL_DISCOUNT_RATES,
     CreditApplication,
@@ -142,24 +144,6 @@ def _unsettled_order_statuses():
     return (Order.Status.PENDING,)
 
 
-def _is_internal_user(user):
-    if not user.is_authenticated:
-        return False
-    rp = getattr(user, "role_profile", None)
-    if rp and rp.role in (UserRole.Role.OWNER, UserRole.Role.STAFF):
-        return True
-    return bool(user.is_staff)
-
-
-def _is_boss(user):
-    if not user.is_authenticated:
-        return False
-    rp = getattr(user, "role_profile", None)
-    if rp and rp.role == UserRole.Role.OWNER:
-        return True
-    return bool(user.is_superuser)
-
-
 def get_user_company(user):
     if not user or not getattr(user, "is_authenticated", False):
         return None
@@ -167,28 +151,6 @@ def get_user_company(user):
     if prof and getattr(prof, "company_id", None):
         return prof.company
     return None
-
-
-def internal_user_required(view_func):
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not _is_internal_user(request.user):
-            return HttpResponseForbidden("You do not have access to this page.")
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped
-
-
-def boss_required(view_func):
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not _is_boss(request.user):
-            return HttpResponseForbidden(
-                "Only the business owner may access this page."
-            )
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped
 
 
 def unsettled_amount_for_customer(customer):
@@ -848,7 +810,7 @@ def _dunning_time_and_supply(amount, credit_limit, days_since_earliest):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def wholesale_order_entry(request):
     company = get_user_company(request.user)
     customers = Customer.objects.all().order_by("name")
@@ -1521,7 +1483,7 @@ def _replenishment_risk_and_action(stock, sold_30d, days_cover):
 
 
 @login_required
-@boss_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.WAREHOUSE)
 def replenishment_dashboard(request):
     """
     老板决策版补货预警：风险分级、排序、汇总、建议采购量（60 天需求 − 当前库存）。
@@ -1622,7 +1584,7 @@ def demo_landing(request):
 
 
 @login_required
-@boss_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.WAREHOUSE)
 def inventory_list(request):
     company = get_user_company(request.user)
     products = Product.objects.order_by("name", "sku")
@@ -1676,7 +1638,7 @@ def inventory_list(request):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def orders_list(request):
     company = get_user_company(request.user)
     unsettled_items = OrderItem.objects.filter(
@@ -1805,6 +1767,18 @@ def orders_list(request):
             }
         )
 
+    hide_financial_fields = get_effective_role(request.user) == UserRole.Role.MANAGER
+    if hide_financial_fields:
+        today_stats = {
+            "revenue": today_stats["revenue"],
+            "cost": None,
+            "profit": None,
+        }
+        for row in order_rows:
+            row.pop("cost", None)
+            row.pop("profit", None)
+            row.pop("profit_rate", None)
+
     return render(
         request,
         "orders_list.html",
@@ -1812,6 +1786,7 @@ def orders_list(request):
             "order_rows": order_rows,
             "customer_debts": customer_debts,
             "today_stats": today_stats,
+            "hide_financial_fields": hide_financial_fields,
             "filter_workflow": wf,
             "filter_status": st,
             "filter_q": q,
@@ -1839,7 +1814,7 @@ def _customer_risk_status_label(customer):
 
 
 @login_required
-@internal_user_required
+@owner_required
 def customer_insights_dashboard(request):
     """
     客户价值与风险看板（稳版）：只读统计，口径与基础报表一致
@@ -1933,7 +1908,7 @@ def customer_insights_dashboard(request):
 
 
 @login_required
-@internal_user_required
+@owner_required
 def reports_dashboard(request):
     """基础报表：销售/利润概览 + 客户/商品 TOP10。"""
     today = timezone.localdate()
@@ -2040,7 +2015,7 @@ def reports_dashboard(request):
 
 
 @login_required
-@boss_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def boss_dashboard(request):
     """Business control center for owner (B2B/ERP-style)."""
     company = get_user_company(request.user)
@@ -2243,10 +2218,13 @@ def boss_dashboard(request):
         Customer.objects.filter(level=Customer.ValueLevel.PREMIUM).count()
     )
 
+    show_financial_kpis = get_effective_role(request.user) == UserRole.Role.OWNER
+
     return render(
         request,
         "boss_dashboard.html",
         {
+            "show_financial_kpis": show_financial_kpis,
             "kpi_today_order_count": kpi_today_order_count,
             "kpi_today_sales": kpi_today_sales,
             "kpi_today_cost": kpi_today_cost,
@@ -2271,7 +2249,7 @@ def boss_dashboard(request):
 
 
 @login_required
-@boss_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 @require_POST
 def boss_start_delivery(request, order_id):
     """Owner action: assigned -> delivering (one-click from dashboard)."""
@@ -2322,7 +2300,7 @@ def _confirm_order_guard_reason(order):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def mark_order_paid(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     if order.status == Order.Status.PAID:
@@ -2351,7 +2329,7 @@ def mark_order_paid(request, order_id):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def confirm_order(request, order_id):
     try:
         with transaction.atomic():
@@ -2378,7 +2356,7 @@ def confirm_order(request, order_id):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def cancel_order(request, order_id):
     with transaction.atomic():
         order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
@@ -2401,7 +2379,7 @@ def _order_status_update_context(order):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def order_status_update(request, order_id):
     """
     订单详情页保存入口：履约/结算方式/支付相关字段 + 结算状态（应收账款）。
@@ -2762,7 +2740,7 @@ def update_transfer_reference(request, order_id):
 
 
 @login_required
-@internal_user_required
+@role_required(UserRole.Role.OWNER, UserRole.Role.MANAGER)
 def mark_order_payment_failed(request, order_id):
     order = get_object_or_404(Order, pk=order_id)
     order.payment_status = Order.PaymentStatus.CANCELLED
@@ -2968,6 +2946,7 @@ def product_csv_import(request):
 
 
 @login_required(login_url="/login/")
+@role_required(UserRole.Role.DRIVER)
 @require_http_methods(["GET", "POST"])
 def driver_orders(request):
     """Driver V1: orders where assigned_driver is the current user."""

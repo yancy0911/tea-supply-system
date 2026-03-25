@@ -173,6 +173,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'tea_supply.context_processors.currency',
+                'tea_supply.context_processors.portal_rbac',
             ],
         },
     },
