@@ -314,7 +314,7 @@
 
             <div class="card">
               <h2 class="section-title">[2] Shipping</h2>
-              {% csrf_token %}
+              <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token_value }}" />
               <input type="hidden" name="next" value="checkout" />
               <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
               <input type="hidden" name="settlement_type" id="settlement-type-hidden" value="cash" />

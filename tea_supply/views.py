@@ -24,7 +24,10 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.middleware.csrf import get_token
 
 from .credit_debt import apply_credit_debt_if_needed, reverse_credit_debt_if_counted
 from .money_utils import money_dec, money_float, money_q2
@@ -1237,6 +1240,8 @@ def credit_home_view(request):
 
 
 @require_GET
+@never_cache
+@ensure_csrf_cookie
 def shop_checkout(request):
     if not request.user.is_authenticated:
         return redirect(f"/login/?next={request.path}")
@@ -1251,7 +1256,8 @@ def shop_checkout(request):
         .order_by("category__sort_order", "category_id", "name")
     )
     shop_items = [_shop_product_row(customer, p) for p in products]
-    return render(
+    csrf_token_value = get_token(request)
+    response = render(
         request,
         "shop/shop_checkout.html",
         {
@@ -1268,8 +1274,12 @@ def shop_checkout(request):
             "current_debt": (
                 money_float(customer.current_debt or 0.0) if customer else 0.0
             ),
+            "csrf_token_value": csrf_token_value,
         },
     )
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
 
 @require_GET
@@ -1439,6 +1449,7 @@ def shop_submit_order(request):
 
 @login_required
 @require_POST
+@csrf_protect
 def checkout_submit_order(request):
     """Checkout 专用提交入口，复用商城下单逻辑。"""
     return shop_submit_order(request)

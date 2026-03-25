@@ -4,7 +4,7 @@
     .dash-grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 12px;
+      gap: 14px;
     }
     @media (max-width: 1100px) {
       .dash-grid {
@@ -18,10 +18,14 @@
     }
     .kpi-card {
       background: #fff;
-      border-radius: 12px;
-      padding: 14px 16px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
-      border: 1px solid #eef2f7;
+      border-radius: 14px;
+      padding: 16px 18px;
+      box-shadow: 0 4px 14px rgba(16, 24, 40, 0.08);
+      border: 1px solid #e8edf5;
+      min-height: 128px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
     .kpi-card.is-danger {
       border-color: #fecaca;
@@ -40,7 +44,7 @@
     }
     .kpi-value {
       margin-top: 8px;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 900;
       color: #111827;
     }
@@ -79,6 +83,22 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
+    .dash-main {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+      gap: 14px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 1150px) {
+      .dash-main {
+        grid-template-columns: 1fr;
+      }
+    }
+    .dash-main-left {
+      display: grid;
+      gap: 14px;
+    }
     @media (max-width: 1100px) {
       .grid-3 {
         grid-template-columns: 1fr;
@@ -99,19 +119,21 @@
     .mini-table td.actions,
     .mini-table th.actions {
       text-align: right;
-      white-space: nowrap;
+      white-space: normal;
+      width: 172px;
     }
     .row-actions {
       display: inline-flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     .btn-mini {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      height: 32px;
+      height: 30px;
       padding: 0 12px;
       border-radius: 10px;
       border: 1px solid transparent;
@@ -121,6 +143,7 @@
       cursor: pointer;
       white-space: nowrap;
       box-sizing: border-box;
+      min-width: 82px;
     }
     .btn-mini.primary {
       background: #2563eb;
@@ -200,69 +223,70 @@
     }
   </style>
 
-  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom: 12px;">
-    <h2 style="margin:0;">Business control center</h2>
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom: 14px;">
+    <h2 style="margin:0;">老板驾驶舱</h2>
     <div class="muted" style="font-size: 13px; font-weight: 700;">
-      <a href="/orders/" style="text-decoration:none;">Orders</a>
+      <a href="/orders/" style="text-decoration:none;">订单</a>
       &nbsp;·&nbsp;
-      <a href="/reports/" style="text-decoration:none;">Reports</a>
+      <a href="/reports/" style="text-decoration:none;">报表</a>
       &nbsp;·&nbsp;
-      <a href="/admin/" style="text-decoration:none;">Admin</a>
+      <a href="/admin/" style="text-decoration:none;">后台</a>
     </div>
   </div>
 
   <div class="dash-grid" style="margin-bottom: 12px;">
     <div class="kpi-card">
-      <div class="kpi-label">Today Orders</div>
+      <div class="kpi-label">今日订单</div>
       <div class="kpi-value">{{ kpi_today_order_count }}</div>
-      <div class="kpi-sub">All non-cancelled orders today</div>
+      <div class="kpi-sub">今日有效订单数</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Revenue Today</div>
+      <div class="kpi-label">今日收入</div>
       <div class="kpi-value">{{ kpi_today_sales|floatformat:2 }}</div>
-      <div class="kpi-sub">Sum of revenue today</div>
+      <div class="kpi-sub">当日收入汇总</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Cost Today</div>
+      <div class="kpi-label">今日成本</div>
       <div class="kpi-value">{{ kpi_today_cost|floatformat:2 }}</div>
-      <div class="kpi-sub">Sum of cost today</div>
+      <div class="kpi-sub">当日成本汇总</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Profit Today</div>
+      <div class="kpi-label">今日利润</div>
       <div class="kpi-value">{{ kpi_today_profit|floatformat:2 }}</div>
-      <div class="kpi-sub">Margin {{ kpi_today_margin_pct|floatformat:2 }}%</div>
+      <div class="kpi-sub">利润率 {{ kpi_today_margin_pct|floatformat:2 }}%</div>
     </div>
     <div class="kpi-card {% if kpi_unpaid_order_count|default:0|add:0 > 0 %}is-danger{% endif %}">
-      <div class="kpi-label">Outstanding</div>
+      <div class="kpi-label">待收款</div>
       <div class="kpi-value">{{ kpi_unpaid_order_count }}</div>
-      <div class="kpi-sub">Settlement status = pending</div>
+      <div class="kpi-sub">未结算订单数</div>
     </div>
     <div class="kpi-card {% if kpi_dispatch_assigned_count|default:0|add:0 > 0 %}is-warn{% endif %}">
-      <div class="kpi-label">To Deliver</div>
+      <div class="kpi-label">待配送</div>
       <div class="kpi-value">{{ kpi_dispatch_assigned_count }}</div>
-      <div class="kpi-sub">delivery_status = assigned</div>
+      <div class="kpi-sub">已分配待出发</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">In Delivery</div>
+      <div class="kpi-label">配送中</div>
       <div class="kpi-value">{{ kpi_dispatch_delivering_count }}</div>
-      <div class="kpi-sub">delivery_status = delivering</div>
+      <div class="kpi-sub">正在配送</div>
     </div>
   </div>
 
-  <div class="grid-3" style="margin-bottom: 12px;">
-    <div class="section">
+  <div class="dash-main">
+    <div class="dash-main-left">
+      <div class="section">
       <div class="section-head">
-        <h3 class="section-title">Recent orders</h3>
-        <span class="section-hint">Latest 10</span>
+        <h3 class="section-title">近期订单</h3>
+        <span class="section-hint">最新 10 条</span>
       </div>
       <table class="mini-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Customer</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th class="actions">Action</th>
+            <th style="width:84px;">订单号</th>
+            <th>客户</th>
+            <th style="width:120px;">金额</th>
+            <th style="width:120px;">状态</th>
+            <th class="actions">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -273,9 +297,9 @@
               <td>{{ o.total_revenue|floatformat:2 }}</td>
               <td>
                 {% if o.status == "paid" %}
-                  <span class="pill green">Paid ✓</span>
+                  <span class="pill green">已支付</span>
                 {% elif o.workflow_status == "cancelled" %}
-                  <span class="pill">Cancelled</span>
+                  <span class="pill">已取消</span>
                 {% else %}
                   <span class="pill blue">{{ o.get_workflow_status_display }}</span>
                 {% endif %}
@@ -285,16 +309,16 @@
                   <span class="muted">—</span>
                 {% elif o.workflow_status == "pending_confirm" %}
                   <div class="row-actions">
-                    <a class="btn-mini primary" href="{% url 'order-confirm' o.id %}">Confirm</a>
-                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">Edit</a>
+                    <a class="btn-mini primary" href="{% url 'order-confirm' o.id %}">确认</a>
+                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
                   </div>
                 {% elif o.workflow_status == "confirmed" and o.status != "paid" %}
                   <div class="row-actions">
-                    <a class="btn-mini success" href="{% url 'order_paid' o.id %}">Mark Paid</a>
-                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">Edit</a>
+                    <a class="btn-mini success" href="{% url 'order_paid' o.id %}">标记收款</a>
+                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
                   </div>
                 {% else %}
-                  <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">View</a>
+                  <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">查看</a>
                 {% endif %}
               </td>
             </tr>
@@ -303,21 +327,21 @@
           {% endfor %}
         </tbody>
       </table>
-    </div>
+      </div>
 
-    <div class="section">
+      <div class="section">
       <div class="section-head">
-        <h3 class="section-title">Unpaid orders</h3>
-        <span class="section-hint">Top 10</span>
+        <h3 class="section-title">未支付订单</h3>
+        <span class="section-hint">最新 10 条</span>
       </div>
       <table class="mini-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Customer</th>
-            <th>Amount</th>
-            <th>Workflow</th>
-            <th class="actions">Action</th>
+            <th style="width:84px;">订单号</th>
+            <th>客户</th>
+            <th style="width:120px;">金额</th>
+            <th style="width:120px;">状态</th>
+            <th class="actions">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -334,16 +358,16 @@
                   <span class="muted">—</span>
                 {% elif o.workflow_status == "pending_confirm" %}
                   <div class="row-actions">
-                    <a class="btn-mini primary" href="{% url 'order-confirm' o.id %}">Confirm</a>
-                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">Edit</a>
+                    <a class="btn-mini primary" href="{% url 'order-confirm' o.id %}">确认</a>
+                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
                   </div>
                 {% elif o.workflow_status == "confirmed" %}
                   <div class="row-actions">
-                    <a class="btn-mini success" href="{% url 'order_paid' o.id %}">Mark Paid</a>
-                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">Edit</a>
+                    <a class="btn-mini success" href="{% url 'order_paid' o.id %}">标记收款</a>
+                    <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">编辑</a>
                   </div>
                 {% else %}
-                  <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">View</a>
+                  <a class="btn-mini secondary" href="{% url 'order-status-update' o.id %}">查看</a>
                 {% endif %}
               </td>
             </tr>
@@ -352,21 +376,21 @@
           {% endfor %}
         </tbody>
       </table>
+      </div>
     </div>
 
     <div class="section">
       <div class="section-head">
-        <h3 class="section-title">Dispatch queue</h3>
-        <span class="section-hint">Assigned / Delivering</span>
+        <h3 class="section-title">调度队列</h3>
+        <span class="section-hint">已分配 / 配送中</span>
       </div>
       <table class="mini-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Customer</th>
-            <th>Delivery</th>
-            <th>Driver</th>
-            <th class="actions">Action</th>
+            <th style="width:84px;">订单号</th>
+            <th>客户</th>
+            <th style="width:120px;">配送状态</th>
+            <th class="actions">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -376,30 +400,29 @@
               <td>{{ o.customer.name|default:"—" }}</td>
               <td>
                 {% if o.delivery_status == "assigned" %}
-                  <span class="pill blue">Assigned</span>
+                  <span class="pill blue">已分配</span>
                 {% elif o.delivery_status == "delivering" %}
-                  <span class="pill orange">Delivering</span>
+                  <span class="pill orange">配送中</span>
                 {% else %}
                   <span class="pill">{{ o.delivery_status }}</span>
                 {% endif %}
               </td>
-              <td>{{ o.assigned_driver.username|default:"—" }}</td>
               <td class="actions">
                 <div class="row-actions">
-                  <a class="btn-mini secondary" href="/admin/tea_supply/order/{{ o.id }}/change/">Assign Driver</a>
+                  <a class="btn-mini secondary" href="/admin/tea_supply/order/{{ o.id }}/change/">分配司机</a>
                   {% if o.delivery_status == "assigned" %}
                     <form method="post" action="{% url 'boss-start-delivery' o.id %}" style="margin:0; display:inline;">
                       {% csrf_token %}
-                      <button type="submit" class="btn-mini success">Start Delivery</button>
+                      <button type="submit" class="btn-mini success">开始配送</button>
                     </form>
                   {% else %}
-                    <button type="button" class="btn-mini success" disabled>Start Delivery</button>
+                    <button type="button" class="btn-mini success" disabled>开始配送</button>
                   {% endif %}
                 </div>
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="5" class="muted">No data</td></tr>
+            <tr><td colspan="4" class="muted">暂无数据</td></tr>
           {% endfor %}
         </tbody>
       </table>
