@@ -48,6 +48,14 @@ class ProductCategory(models.Model):
 
 
 class Product(models.Model):
+    company = models.ForeignKey(
+        "Company",
+        on_delete=models.CASCADE,
+        related_name="products",
+        null=True,
+        blank=True,
+        verbose_name="公司",
+    )
     category = models.ForeignKey(
         ProductCategory,
         on_delete=models.PROTECT,
@@ -195,6 +203,14 @@ class Customer(models.Model):
         MONTH = "月结", "月结"
 
     name = models.CharField(max_length=100, verbose_name="客户名称")
+    company = models.ForeignKey(
+        "Company",
+        on_delete=models.CASCADE,
+        related_name="customers",
+        null=True,
+        blank=True,
+        verbose_name="公司",
+    )
     contact_name = models.CharField(
         max_length=100,
         blank=True,
@@ -397,6 +413,14 @@ class StockLog(models.Model):
         related_name="stock_logs",
         verbose_name="商品",
     )
+    company = models.ForeignKey(
+        "Company",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="stock_logs",
+        verbose_name="公司",
+    )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
@@ -439,6 +463,14 @@ class InventoryLog(models.Model):
         ADJUST = "adjust", "调整"
 
     product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name="inventory_logs", verbose_name="商品")
+    company = models.ForeignKey(
+        "Company",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="inventory_logs",
+        verbose_name="公司",
+    )
     order = models.ForeignKey(
         "Order",
         on_delete=models.SET_NULL,
@@ -478,6 +510,48 @@ class UserRole(models.Model):
 
     def __str__(self):
         return f"{self.user.username}({self.get_role_display()})"
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=200, verbose_name="公司名称")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="owned_companies",
+        verbose_name="Owner",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+
+    class Meta:
+        ordering = ("-created_at", "id")
+        verbose_name = "公司"
+        verbose_name_plural = "公司"
+
+    def __str__(self):
+        return self.name
+
+
+class UserCompanyProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="company_profile",
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="users",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "用户公司绑定"
+        verbose_name_plural = "用户公司绑定"
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.company.name}"
 
 
 class Vehicle(models.Model):
@@ -536,6 +610,14 @@ class Order(models.Model):
         CANCELLED = "cancelled", "Cancelled"
 
     name = models.CharField(max_length=100, default="Wholesale order", verbose_name="订单名称")
+    company = models.ForeignKey(
+        "Company",
+        on_delete=models.CASCADE,
+        related_name="orders",
+        null=True,
+        blank=True,
+        verbose_name="公司",
+    )
     customer = models.ForeignKey(
         Customer,
         on_delete=models.CASCADE,
@@ -717,8 +799,10 @@ def _write_stock_log(product, need, *, add_back, order=None, remark=""):
             remark = "库存入库" if add_back else "库存扣减"
     if product.ingredient_id:
         remark = (remark + "·原材料")[:240]
+    company = getattr(product, "company", None) or getattr(order, "company", None)
     StockLog.objects.create(
         product=product,
+        company=company,
         order=order,
         direction=direction,
         quantity=float(need),
@@ -731,8 +815,10 @@ def _write_inventory_log(product, qty, before_stock, after_stock, *, add_back=Fa
     base_note = remark or ("订单回库" if add_back else "订单扣减")
     if order is not None:
         base_note = f"{base_note}（订单#{order.id}）"
+    company = getattr(product, "company", None) or getattr(order, "company", None)
     InventoryLog.objects.create(
         product=product,
+        company=company,
         order=order,
         change_type=ctype,
         quantity=float(qty),

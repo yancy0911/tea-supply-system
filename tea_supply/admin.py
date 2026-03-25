@@ -17,6 +17,7 @@ from django.db import transaction
 
 from .credit_debt import reverse_credit_debt_if_counted
 from .models import (
+    Company,
     CreditApplication,
     Customer,
     CustomerProductPrice,
@@ -27,6 +28,7 @@ from .models import (
     Product,
     ProductCategory,
     StockLog,
+    UserCompanyProfile,
     UserRole,
     Vehicle,
 )
@@ -35,6 +37,33 @@ from .resources import ProductCategoryResource, ProductResource
 from .category_names import normalize_product_field_to_english
 
 logger = logging.getLogger(__name__)
+
+
+def _req_company(request):
+    u = getattr(request, "user", None)
+    if not u or not u.is_authenticated:
+        return None
+    prof = getattr(u, "company_profile", None)
+    if prof and getattr(prof, "company_id", None):
+        return prof.company
+    return None
+
+
+class CompanyScopedAdminMixin:
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        company = _req_company(request)
+        if company is None:
+            return qs.none()
+        if hasattr(qs.model, "company_id"):
+            return qs.filter(company=company)
+        return qs
+
+    def save_model(self, request, obj, form, change):
+        company = _req_company(request)
+        if hasattr(obj, "company_id") and not getattr(obj, "company_id", None):
+            obj.company = company
+        return super().save_model(request, obj, form, change)
 
 
 def _admin_fmt_money(value) -> str:
@@ -161,7 +190,7 @@ class CustomerProductPriceInline(admin.TabularInline):
 
 
 @admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
+class CustomerAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
     list_display = (
         "shop_name",
         "name",
@@ -245,7 +274,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 
 @admin.register(CustomerProductPrice)
-class CustomerProductPriceAdmin(admin.ModelAdmin):
+class CustomerProductPriceAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
     list_display = ("customer", "product", "custom_price_single", "custom_price_case", "is_active")
     list_filter = ("is_active", "customer")
     search_fields = ("customer__name", "product__name", "product__sku")
@@ -264,7 +293,7 @@ class ProductCategoryAdmin(ImportExportModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(ImportExportModelAdmin):
+class ProductAdmin(CompanyScopedAdminMixin, ImportExportModelAdmin):
     """list_editable 与 import_export 在部分环境下会导致 Import 按钮不显示，故不在列表内联编辑。"""
     resource_class = ProductResource
     form = ProductAdminForm
@@ -414,7 +443,7 @@ class VehicleAdmin(admin.ModelAdmin):
 
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
     inlines = (OrderItemInline,)
     list_display = (
         "name",
@@ -749,7 +778,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(OrderItem)
-class OrderItemAdmin(admin.ModelAdmin):
+class OrderItemAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
     list_display = (
         "order",
         "product",
@@ -795,7 +824,7 @@ class OrderItemAdmin(admin.ModelAdmin):
 
 
 @admin.register(StockLog)
-class StockLogAdmin(admin.ModelAdmin):
+class StockLogAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
     list_display = ("created_at", "direction", "quantity", "product", "ingredient", "order", "remark")
     list_filter = ("direction", "created_at")
     search_fields = ("product__sku", "product__name", "ingredient__name", "remark")
@@ -810,7 +839,7 @@ class StockLogAdmin(admin.ModelAdmin):
 
 
 @admin.register(InventoryLog)
-class InventoryLogAdmin(admin.ModelAdmin):
+class InventoryLogAdmin(CompanyScopedAdminMixin, admin.ModelAdmin):
     list_display = ("created_at", "product", "order", "change_type", "quantity", "before_stock", "after_stock", "note")
     list_filter = ("change_type", "created_at")
     search_fields = ("product__sku", "product__name", "note")

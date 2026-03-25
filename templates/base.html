@@ -159,7 +159,12 @@
         </div>
         <div style="margin-left: auto">
           {% if user.is_authenticated %}
-          <span class="muted" style="margin-right: 10px">Hi, {{ user.username }}</span>
+          <span class="muted" style="margin-right: 10px">
+            {% if user.company_profile and user.company_profile.company %}
+              {{ user.company_profile.company.name }} ·
+            {% endif %}
+            Hi, {{ user.username }}
+          </span>
           <a class="btn secondary" href="/logout/">Logout</a>
           {% else %}
           <a class="btn" href="/login/">Sign in</a>

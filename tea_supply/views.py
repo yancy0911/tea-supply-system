@@ -34,6 +34,7 @@ from .models import (
     CreditApplication,
     Customer,
     CustomerProductPrice,
+    Company,
     Ingredient,
     Order,
     OrderItem,
@@ -47,14 +48,20 @@ from .models import (
     _stock_need_for_line,
     resolve_selling_unit_price,
 )
+from .models import UserCompanyProfile
 
 logger = logging.getLogger(__name__)
 PROFIT_PROTECTION_MODE = "warning"  # "warning" | "block"
 
 
-def _profit_recommendation_rows(limit=5):
+def _profit_recommendation_rows(*, company=None, limit=5):
+    base_qs = OrderItem.objects.exclude(
+        order__workflow_status=Order.WorkflowStatus.CANCELLED
+    )
+    if company is not None:
+        base_qs = base_qs.filter(order__company=company)
     base = (
-        OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
+        base_qs
         .values("product_id", "product__name", "product__sku")
         .annotate(
             qty=Coalesce(Sum("quantity"), 0.0),
@@ -148,6 +155,15 @@ def _is_boss(user):
     if rp and rp.role == UserRole.Role.OWNER:
         return True
     return bool(user.is_superuser)
+
+
+def get_user_company(user):
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    prof = getattr(user, "company_profile", None)
+    if prof and getattr(prof, "company_id", None):
+        return prof.company
+    return None
 
 
 def internal_user_required(view_func):
@@ -482,9 +498,12 @@ def submit_order_from_lines(
                 customer_locked = Customer.objects.select_for_update().get(
                     pk=customer_obj.pk
                 )
+            company = getattr(customer_locked, "company", None) if customer_locked else None
 
             # 1) 先组装订单头字段（每次提交只创建一条 Order）
             create_kwargs = {"confirmed": False}
+            if company is not None:
+                create_kwargs["company"] = company
             if customer_locked is not None:
                 create_kwargs["customer"] = customer_locked
             if (
@@ -606,7 +625,8 @@ def ensure_customer_profile(user):
     """
     if not user.is_authenticated:
         return None
-    existing = Customer.objects.filter(user_id=user.id).first()
+    company = get_user_company(user)
+    existing = Customer.objects.filter(user_id=user.id, company=company).first()
     if existing:
         return existing
     if user.is_staff or user.is_superuser:
@@ -614,6 +634,7 @@ def ensure_customer_profile(user):
     username = (user.username or "").strip() or f"user{user.pk}"
     defaults = {
         "name": username[:100],
+        "company": company,
         "contact_name": username[:100],
         "phone": username[:30],
         "shop_name": username[:200],
@@ -631,11 +652,11 @@ def ensure_customer_profile(user):
     try:
         with transaction.atomic():
             customer, _created = Customer.objects.get_or_create(
-                user=user, defaults=defaults
+                user=user, company=company, defaults=defaults
             )
         return customer
     except IntegrityError:
-        return Customer.objects.filter(user_id=user.id).first()
+        return Customer.objects.filter(user_id=user.id, company=company).first()
 
 
 def get_shop_customer(request):
@@ -811,6 +832,7 @@ def _dunning_time_and_supply(amount, credit_limit, days_since_earliest):
 @login_required
 @internal_user_required
 def wholesale_order_entry(request):
+    company = get_user_company(request.user)
     customers = Customer.objects.all().order_by("name")
     categories = ProductCategory.objects.filter(is_active=True).order_by(
         "sort_order", "id"
@@ -820,6 +842,9 @@ def wholesale_order_entry(request):
         .select_related("category")
         .order_by("category", "name")
     )
+    if company is not None:
+        customers = customers.filter(company=company)
+        products = products.filter(company=company)
     products_data = []
     for p in products:
         products_data.append(
@@ -927,7 +952,7 @@ def wholesale_order_entry(request):
         "exclusive_prices_json": json.dumps(exclusive_map, ensure_ascii=False),
         "today_order_count": Order.objects.count(),
         "recommended_product_ids": [
-            r["product_id"] for r in _profit_recommendation_rows(limit=5)
+            r["product_id"] for r in _profit_recommendation_rows(company=company, limit=5)
         ],
     }
     return render(request, "wholesale_order_form.html", context)
@@ -939,11 +964,14 @@ def shop_home(request):
         "sort_order", "id"
     )
     customer = get_shop_customer(request)
+    company = getattr(customer, "company", None) if customer else None
     products = (
         Product.objects.filter(is_active=True)
         .select_related("category", "ingredient")
         .order_by("category__sort_order", "category_id", "name")
     )
+    if company is not None:
+        products = products.filter(company=company)
     shop_items = []
     missing_images = []
     missing_prices = []
@@ -1009,7 +1037,10 @@ def register_view(request):
     with transaction.atomic():
         user = User.objects.create_user(username=username, password=password)
         _ensure_customer_role(user)
+        company = Company.objects.create(name=f"{username} company", owner=user)
+        UserCompanyProfile.objects.create(user=user, company=company)
         Customer.objects.create(
+            company=company,
             user=user,
             name=username[:100],
             contact_name=username[:100],
@@ -1568,7 +1599,10 @@ def demo_landing(request):
 @login_required
 @boss_required
 def inventory_list(request):
+    company = get_user_company(request.user)
     products = Product.objects.order_by("name", "sku")
+    if company is not None:
+        products = products.filter(company=company)
     rows = []
     low_count = 0
     severe_count = 0
@@ -1619,9 +1653,12 @@ def inventory_list(request):
 @login_required
 @internal_user_required
 def orders_list(request):
+    company = get_user_company(request.user)
     unsettled_items = OrderItem.objects.filter(
         order__status__in=_unsettled_order_statuses()
     ).select_related("order__customer", "product")
+    if company is not None:
+        unsettled_items = unsettled_items.filter(order__company=company)
 
     amount_by_customer_id = defaultdict(lambda: money_dec(0))
     for item in unsettled_items:
@@ -1635,6 +1672,8 @@ def orders_list(request):
         .values("customer_id")
         .annotate(m=Min("created_at"))
     )
+    if company is not None:
+        earliest_pending = earliest_pending.filter(company=company)
     earliest_map = {row["customer_id"]: row["m"] for row in earliest_pending}
 
     customer_debts = []
@@ -1979,9 +2018,12 @@ def reports_dashboard(request):
 @boss_required
 def boss_dashboard(request):
     """Business control center for owner (B2B/ERP-style)."""
+    company = get_user_company(request.user)
     today = timezone.localdate()
 
     valid_orders = Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+    if company is not None:
+        valid_orders = valid_orders.filter(company=company)
     today_orders = valid_orders.filter(created_at__date=today)
     today_agg = today_orders.aggregate(
         sales=Coalesce(Sum("total_revenue"), 0.0),
@@ -2002,19 +2044,27 @@ def boss_dashboard(request):
     unpaid_qs = Order.objects.filter(status=Order.Status.PENDING).exclude(
         workflow_status=Order.WorkflowStatus.CANCELLED
     )
+    if company is not None:
+        unpaid_qs = unpaid_qs.filter(company=company)
     kpi_unpaid_order_count = int(unpaid_qs.count())
 
     kpi_dispatch_assigned_count = int(
-        Order.objects.filter(delivery_status="assigned").count()
+        (Order.objects.filter(delivery_status="assigned", company=company).count()
+         if company is not None
+         else Order.objects.filter(delivery_status="assigned").count())
     )
     kpi_dispatch_delivering_count = int(
-        Order.objects.filter(delivery_status="delivering").count()
+        (Order.objects.filter(delivery_status="delivering", company=company).count()
+         if company is not None
+         else Order.objects.filter(delivery_status="delivering").count())
     )
 
-    recent_orders = list(
-        Order.objects.select_related("customer", "assigned_driver", "assigned_vehicle")
-        .order_by("-created_at")[:10]
-    )
+    recent_qs = Order.objects.select_related(
+        "customer", "assigned_driver", "assigned_vehicle"
+    ).order_by("-created_at")
+    if company is not None:
+        recent_qs = recent_qs.filter(company=company)
+    recent_orders = list(recent_qs[:10])
     unpaid_orders = list(
         unpaid_qs.select_related("customer").order_by("-created_at")[:10]
     )
@@ -2023,6 +2073,14 @@ def boss_dashboard(request):
         .select_related("customer", "assigned_driver", "assigned_vehicle")
         .order_by("-created_at")[:10]
     )
+    if company is not None:
+        dispatch_orders = list(
+            Order.objects.filter(
+                company=company, delivery_status__in=["assigned", "delivering"]
+            )
+            .select_related("customer", "assigned_driver", "assigned_vehicle")
+            .order_by("-created_at")[:10]
+        )
 
     customer_profit_top5 = list(
         valid_orders.exclude(customer__isnull=True)
@@ -2044,9 +2102,13 @@ def boss_dashboard(request):
         for r in customer_profit_top5
     ]
 
+    product_items = OrderItem.objects.exclude(
+        order__workflow_status=Order.WorkflowStatus.CANCELLED
+    )
+    if company is not None:
+        product_items = product_items.filter(order__company=company)
     product_profit_base = (
-        OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
-        .values("product_id", "product__name", "product__sku")
+        product_items.values("product_id", "product__name", "product__sku")
         .annotate(
             qty=Coalesce(Sum("quantity"), 0.0),
             profit=Coalesce(Sum("profit"), 0.0),
@@ -2069,7 +2131,7 @@ def boss_dashboard(request):
         for r in product_profit_base
     ]
 
-    recommendation_rows = _profit_recommendation_rows(limit=5)
+    recommendation_rows = _profit_recommendation_rows(company=company, limit=5)
 
     # 7-day trend (orders + sales)
     start = today - timedelta(days=6)
@@ -2320,9 +2382,10 @@ def order_status_update(request, order_id):
     订单详情页保存入口：履约/结算方式/支付相关字段 + 结算状态（应收账款）。
     仅锁 Order 主表；联动欠款在同事务内执行，失败则整笔回滚并提示原因。
     """
-    detail_qs = Order.objects.select_related("customer").prefetch_related(
-        "items__product"
-    )
+    company = get_user_company(request.user)
+    detail_qs = Order.objects.select_related("customer").prefetch_related("items__product")
+    if company is not None:
+        detail_qs = detail_qs.filter(company=company)
 
     if request.method == "POST":
         workflow = (request.POST.get("workflow_status") or "").strip()
