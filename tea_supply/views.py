@@ -1519,7 +1519,7 @@ def inventory_list(request):
         wl = float(p.safety_stock or 0.0)
         is_severe = wl > 0 and st < (wl / 2.0)
         is_low = st < wl and not is_severe
-        reorder_qty = calculate_reorder(p)
+        reorder_calc = calculate_reorder(p)
         if is_low:
             low_count += 1
         if is_severe:
@@ -1541,7 +1541,8 @@ def inventory_list(request):
                 "safety_stock": wl,
                 "low_stock": is_low,
                 "severe_stock": is_severe,
-                "reorder_qty": reorder_qty,
+                "reorder_qty": float(reorder_calc["reorder_qty"] or 0.0),
+                "reorder_reason": reorder_calc["reason"],
                 "status_label": status_label,
                 "status_level": status_level,
             }
@@ -2033,26 +2034,28 @@ def boss_dashboard(request):
 
     reorder_rows = []
     for p in Product.objects.filter(stock_enabled=True).order_by("sku", "id"):
-        reorder_qty = calculate_reorder(p)
-        if reorder_qty <= 0:
-            continue
         st = float(getattr(p, "stock", 0.0) or 0.0)
         wl = float(getattr(p, "safety_stock", 0.0) or 0.0)
+        calc = calculate_reorder(p)
+        reorder_qty = float(calc["reorder_qty"] or 0.0)
+        if reorder_qty <= 0:
+            continue
         is_urgent = wl > 0 and st < (wl / 2.0)
-        is_recommend = wl > 0 and st < wl
-        status = "OK"
+        status = "Reorder"
         if is_urgent:
             status = "Urgent"
-        elif is_recommend:
-            status = "Reorder"
         reorder_rows.append(
             {
                 "product": p,
                 "sku": p.sku,
                 "name": p.name,
                 "stock": st,
+                "safety_stock": wl,
+                "demand": float(calc["demand"] or 0.0),
+                "target_stock": float(calc["target_stock"] or 0.0),
                 "reorder_qty": reorder_qty,
                 "status": status,
+                "reason": calc["reason"],
             }
         )
     reorder_rows.sort(

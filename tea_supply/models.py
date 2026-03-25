@@ -777,12 +777,28 @@ def calculate_reorder(product):
     )
 
     # 建议库存 = 需求 + 安全库存
-    target_stock = demand + float(getattr(product, "safety_stock", 0) or 0)
+    safety_stock = float(getattr(product, "safety_stock", 0) or 0)
+    target_stock = demand + safety_stock
 
     # 建议补货量
-    reorder_qty = max(0.0, target_stock - float(getattr(product, "stock", 0) or 0))
+    stock = float(getattr(product, "stock", 0) or 0)
+    reorder_qty = max(0.0, target_stock - stock)
 
-    return reorder_qty
+    if stock >= target_stock:
+        reason = "库存充足"
+    elif safety_stock > 0 and stock < (safety_stock / 2.0):
+        reason = "库存严重不足（紧急）"
+    elif safety_stock > 0 and stock < safety_stock:
+        reason = "库存低于安全库存"
+    else:
+        reason = "预计需求超出现有库存"
+
+    return {
+        "reorder_qty": reorder_qty,
+        "demand": demand,
+        "target_stock": target_stock,
+        "reason": reason,
+    }
 
 
 def release_stock_for_order(order_id):

@@ -551,8 +551,12 @@
           <th>SKU</th>
           <th>Product</th>
           <th>Stock</th>
+          <th>Safety</th>
+          <th>Demand</th>
+          <th>Target</th>
           <th>Reorder qty</th>
           <th>Status</th>
+          <th>Reason</th>
           <th class="actions">Action</th>
         </tr>
       </thead>
@@ -562,6 +566,9 @@
             <td><strong>{{ row.sku }}</strong></td>
             <td>{{ row.name }}</td>
             <td>{{ row.stock|floatformat:2 }}</td>
+            <td>{{ row.safety_stock|floatformat:2 }}</td>
+            <td>{{ row.demand|floatformat:2 }}</td>
+            <td>{{ row.target_stock|floatformat:2 }}</td>
             <td><strong>{{ row.reorder_qty|floatformat:2 }}</strong></td>
             <td>
               {% if row.status == "Urgent" %}
@@ -572,12 +579,13 @@
                 <span class="pill green">OK</span>
               {% endif %}
             </td>
+            <td><span class="muted" style="font-size: 12px">{{ row.reason }}</span></td>
             <td class="actions">
               <a class="btn-mini secondary" href="/admin/tea_supply/product/{{ row.product.id }}/change/">Adjust</a>
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="muted">No suggestions</td></tr>
+          <tr><td colspan="10" class="muted">No suggestions</td></tr>
         {% endfor %}
       </tbody>
     </table>
