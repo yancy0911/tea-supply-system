@@ -223,9 +223,14 @@
       <div class="kpi-sub">Sum of revenue today</div>
     </div>
     <div class="kpi-card">
+      <div class="kpi-label">Cost Today</div>
+      <div class="kpi-value">{{ kpi_today_cost|floatformat:2 }}</div>
+      <div class="kpi-sub">Sum of cost today</div>
+    </div>
+    <div class="kpi-card">
       <div class="kpi-label">Profit Today</div>
       <div class="kpi-value">{{ kpi_today_profit|floatformat:2 }}</div>
-      <div class="kpi-sub">Revenue − cost today</div>
+      <div class="kpi-sub">Margin {{ kpi_today_margin_pct|floatformat:2 }}%</div>
     </div>
     <div class="kpi-card {% if kpi_unpaid_order_count|default:0|add:0 > 0 %}is-danger{% endif %}">
       <div class="kpi-label">Outstanding</div>
@@ -404,24 +409,30 @@
   <div class="grid-3">
     <div class="section">
       <div class="section-head">
-        <h3 class="section-title">Top customers</h3>
-        <span class="section-hint">By sales</span>
+        <h3 class="section-title">👤 Top customers</h3>
+        <span class="section-hint">By profit</span>
       </div>
       <table class="mini-table">
         <thead>
           <tr>
             <th>Customer</th>
-            <th>Sales</th>
+            <th>Amount</th>
+            <th>Profit</th>
+            <th>Orders</th>
           </tr>
         </thead>
         <tbody>
-          {% for r in customer_top5 %}
+          {% for r in customer_profit_top5 %}
             <tr>
               <td>{{ r.customer__name }}</td>
-              <td>{{ r.value|floatformat:2 }}</td>
+              <td>{{ r.revenue|floatformat:2 }}</td>
+              <td style="font-weight: 900; color: {% if r.profit < 0 %}#b91c1c{% else %}#15803d{% endif %}">
+                {{ r.profit|floatformat:2 }}
+              </td>
+              <td>{{ r.orders }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="2" class="muted">No data</td></tr>
+            <tr><td colspan="4" class="muted">No data</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -429,26 +440,30 @@
 
     <div class="section">
       <div class="section-head">
-        <h3 class="section-title">Top products</h3>
-        <span class="section-hint">By sales</span>
+        <h3 class="section-title">📦 Top products</h3>
+        <span class="section-hint">By profit</span>
       </div>
       <table class="mini-table">
         <thead>
           <tr>
             <th>Product</th>
             <th>Qty</th>
-            <th>Sales</th>
+            <th>Profit</th>
+            <th>Unit</th>
           </tr>
         </thead>
         <tbody>
-          {% for r in product_top5 %}
+          {% for r in product_profit_top5 %}
             <tr>
               <td><span style="font-weight:800;">{{ r.sku }}</span> · {{ r.name }}</td>
               <td>{{ r.qty|floatformat:2 }}</td>
-              <td>{{ r.value|floatformat:2 }}</td>
+              <td style="font-weight: 900; color: {% if r.profit < 0 %}#b91c1c{% else %}#15803d{% endif %}">
+                {{ r.profit|floatformat:2 }}
+              </td>
+              <td>{{ r.unit_profit|floatformat:2 }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="3" class="muted">No data</td></tr>
+            <tr><td colspan="4" class="muted">No data</td></tr>
           {% endfor %}
         </tbody>
       </table>

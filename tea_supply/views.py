@@ -1927,12 +1927,19 @@ def boss_dashboard(request):
     today_orders = valid_orders.filter(created_at__date=today)
     today_agg = today_orders.aggregate(
         sales=Coalesce(Sum("total_revenue"), 0.0),
+        cost=Coalesce(Sum("total_cost"), 0.0),
         profit=Coalesce(Sum("profit"), 0.0),
     )
 
     kpi_today_order_count = int(today_orders.count())
     kpi_today_sales = money_float(today_agg["sales"] or 0.0)
     kpi_today_profit = money_float(today_agg["profit"] or 0.0)
+    kpi_today_cost = money_float(today_agg["cost"] or 0.0)
+    kpi_today_margin_pct = (
+        0.0
+        if float(kpi_today_sales or 0.0) <= 0
+        else money_float((float(kpi_today_profit or 0.0) / float(kpi_today_sales or 1.0)) * 100.0)
+    )
 
     unpaid_qs = Order.objects.filter(status=Order.Status.PENDING).exclude(
         workflow_status=Order.WorkflowStatus.CANCELLED
@@ -1959,32 +1966,49 @@ def boss_dashboard(request):
         .order_by("-created_at")[:10]
     )
 
-    customer_top5 = list(
+    customer_profit_top5 = list(
         valid_orders.exclude(customer__isnull=True)
         .values("customer_id", "customer__name")
-        .annotate(value=Coalesce(Sum("total_revenue"), 0.0))
-        .order_by("-value")[:5]
+        .annotate(
+            revenue=Coalesce(Sum("total_revenue"), 0.0),
+            profit=Coalesce(Sum("profit"), 0.0),
+            orders=Coalesce(Count("id"), 0),
+        )
+        .order_by("-profit")[:5]
     )
-    customer_top5 = [{**r, "value": money_float(r["value"])} for r in customer_top5]
+    customer_profit_top5 = [
+        {
+            **r,
+            "revenue": money_float(r["revenue"] or 0.0),
+            "profit": money_float(r["profit"] or 0.0),
+            "orders": int(r["orders"] or 0),
+        }
+        for r in customer_profit_top5
+    ]
 
-    product_base = (
+    product_profit_base = (
         OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
         .values("product_id", "product__name", "product__sku")
         .annotate(
             qty=Coalesce(Sum("quantity"), 0.0),
-            value=Coalesce(Sum("total_revenue"), 0.0),
+            profit=Coalesce(Sum("profit"), 0.0),
         )
-        .order_by("-value")[:5]
+        .order_by("-profit")[:5]
     )
-    product_top5 = [
+    product_profit_top5 = [
         {
             "product_id": r["product_id"],
             "name": r["product__name"],
             "sku": r["product__sku"],
             "qty": float(r["qty"] or 0.0),
-            "value": money_float(r["value"] or 0.0),
+            "profit": money_float(r["profit"] or 0.0),
+            "unit_profit": (
+                0.0
+                if float(r["qty"] or 0.0) <= 0
+                else money_float(float(r["profit"] or 0.0) / float(r["qty"] or 1.0))
+            ),
         }
-        for r in product_base
+        for r in product_profit_base
     ]
 
     # 7-day trend (orders + sales)
@@ -2073,15 +2097,17 @@ def boss_dashboard(request):
         {
             "kpi_today_order_count": kpi_today_order_count,
             "kpi_today_sales": kpi_today_sales,
+            "kpi_today_cost": kpi_today_cost,
             "kpi_today_profit": kpi_today_profit,
+            "kpi_today_margin_pct": kpi_today_margin_pct,
             "kpi_unpaid_order_count": kpi_unpaid_order_count,
             "kpi_dispatch_assigned_count": kpi_dispatch_assigned_count,
             "kpi_dispatch_delivering_count": kpi_dispatch_delivering_count,
             "recent_orders": recent_orders,
             "unpaid_orders": unpaid_orders,
             "dispatch_orders": dispatch_orders,
-            "customer_top5": customer_top5,
-            "product_top5": product_top5,
+            "customer_profit_top5": customer_profit_top5,
+            "product_profit_top5": product_profit_top5,
             "trend7": trend,
             "low_stock_rows": low_stock_rows,
             "reorder_rows": reorder_rows,

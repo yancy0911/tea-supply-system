@@ -316,7 +316,9 @@
               <td style="font-weight: 600">{{ row.amount|floatformat:2 }}</td>
               <td>{{ row.cost|floatformat:2 }}</td>
               <td>
-                <span style="font-weight: 600; color: #2563eb">{{ row.profit|floatformat:2 }}</span>
+                <span
+                  style="font-weight: 800; color: {% if row.profit is not None and row.profit < 0 %}#b91c1c{% else %}#15803d{% endif %}"
+                >{{ row.profit|floatformat:2 }}</span>
                 {% if row.profit is not None and row.profit < 0 %}
                   <span style="margin-left:6px;color:#b91c1c;font-weight:700;">Loss</span>
                 {% endif %}
