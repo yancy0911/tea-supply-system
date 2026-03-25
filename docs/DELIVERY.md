@@ -104,7 +104,7 @@
 
 ## 8. 登录后默认去向（实现说明）
 
-实现位于 `tea_supply/rbac.py` 的 `resolve_login_redirect_url`：在**无有效 `next`** 时，按上表跳转至各角色默认首页。
+实现位于 `tea_supply/rbac.py` 的 `get_post_login_redirect`：在 **`next` 非空且安全、且路径符合该角色允许的前缀** 时优先使用；否则按上表跳转至各角色默认首页。
 
 ---
 
