@@ -35,9 +35,9 @@
           <input type="text" name="contact_name" value="{{ shop_customer.name }}" required />
           <label>Phone</label>
           <input type="text" name="phone" value="{{ shop_customer.phone }}" required />
-          <label>Estimated monthly purchase (¥)</label>
+          <label>Estimated monthly purchase ({{ currency_symbol }})</label>
           <input type="number" step="0.01" min="0.01" name="monthly_purchase_estimate" required />
-          <label>Requested credit limit (¥)</label>
+          <label>Requested credit limit ({{ currency_symbol }})</label>
           <input type="number" step="0.01" min="0.01" name="requested_credit_limit" required />
           <label>Notes</label>
           <textarea name="note" maxlength="2000" placeholder="Optional details"></textarea>

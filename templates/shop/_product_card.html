@@ -62,11 +62,11 @@
               <span class="price-block__empty">—</span>
             {% elif product.strike_single %}
               <div class="price-block__compare">
-                <del class="price-block__was">¥{{ product.base_single|floatformat:2 }}</del>
-                <strong class="price-block__amount">¥{{ product.display_single|floatformat:2 }}</strong>
+                <del class="price-block__was">{{ currency_symbol }}{{ product.base_single|floatformat:2 }}</del>
+                <strong class="price-block__amount">{{ currency_symbol }}{{ product.display_single|floatformat:2 }}</strong>
               </div>
             {% else %}
-              <strong class="price-block__amount">¥{{ product.display_single|floatformat:2 }}</strong>
+              <strong class="price-block__amount">{{ currency_symbol }}{{ product.display_single|floatformat:2 }}</strong>
             {% endif %}
           </div>
         </div>
@@ -78,11 +78,11 @@
               <span class="price-block__empty">—</span>
             {% elif product.strike_case %}
               <div class="price-block__compare">
-                <del class="price-block__was">¥{{ product.base_case|floatformat:2 }}</del>
-                <strong class="price-block__amount">¥{{ product.display_case|floatformat:2 }}</strong>
+                <del class="price-block__was">{{ currency_symbol }}{{ product.base_case|floatformat:2 }}</del>
+                <strong class="price-block__amount">{{ currency_symbol }}{{ product.display_case|floatformat:2 }}</strong>
               </div>
             {% else %}
-              <strong class="price-block__amount">¥{{ product.display_case|floatformat:2 }}</strong>
+              <strong class="price-block__amount">{{ currency_symbol }}{{ product.display_case|floatformat:2 }}</strong>
             {% endif %}
           </div>
         </div>

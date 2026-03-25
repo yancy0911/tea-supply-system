@@ -1220,7 +1220,7 @@
         <div class="cart-footer">
           <div class="cart-total">
             <span>Total</span>
-            <span id="cart-total" class="cart-total__amount">¥0.00</span>
+            <span id="cart-total" class="cart-total__amount">{{ currency_symbol }}0.00</span>
           </div>
           <button type="button" class="cart-submit" id="btn-submit-order" disabled>Checkout</button>
         </div>
@@ -1711,7 +1711,7 @@
               '<div class="cart-line__rows">' +
               '<div class="cart-line__row">' +
               '<span class="cart-line__lbl">Unit price</span>' +
-              '<span class="cart-line__unit-val">¥<span class="line-unit"></span></span>' +
+              '<span class="cart-line__unit-val">{{ currency_symbol }}<span class="line-unit"></span></span>' +
               "</div>" +
               '<div class="cart-line__qty-block">' +
               '<div class="cart-line__row">' +
@@ -1727,7 +1727,7 @@
               "</div></div></div>" +
               '<div class="cart-line__subtotal">' +
               '<span class="cart-line__sub-lbl">Subtotal</span>' +
-              '<span class="cart-line-sub">¥<span class="line-sub"></span></span>' +
+              '<span class="cart-line-sub">{{ currency_symbol }}<span class="line-sub"></span></span>' +
               "</div></div>";
 
             var nameEl = div.querySelector(".cart-line__name");
@@ -1818,7 +1818,7 @@
           if (cart.length === 0) {
             cartBody.innerHTML = '<p class="cart-empty-msg">Your cart is empty</p>';
           }
-          cartTotal.textContent = "¥" + fmtMoney(sum);
+          cartTotal.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
           var badgeNum = cart.length === 0 ? 0 : cart.reduce(function (s, l) { return s + (parseFloat(l.quantity) || 0); }, 0);
           cartBadge.textContent = badgeNum % 1 === 0 ? String(badgeNum) : badgeNum.toFixed(1);
           if (cart.length === 0) {

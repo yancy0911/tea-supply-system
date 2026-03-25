@@ -357,7 +357,7 @@
             <div class="summary-list">
               <div class="summary-row"><span class="k">Line items</span><span class="v" id="summary-kinds">0</span></div>
               <div class="summary-row"><span class="k">Total qty</span><span class="v" id="summary-qty">0</span></div>
-              <div class="summary-row"><span class="k">Subtotal</span><span class="v" id="goods-sum">¥0.00</span></div>
+              <div class="summary-row"><span class="k">Subtotal</span><span class="v" id="goods-sum">{{ currency_symbol }}0.00</span></div>
             </div>
             <div class="settle-box" style="margin-top: 12px">
               <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">Payment method</label>
@@ -386,7 +386,7 @@
               <div class="muted" style="font-size: 12px; margin-top: 6px">Credit is not enabled for this account</div>
               {% endif %}
             </div>
-            <div class="sum" id="order-sum">Total: ¥0.00</div>
+            <div class="sum" id="order-sum">Total: {{ currency_symbol }}0.00</div>
             <button type="submit" class="btn" id="btn-place" disabled>Place order</button>
             <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration:none;text-align:center">Back to cart</a>
           </div>
@@ -526,8 +526,8 @@
           if (cart.length === 0) {
             linesArea.innerHTML =
               '<p style="color:#b45309;font-weight:600">Your cart is empty.</p><p><a href="/shop/">Continue shopping</a></p>';
-            sumEl.textContent = "Total: ¥0.00";
-            goodsSumEl.textContent = "¥0.00";
+            sumEl.textContent = "Total: {{ currency_symbol }}0.00";
+            goodsSumEl.textContent = "{{ currency_symbol }}0.00";
             summaryKinds.textContent = "0";
             summaryQty.textContent = "0";
             hiddenJson.value = "[]";
@@ -581,10 +581,10 @@
               '<div class="line-col"><span class="k">Qty</span><span class="v">' +
               l.quantity +
               "</span></div>" +
-              '<div class="line-col"><span class="k">Unit Price</span><span class="v">¥' +
+              '<div class="line-col"><span class="k">Unit Price</span><span class="v">{{ currency_symbol }}' +
               fmtMoney(unit) +
               '</span></div>' +
-              '<div class="line-col"><span class="k">Subtotal</span><span class="v">¥' +
+              '<div class="line-col"><span class="k">Subtotal</span><span class="v">{{ currency_symbol }}' +
               fmtMoney(sub) +
               "</span></div>" +
               (priceNoteDisp ? '<div class="line-meta" style="grid-column:1 / -1;">Pricing: ' + priceNoteDisp + "</div>" : "") +
@@ -592,10 +592,10 @@
               "</div>";
           });
           linesArea.innerHTML = html;
-          goodsSumEl.textContent = "¥" + fmtMoney(sum);
+          goodsSumEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
           summaryKinds.textContent = String(cart.length);
           summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
-          sumEl.textContent = "Total: ¥" + fmtMoney(sum);
+          sumEl.textContent = "Total: {{ currency_symbol }}" + fmtMoney(sum);
           currentOrderTotal = sum;
           hiddenJson.value = JSON.stringify(
             cart.map(function (l) {

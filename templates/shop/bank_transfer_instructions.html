@@ -24,7 +24,7 @@
         <h2 style="margin:0 0 10px">Bank transfer</h2>
         <p style="margin:0;color:#6b7280">Transfer using the details below and put order <strong>#{{ order.id }}</strong> in the memo.</p>
         <div class="k">Amount due</div>
-        <div class="amt">¥{{ order.total_revenue|floatformat:2 }}</div>
+        <div class="amt">{{ currency_symbol }}{{ order.total_revenue|floatformat:2 }}</div>
         <div class="k">Bank name</div>
         <div class="v">{% firstof bank_info.bank_name "Contact us" %}</div>
         <div class="k">Account name</div>

@@ -295,11 +295,11 @@
           priceHtml = '<span class="big-price">Quote required</span>';
         } else {
           priceHtml +=
-            '<div><span class="big-price">¥' +
+            '<div><span class="big-price">{{ currency_symbol }}' +
             fmtMoney(p.display_single) +
             '</span> <small style="color:#6b7280">Per Bag</small></div>';
           priceHtml +=
-            '<div><span class="big-price">¥' +
+            '<div><span class="big-price">{{ currency_symbol }}' +
             fmtMoney(p.display_case) +
             '</span> <small style="color:#6b7280">Per Case</small></div>';
         }

@@ -69,17 +69,17 @@
             <td>{{ item.quantity }}</td>
             <td>
               {% if item.sale_type == "case" %}
-                <span class="muted">¥{{ item.product.price_case|floatformat:2 }}</span>
+                <span class="muted">{{ currency_symbol }}{{ item.product.price_case|floatformat:2 }}</span>
               {% else %}
-                <span class="muted">¥{{ item.product.price_single|floatformat:2 }}</span>
+                <span class="muted">{{ currency_symbol }}{{ item.product.price_single|floatformat:2 }}</span>
               {% endif %}
               <span class="muted">→</span>
-              <strong>¥{{ item.unit_price|floatformat:2 }}</strong>
+              <strong>{{ currency_symbol }}{{ item.unit_price|floatformat:2 }}</strong>
               {% if item.pricing_note %}
                 <div class="muted" style="font-size: 12px">{{ item.pricing_note }}</div>
               {% endif %}
             </td>
-            <td>¥{{ item.total_revenue|floatformat:2 }}</td>
+            <td>{{ currency_symbol }}{{ item.total_revenue|floatformat:2 }}</td>
           </tr>
         {% empty %}
           <tr>
@@ -88,7 +88,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <p style="text-align: right; font-size: 16px; font-weight: 700">Total: ¥{{ order.total_revenue|floatformat:2 }}</p>
+    <p style="text-align: right; font-size: 16px; font-weight: 700">Total: {{ currency_symbol }}{{ order.total_revenue|floatformat:2 }}</p>
 
     <form method="post">
       {% csrf_token %}

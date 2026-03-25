@@ -741,9 +741,18 @@ class Order(models.Model):
 def _stock_need_for_line(order_item, product=None):
     """
     计算本行应扣减的库存数量（与 save/delete 一致）。
-    V1：扣减数量 = 下单数量（不区分单品/整箱）。
+    统一单位：库存按“单品单位”计。
+    - single: 扣减 = quantity
+    - case:   扣减 = quantity * units_per_case
     """
-    q = float(order_item.quantity)
+    q = float(order_item.quantity or 0)
+    sale_type = str(getattr(order_item, "sale_type", "") or "").strip().lower()
+    if sale_type == str(OrderItem.SaleType.CASE):
+        p = product or getattr(order_item, "product", None)
+        upc = float(getattr(p, "units_per_case", 1) or 1)
+        if upc <= 0:
+            upc = 1
+        return q * upc
     return q
 
 

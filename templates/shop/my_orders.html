@@ -65,15 +65,15 @@
                       <td>{{ it.product.name }}</td>
                       <td>{% if it.sale_type == "case" %}Case{% else %}Single{% endif %}</td>
                       <td>{{ it.quantity }}</td>
-                      <td>¥{{ it.unit_price|floatformat:2 }}</td>
-                      <td>¥{{ it.total_revenue|floatformat:2 }}</td>
+                      <td>{{ currency_symbol }}{{ it.unit_price|floatformat:2 }}</td>
+                      <td>{{ currency_symbol }}{{ it.total_revenue|floatformat:2 }}</td>
                       <td class="muted" style="font-size:12px"><span class="js-pricing-note" data-note="{{ it.pricing_note|default:''|escape }}"></span></td>
                     </tr>
                   {% endfor %}
                 </tbody>
               </table>
             </div>
-            <div style="text-align:right;font-weight:700;margin-top:8px;">Total: ¥{{ order.total_revenue|floatformat:2 }}</div>
+            <div style="text-align:right;font-weight:700;margin-top:8px;">Total: {{ currency_symbol }}{{ order.total_revenue|floatformat:2 }}</div>
             {% if order.payment_method == "bank_transfer" and order.payment_status != "paid" %}
               <div style="margin-top: 8px">
                 <a href="{% url 'bank-transfer-instructions' order.id %}">Bank transfer details</a>

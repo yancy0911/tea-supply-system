@@ -364,6 +364,13 @@ def submit_order_from_lines(
                 raise ValidationError("Invalid sale type.")
 
             p = Product.objects.get(pk=pid)
+            logger.info(
+                "CHECKOUT_CART_LINE sku=%s product_id=%s qty=%s sale_type=%s",
+                p.sku,
+                pid,
+                qty,
+                sale_type,
+            )
             if not p.is_active:
                 raise ValidationError(f'Product "{p.name}" is inactive.')
             if sale_type == OrderItem.SaleType.SINGLE and not p.can_split_sale:
@@ -476,7 +483,14 @@ def submit_order_from_lines(
             p = Product.objects.get(pk=pid)
             if not bool(getattr(p, "stock_enabled", True)):
                 continue
-            cur = float(getattr(p, "current_stock", 0.0))
+            cur = float(getattr(p, "stock", 0.0))
+            logger.info(
+                "CHECKOUT_STOCK_VALIDATE sku=%s product_id=%s required_qty=%s stock=%s",
+                p.sku,
+                pid,
+                float(need),
+                cur,
+            )
             if cur < need:
                 raise ValidationError(f"Insufficient stock: {p.sku}")
 
@@ -725,7 +739,7 @@ def _shop_product_row(customer, p):
     base_c = money_float(p.price_case)
     ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
     dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
-    stock_disp = float(getattr(p, "current_stock", 0.0))
+    stock_disp = float(getattr(p, "stock", 0.0))
     safety = float(getattr(p, "safety_stock", 10.0))
     enabled = bool(getattr(p, "stock_enabled", True))
     excl = "Customer exclusive price"

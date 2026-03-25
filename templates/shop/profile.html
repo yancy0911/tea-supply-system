@@ -28,9 +28,9 @@
         <div class="row"><div class="k">Store name</div><div class="v">{{ shop_customer.shop_name|default:"—" }}</div></div>
         <div class="row"><div class="k">Customer tier</div><div class="v">{{ shop_customer.get_customer_level_display }}</div></div>
         <div class="row"><div class="k">Credit allowed</div><div class="v">{% if shop_customer.allow_credit %}Yes{% else %}No{% endif %}</div></div>
-        <div class="row"><div class="k">Credit limit</div><div class="v">¥{{ shop_customer.credit_limit|floatformat:2 }}</div></div>
-        <div class="row"><div class="k">Outstanding balance</div><div class="v">¥{{ current_debt|floatformat:2 }}</div></div>
-        <div class="row" style="border-bottom:0"><div class="k">Minimum order</div><div class="v">¥{{ shop_customer.minimum_order_amount|floatformat:2 }}</div></div>
+        <div class="row"><div class="k">Credit limit</div><div class="v">{{ currency_symbol }}{{ shop_customer.credit_limit|floatformat:2 }}</div></div>
+        <div class="row"><div class="k">Outstanding balance</div><div class="v">{{ currency_symbol }}{{ current_debt|floatformat:2 }}</div></div>
+        <div class="row" style="border-bottom:0"><div class="k">Minimum order</div><div class="v">{{ currency_symbol }}{{ shop_customer.minimum_order_amount|floatformat:2 }}</div></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">Contact</h3>

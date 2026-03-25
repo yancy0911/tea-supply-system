@@ -127,6 +127,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'tea_supply.context_processors.currency',
             ],
         },
     },
@@ -206,6 +207,8 @@ SHOP_CONTACT_HINT = (
     os.environ.get("SHOP_CONTACT_HINT", "").strip()
     or "请联系业务员或致电门店确认价格与下单（Contact us to order）。"
 )
+
+CURRENCY_SYMBOL = os.environ.get("CURRENCY_SYMBOL", "$").strip() or "$"
 
 # Payment (Stripe / Bank Transfer)
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "").strip()
