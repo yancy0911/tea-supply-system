@@ -58,7 +58,7 @@
             {% for row in customer_rows %}
               <option
                 value="{{ row.customer.id }}"
-                data-level="{{ row.customer.customer_level }}"
+                data-level="{{ row.customer.level }}"
                 data-allow-credit="{% if row.customer.allow_credit %}1{% else %}0{% endif %}"
                 data-credit-limit="{{ row.customer.credit_limit|floatformat:2 }}"
                 data-unsettled="{{ row.unsettled_amount }}"

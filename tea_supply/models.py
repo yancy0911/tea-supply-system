@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.db import transaction, models
+from django.db.models import Sum
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -182,6 +183,11 @@ class Customer(models.Model):
         A = "A", "A"
         VIP = "VIP", "VIP"
 
+    class ValueLevel(models.TextChoices):
+        NORMAL = "NORMAL", "NORMAL"
+        VIP = "VIP", "VIP"
+        PREMIUM = "PREMIUM", "PREMIUM"
+
     class PaymentCycle(models.TextChoices):
         CASH = "现结", "现结"
         WEEK = "周结", "周结"
@@ -215,6 +221,18 @@ class Customer(models.Model):
         default=Level.C,
         verbose_name="客户等级（VIP）",
         help_text="商城/录单：专属价优先；否则按统一等级折扣（VIP×0.85、A×0.90、B×0.95、C×1.00）乘基础价。可手动改等级；订单也会按消费自动重算等级。",
+    )
+    level = models.CharField(
+        max_length=16,
+        choices=ValueLevel.choices,
+        default=ValueLevel.NORMAL,
+        verbose_name="等级",
+        help_text="动态定价（V1）：NORMAL/VIP/PREMIUM。",
+    )
+    discount_rate = models.FloatField(
+        default=1.0,
+        verbose_name="折扣",
+        help_text="动态定价（V1）：成交价 = 原价 × 折扣系数。",
     )
     allow_credit = models.BooleanField(
         default=False,
@@ -275,6 +293,7 @@ class Customer(models.Model):
                 .first()
             )
         prev_blocked = bool(old_row["is_blocked"]) if old_row else False
+        self.sync_discount_rate_from_level()
         self._apply_credit_block_rule(old_row)
         if update_fields is not None:
             ufs = list(update_fields)
@@ -310,10 +329,14 @@ class Customer(models.Model):
             return self.ORDER_STOP_SUPPLIER_MESSAGE
         return ""
 
-    @property
-    def level(self):
-        """与 customer_level 同义（兼容「等级」字段命名）。"""
-        return self.customer_level
+    def sync_discount_rate_from_level(self):
+        lv = str(getattr(self, "level", self.ValueLevel.NORMAL) or self.ValueLevel.NORMAL)
+        if lv == self.ValueLevel.PREMIUM:
+            self.discount_rate = 0.8
+        elif lv == self.ValueLevel.VIP:
+            self.discount_rate = 0.9
+        else:
+            self.discount_rate = 1.0
 
 
 class CustomerLevelPriceRule(models.Model):
@@ -347,9 +370,14 @@ class CustomerLevelPriceRule(models.Model):
 
 # 统一等级折扣（代码常量，单品/整箱同一系数）。实际定价不再读取 CustomerLevelPriceRule 表，避免与后台双源冲突。
 CUSTOMER_LEVEL_DISCOUNT_RATES = {
-    Customer.Level.VIP: 0.85,
-    Customer.Level.A: 0.90,
-    Customer.Level.B: 0.95,
+    # 新动态定价等级（V1）
+    Customer.ValueLevel.NORMAL: 1.00,
+    Customer.ValueLevel.VIP: 0.90,
+    Customer.ValueLevel.PREMIUM: 0.80,
+    # 兼容旧等级（若仍被前端/脚本使用）
+    Customer.Level.VIP: 0.90,
+    Customer.Level.A: 1.00,
+    Customer.Level.B: 1.00,
     Customer.Level.C: 1.00,
 }
 
@@ -1084,29 +1112,18 @@ def resolve_product_price_for_customer(product, customer, sale_type):
                 final_price = custom_price
                 pricing_note = "Customer exclusive price"
         if source != "custom":
-            level = (
-                getattr(customer, "customer_level", None)
-                or getattr(customer, "level", None)
-                or ""
-            )
-            level = str(level).upper().strip()
-            discount_map = {
-                "C": Decimal("1.00"),
-                "B": Decimal("0.95"),
-                "A": Decimal("0.90"),
-                "VIP": Decimal("0.85"),
-            }
-            rate = discount_map.get(level, Decimal("1.00"))
+            lv = str(getattr(customer, "level", "") or "").upper().strip()
+            rate = Decimal(str(getattr(customer, "discount_rate", 1.0) or 1.0))
+            if rate <= Decimal("0.00"):
+                rate = Decimal("1.00")
             final_price = (base_price * rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            if level == "B":
-                pricing_note = "Tier B (5% off)"
-            elif level == "A":
-                pricing_note = "Tier A (10% off)"
-            elif level == "VIP":
-                pricing_note = "VIP (15% off)"
-            else:
+            if abs(float(rate) - 1.0) < 1e-9:
                 pricing_note = "Base price"
-            source = "tier" if rate < Decimal("1.00") else "base"
+                source = "base"
+            else:
+                pct_off = int(round((1.0 - float(rate)) * 100))
+                pricing_note = f"Tier {lv} ({pct_off}% off)" if lv else f"{pct_off}% off"
+                source = "tier"
 
     return {
         "base_price": base_price,
@@ -1167,6 +1184,32 @@ def update_customer_tier_from_spending(customer_id):
     customer.allow_credit = allow_credit
     customer.credit_limit = credit_limit
     customer.save(update_fields=["customer_level", "allow_credit", "credit_limit"])
+
+
+def update_customer_level(customer):
+    """
+    V1 客户分级（赚钱维度）：
+    - 总利润 > 1000 → PREMIUM
+    - 总利润 > 300 → VIP
+    - 其他 → NORMAL
+    """
+    if not customer:
+        return
+    total_profit = (
+        Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+        .filter(customer=customer)
+        .aggregate(v=Sum("profit"))
+        .get("v")
+        or 0.0
+    )
+    if float(total_profit) > 1000:
+        customer.level = Customer.ValueLevel.PREMIUM
+    elif float(total_profit) > 300:
+        customer.level = Customer.ValueLevel.VIP
+    else:
+        customer.level = Customer.ValueLevel.NORMAL
+    customer.sync_discount_rate_from_level()
+    customer.save(update_fields=["level", "discount_rate"])
 
 
 def _should_release_stock_on_workflow(old_wf, new_wf):

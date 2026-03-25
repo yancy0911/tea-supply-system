@@ -43,6 +43,7 @@ from .models import (
     calculate_reorder,
     deduct_stock_for_order,
     recalculate_order_totals,
+    update_customer_level,
     _stock_need_for_line,
     resolve_selling_unit_price,
 )
@@ -54,7 +55,7 @@ PROFIT_PROTECTION_MODE = "warning"  # "warning" | "block"
 def tier_discount_map_for_wholesale():
     """录单页 JS：等级 -> {single, case} 折扣率（与 CUSTOMER_LEVEL_DISCOUNT_RATES 一致）。"""
     out = {}
-    for code, _ in Customer.Level.choices:
+    for code, _ in Customer.ValueLevel.choices:
         r = float(CUSTOMER_LEVEL_DISCOUNT_RATES.get(code, 1.0))
         out[code] = {"single": r, "case": r}
     return out
@@ -63,7 +64,7 @@ def tier_discount_map_for_wholesale():
 def tier_rules_banner_text():
     """Tier discount line for shop header (aligned with CUSTOMER_LEVEL_DISCOUNT_RATES)."""
     parts = []
-    for lvl in ["C", "B", "A", "VIP"]:
+    for lvl in ["NORMAL", "VIP", "PREMIUM"]:
         r = float(CUSTOMER_LEVEL_DISCOUNT_RATES.get(lvl, 1.0))
         if abs(r - 1.0) < 1e-9:
             parts.append(f"{lvl} base price")
@@ -2091,6 +2092,11 @@ def boss_dashboard(request):
     )
     reorder_rows = reorder_rows[:5]
 
+    vip_count = int(Customer.objects.filter(level=Customer.ValueLevel.VIP).count())
+    premium_count = int(
+        Customer.objects.filter(level=Customer.ValueLevel.PREMIUM).count()
+    )
+
     return render(
         request,
         "boss_dashboard.html",
@@ -2111,6 +2117,8 @@ def boss_dashboard(request):
             "trend7": trend,
             "low_stock_rows": low_stock_rows,
             "reorder_rows": reorder_rows,
+            "vip_count": vip_count,
+            "premium_count": premium_count,
         },
     )
 
@@ -2186,6 +2194,8 @@ def mark_order_paid(request, order_id):
             order.paid_at = timezone.now()
             order.save(update_fields=["status", "payment_status", "paid_at"])
             reverse_credit_debt_if_counted(order)
+            if order.customer_id:
+                update_customer_level(order.customer)
     except ValidationError as exc:
         messages.error(request, str(exc))
         return redirect("orders-list")
@@ -2211,6 +2221,8 @@ def confirm_order(request, order_id):
                 order.workflow_status = Order.WorkflowStatus.CONFIRMED
                 order.save(update_fields=["workflow_status"])
             apply_credit_debt_if_needed(order)
+            if order.customer_id:
+                update_customer_level(order.customer)
     except ValidationError as exc:
         messages.error(request, str(exc))
         return redirect("orders-list")

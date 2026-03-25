@@ -28,6 +28,19 @@
     <div style="margin-bottom: 16px; line-height: 1.85; font-size: 14px">
       <div><strong>Order:</strong>#{{ order.id }} · {{ order.name }}</div>
       <div><strong>Customer:</strong>{% if order.customer %}{{ order.customer.name }} ({{ order.customer.phone }}){% else %}No customer{% endif %}</div>
+      {% if order.customer %}
+        <div>
+          <strong>Customer tier:</strong>
+          {% if order.customer.level == "PREMIUM" %}
+            <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-weight:900;border:1px solid #fde68a;">PREMIUM</span>
+          {% elif order.customer.level == "VIP" %}
+            <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-weight:900;border:1px solid #bae6fd;">VIP</span>
+          {% else %}
+            <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#4b5563;font-weight:900;border:1px solid #e5e7eb;">NORMAL</span>
+          {% endif %}
+          <span class="muted" style="margin-left:8px; font-size: 12px">Discount rate ×{{ order.customer.discount_rate|floatformat:2 }}</span>
+        </div>
+      {% endif %}
       <div><strong>Created:</strong>{{ order.created_at|date:"Y-m-d H:i:s" }}</div>
       <div><strong>Contact:</strong>{{ order.contact_name|default:"—" }} · {{ order.delivery_phone|default:"—" }}</div>
       <div><strong>Store / company:</strong>{{ order.store_name|default:"—" }}</div>
@@ -44,7 +57,7 @@
           <th>Product</th>
           <th>Type</th>
           <th>Qty</th>
-          <th>Unit price</th>
+          <th>List → final</th>
           <th>Line total</th>
         </tr>
       </thead>
@@ -54,7 +67,18 @@
             <td>{{ item.product.name }} <span class="muted" style="font-size: 12px">{{ item.product.sku }}</span></td>
             <td>{% if item.sale_type == "case" %}Case{% else %}Single{% endif %}</td>
             <td>{{ item.quantity }}</td>
-            <td>¥{{ item.unit_price|floatformat:2 }}</td>
+            <td>
+              {% if item.sale_type == "case" %}
+                <span class="muted">¥{{ item.product.price_case|floatformat:2 }}</span>
+              {% else %}
+                <span class="muted">¥{{ item.product.price_single|floatformat:2 }}</span>
+              {% endif %}
+              <span class="muted">→</span>
+              <strong>¥{{ item.unit_price|floatformat:2 }}</strong>
+              {% if item.pricing_note %}
+                <div class="muted" style="font-size: 12px">{{ item.pricing_note }}</div>
+              {% endif %}
+            </td>
             <td>¥{{ item.total_revenue|floatformat:2 }}</td>
           </tr>
         {% empty %}
