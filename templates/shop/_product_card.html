@@ -31,6 +31,7 @@
         <span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}
       </p>
       <div class="ecom-card__specs" aria-label="Unit specifications">
+        <span class="ecom-card__spec-label">规格</span>
         <span class="ecom-card__spec">{{ product.unit_label|spec_en }}</span>
         {% if product.case_label and product.case_label|spec_en != "—" %}
           <span class="ecom-card__spec-sep" aria-hidden="true">·</span>
@@ -55,7 +56,7 @@
 
       <div class="catalog-card__prices ecom-card__prices" aria-label="Unit pricing">
         <div class="price-block" data-price-type="bag">
-          <div class="price-block__label">Per Bag Price</div>
+          <div class="price-block__label">单价（Per Bag）</div>
           <div class="price-block__unit">{{ product.unit_label|spec_en }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_single %}
@@ -71,7 +72,7 @@
           </div>
         </div>
         <div class="price-block" data-price-type="case">
-          <div class="price-block__label">Per Case Price</div>
+          <div class="price-block__label">箱价（Per Case）</div>
           <div class="price-block__unit">{{ product.case_label|spec_en }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_case %}
@@ -105,14 +106,19 @@
 
     <div class="catalog-card__stock">
       {% if product.stock_enabled %}
-        Stock: {{ product.current_stock|floatformat:2 }}
-        {% if product.is_out_of_stock %}
-          <span class="catalog-stock-out">· Out of stock</span>
-        {% elif product.is_low_stock %}
-          <span class="catalog-stock-low">· Low stock</span>
-        {% endif %}
+        <div class="stock-line-main">
+          <span class="stock-current">当前库存：{{ product.sellable_stock|floatformat:2 }}</span>
+          <span class="stock-status-label">库存状态：</span>
+          {% if product.is_out_of_stock %}
+            <span class="stock-pill stock-pill--out">缺货</span>
+          {% elif product.is_low_stock %}
+            <span class="stock-pill stock-pill--warn">库存紧张</span>
+          {% else %}
+            <span class="stock-pill stock-pill--ok">有货</span>
+          {% endif %}
+        </div>
       {% else %}
-        <span class="catalog-muted">Stock not tracked</span>
+        <span class="catalog-muted">库存未跟踪（可下单）</span>
       {% endif %}
     </div>
 
@@ -156,6 +162,9 @@
             title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
           {% elif product.price_on_request %}
             disabled
+          {% elif product.stock_enabled and product.is_out_of_stock %}
+            disabled
+            title="缺货，无法加入购物车"
           {% endif %}
         >
           Add to Cart
@@ -169,6 +178,9 @@
             title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
           {% elif product.price_on_request %}
             disabled
+          {% elif product.stock_enabled and product.is_out_of_stock %}
+            disabled
+            title="缺货，无法立即购买"
           {% endif %}
         >
           Buy Now

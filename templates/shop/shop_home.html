@@ -608,6 +608,59 @@
         font-size: 12px;
         color: var(--muted);
       }
+      .catalog-card__stock .stock-line-main {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .stock-current {
+        font-weight: 600;
+        color: var(--text);
+      }
+      .stock-status-label {
+        color: var(--muted);
+      }
+      .stock-pill {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+      .stock-pill--ok {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .stock-pill--warn {
+        background: #ffedd5;
+        color: #c2410c;
+      }
+      .stock-pill--out {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .catalog-muted {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .cart-stock-banner {
+        background: #fee2e2;
+        color: #991b1b;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 10px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .cart-line__stock-warn {
+        font-size: 12px;
+        color: #b42318;
+        font-weight: 600;
+        margin-top: 6px;
+      }
       .catalog-stock-out {
         color: #b42318;
         font-weight: 600;
@@ -1272,8 +1325,11 @@
             {% endif %}
           </span>
         </h3>
-        <div class="cart-scroll" id="cart-body">
-          <p class="cart-empty-msg">Your cart is empty</p>
+        <div class="cart-scroll">
+          <div id="cart-stock-banner" class="cart-stock-banner" style="display: none" hidden></div>
+          <div id="cart-body">
+            <p class="cart-empty-msg">Your cart is empty</p>
+          </div>
         </div>
         <div class="cart-footer">
           <div class="cart-total">
@@ -1453,6 +1509,7 @@
         var cartTotal = document.getElementById("cart-total");
         var cartBadge = document.getElementById("cart-badge");
         var btnSubmitOrder = document.getElementById("btn-submit-order");
+        var stockBanner = document.getElementById("cart-stock-banner");
         var productCount = document.getElementById("product-count");
         var shopLoggedIn = {% if shop_customer %}true{% else %}false{% endif %};
         var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
@@ -1546,11 +1603,26 @@
             }
             var qb = e.target.closest(".qty-stepper button");
             if (qb) {
+              var card = qb.closest(".catalog-card");
+              var pid = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
+              var p = productById(pid);
+              var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
+              var saleType = mode ? mode.value : "single";
               var row = qb.closest(".qty-stepper");
               var inp = row.querySelector("input");
               var v = parseFloat(inp.value) || 0;
-              if (qb.getAttribute("data-act") === "plus") v += 1;
-              else v = Math.max(0.01, v - 1);
+              var minQ = p ? Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01) : 0.01;
+              var cartSnap = getCart();
+              var maxQ = p ? maxStepperQtyForCard(pid, p, saleType, cartSnap) : Infinity;
+              if (qb.getAttribute("data-act") === "plus") {
+                v = v + 1;
+                if (maxQ !== Infinity && v > maxQ + 1e-9) {
+                  v = maxQ;
+                  if (maxQ <= 0) alert("库存不足。");
+                }
+              } else {
+                v = Math.max(minQ, v - 1);
+              }
               inp.value = v;
             }
           });
@@ -1602,9 +1674,67 @@
           return t;
         }
 
-        function stockUnitsAvailable(p) {
-          if (p.stock_quantity === null || p.stock_quantity === undefined) return null;
-          return parseFloat(p.stock_quantity);
+        /** Mirrors Product.stock in JSON (sellable_stock / current_stock); null = not tracked */
+        function sellableStockUnits(p) {
+          if (!p || !p.stock_enabled) return null;
+          var raw =
+            p.sellable_stock != null
+              ? p.sellable_stock
+              : p.current_stock != null
+                ? p.current_stock
+                : p.stock_quantity;
+          if (raw === null || raw === undefined) return 0;
+          var v = parseFloat(raw);
+          return isNaN(v) ? 0 : v;
+        }
+
+        function remainingStockUnits(pid, cart) {
+          var p = productById(pid);
+          if (!p) return 0;
+          var sell = sellableStockUnits(p);
+          if (sell === null) return Infinity;
+          var used = needUnitsForProduct(pid, p, cart);
+          return Math.max(0, sell - used);
+        }
+
+        function maxStepperQtyForCard(pid, p, saleType, cart) {
+          var rem = remainingStockUnits(pid, cart);
+          if (rem === Infinity) return Infinity;
+          if (rem <= 0) return 0;
+          var upc = parseFloat(p.units_per_case) || 1;
+          if (saleType === "case") return Math.floor(rem / upc + 1e-9);
+          return rem;
+        }
+
+        function cartStockIssueInfo(cart) {
+          var bad = false;
+          var byPid = {};
+          cart.forEach(function (line) {
+            var pid = Number(line.product_id);
+            var p = productById(pid);
+            if (!p || !p.stock_enabled) return;
+            var need = needUnitsForProduct(pid, p, cart);
+            var avail = sellableStockUnits(p);
+            if (avail === null) return;
+            if (need > avail + 1e-6) {
+              bad = true;
+              byPid[pid] = { need: need, avail: avail };
+            }
+          });
+          return { bad: bad, byPid: byPid };
+        }
+
+        function cartQtyAllowed(cart, liIndex, newQty) {
+          var sim = cart.map(function (x, i) {
+            var q = i === liIndex ? newQty : parseFloat(x.quantity) || 0;
+            return { product_id: x.product_id, sale_type: x.sale_type, quantity: q };
+          });
+          var line = cart[liIndex];
+          var p = productById(line.product_id);
+          if (!p || !p.stock_enabled) return true;
+          var need = needUnitsForProduct(line.product_id, p, sim);
+          var avail = sellableStockUnits(p);
+          return avail === null || need <= avail + 1e-6;
         }
 
         function addToCart(pid, saleType, qty) {
@@ -1614,6 +1744,11 @@
           }
           var p = productById(pid);
           if (!p) return;
+          var sell0 = sellableStockUnits(p);
+          if (sell0 !== null && sell0 <= 0) {
+            alert("缺货，无法加入购物车。");
+            return;
+          }
           if (p.price_on_request) {
             alert("Quote required — cannot add to cart.");
             return;
@@ -1661,12 +1796,12 @@
             sim.push({ product_id: pid, sale_type: st, quantity: qty });
           }
           var needAfter = needUnitsForProduct(pid, p, sim);
-          var avail = stockUnitsAvailable(p);
+          var avail = sellableStockUnits(p);
           if (avail !== null && !isNaN(avail) && needAfter > avail + 1e-6) {
             alert(
-              "Insufficient stock. Available ≈ " +
+              "库存不足。可用约 " +
                 avail +
-                " (stock units). Reduce qty or contact us."
+                "（库存单位），请减少数量或联系客服。"
             );
             return;
           }
@@ -1743,6 +1878,18 @@
             sum += parseFloat(line.subtotal) || 0;
           });
           saveCart(cart);
+          var issueInfo = cartStockIssueInfo(cart);
+          if (stockBanner) {
+            if (cart.length > 0 && issueInfo.bad) {
+              stockBanner.textContent = "部分商品库存不足，请调整数量后再结账。";
+              stockBanner.style.display = "";
+              stockBanner.hidden = false;
+            } else {
+              stockBanner.textContent = "";
+              stockBanner.style.display = "none";
+              stockBanner.hidden = true;
+            }
+          }
           cartBody.innerHTML = "";
           cart.forEach(function (line, idx) {
             var p = productById(line.product_id);
@@ -1783,6 +1930,7 @@
               '" aria-label="Quantity" />' +
               '<button type="button" class="qty-btn" data-act="plus" aria-label="Increase quantity">+</button>' +
               "</div></div></div>" +
+              '<div class="cart-line__stock-warn" style="display:none"></div>' +
               '<div class="cart-line__subtotal">' +
               '<span class="cart-line__sub-lbl">Subtotal</span>' +
               '<span class="cart-line-sub">{{ currency_symbol }}<span class="line-sub"></span></span>' +
@@ -1806,6 +1954,15 @@
             if (pn) metaParts.push(pn);
             if (metaEl) metaEl.textContent = metaParts.join(" · ");
 
+            var pidLine = Number(line.product_id);
+            var warnEl = div.querySelector(".cart-line__stock-warn");
+            if (warnEl && issueInfo.byPid[pidLine]) {
+              var inf = issueInfo.byPid[pidLine];
+              warnEl.style.display = "";
+              warnEl.textContent =
+                "库存不足：需要约 " + fmtMoney(inf.need) + " 单位，当前可用 " + fmtMoney(inf.avail) + "。";
+            }
+
             var unitEl = div.querySelector(".line-unit");
             var subEl = div.querySelector(".line-sub");
             if (unitEl) unitEl.textContent = fmtMoney(line.unit_price);
@@ -1826,6 +1983,11 @@
                   return lineKey(x) === rowKey;
                 });
                 if (li < 0) return;
+                if (!cartQtyAllowed(cart, li, v)) {
+                  alert("库存不足，无法调整为该数量。");
+                  this.value = line.quantity;
+                  return;
+                }
                 cart[li].quantity = v;
                 cart[li].qty = v;
                 recalcLine(cart[li]);
@@ -1846,7 +2008,12 @@
                   if (act === "minus") {
                     v = Math.max(minQ, v - 1);
                   } else if (act === "plus") {
-                    v = v + 1;
+                    var tryV = v + 1;
+                    if (!cartQtyAllowed(cart, li, tryV)) {
+                      alert("库存不足。");
+                      return;
+                    }
+                    v = tryV;
                   }
                   cart[li].quantity = v;
                   cart[li].qty = v;
@@ -1882,6 +2049,9 @@
           if (cart.length === 0) {
             btnSubmitOrder.disabled = true;
             btnSubmitOrder.title = "Cart is empty";
+          } else if (issueInfo.bad) {
+            btnSubmitOrder.disabled = true;
+            btnSubmitOrder.title = "库存不足，无法结账";
           } else if (shopLoggedIn && !shopCanOrder) {
             btnSubmitOrder.disabled = true;
             btnSubmitOrder.title = shopOrderBlockHint || "Ordering unavailable";
@@ -1930,6 +2100,10 @@
             return;
           }
           if (cart.length === 0) {
+            return;
+          }
+          if (cartStockIssueInfo(cart).bad) {
+            alert("库存不足，请调整购物车后再结账。");
             return;
           }
           if (!shopLoggedIn) {

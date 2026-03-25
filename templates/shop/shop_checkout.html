@@ -500,6 +500,12 @@
         });
         if (checkoutForm) {
           checkoutForm.addEventListener("submit", function (ev) {
+            var c = getCart();
+            if (cartStockIssueInfo(c).bad) {
+              ev.preventDefault();
+              alert("库存不足，无法提交订单。请返回商店调整购物车。");
+              return;
+            }
             if (!shopCanOrder) {
               ev.preventDefault();
               alert(shopOrderBlockHint || "Ordering is not available.");
@@ -521,6 +527,47 @@
           });
         }
 
+        function needUnitsForProduct(pid, p, lines) {
+          var t = 0;
+          lines.forEach(function (l) {
+            if (Number(l.product_id) !== Number(pid)) return;
+            if (l.sale_type === "case") t += parseFloat(l.quantity) * (parseFloat(p.units_per_case) || 1);
+            else t += parseFloat(l.quantity);
+          });
+          return t;
+        }
+
+        function sellableStockUnits(p) {
+          if (!p || !p.stock_enabled) return null;
+          var raw =
+            p.sellable_stock != null
+              ? p.sellable_stock
+              : p.current_stock != null
+                ? p.current_stock
+                : p.stock_quantity;
+          if (raw === null || raw === undefined) return 0;
+          var v = parseFloat(raw);
+          return isNaN(v) ? 0 : v;
+        }
+
+        function cartStockIssueInfo(cart) {
+          var bad = false;
+          var byPid = {};
+          cart.forEach(function (line) {
+            var pid = Number(line.product_id);
+            var p = productById(pid);
+            if (!p || !p.stock_enabled) return;
+            var need = needUnitsForProduct(pid, p, cart);
+            var avail = sellableStockUnits(p);
+            if (avail === null) return;
+            if (need > avail + 1e-6) {
+              bad = true;
+              byPid[pid] = { need: need, avail: avail };
+            }
+          });
+          return { bad: bad, byPid: byPid };
+        }
+
         function renderCart() {
           cart = getCart();
           if (cart.length === 0) {
@@ -535,9 +582,14 @@
             btn.title = "Cart is empty";
             return;
           }
+          var issueInfo = cartStockIssueInfo(cart);
           var sum = 0;
           var qtyTotal = 0;
           var html = "";
+          if (issueInfo.bad) {
+            html +=
+              '<div class="msg-banner" style="margin-bottom:12px"><div class="msg-err">部分商品库存不足，请返回商店调整数量后再下单。</div></div>';
+          }
           cart.forEach(function (l) {
             var p = productById(l.product_id);
             var name = p ? p.name : l.name || "Product";
@@ -561,6 +613,16 @@
             if (p) {
               if (l.sale_type === "case" && p.profit_risk_case) riskText = "Margin risk: price below cost";
               if (l.sale_type !== "case" && p.profit_risk_single) riskText = "Margin risk: price below cost";
+            }
+            var stockWarn = "";
+            if (p && issueInfo.byPid[Number(l.product_id)]) {
+              var inf = issueInfo.byPid[Number(l.product_id)];
+              stockWarn =
+                '<div class="line-meta" style="grid-column:1 / -1;color:#991b1b;font-weight:700;">库存不足：需要约 ' +
+                inf.need.toFixed(2) +
+                " 单位，可用 " +
+                inf.avail.toFixed(2) +
+                "。</div>";
             }
             sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
@@ -588,6 +650,7 @@
               fmtMoney(sub) +
               "</span></div>" +
               (priceNoteDisp ? '<div class="line-meta" style="grid-column:1 / -1;">Pricing: ' + priceNoteDisp + "</div>" : "") +
+              stockWarn +
               (riskText ? '<div class="line-meta" style="grid-column:1 / -1;color:#9a3412;font-weight:600;">' + riskText + "</div>" : "") +
               "</div>";
           });
@@ -602,10 +665,15 @@
               return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
             })
           );
-          btn.disabled = false;
-          btn.title = shopCanOrder
-            ? ""
-            : shopOrderBlockHint || "Ordering unavailable";
+          if (issueInfo.bad) {
+            btn.disabled = true;
+            btn.title = "库存不足，无法提交订单";
+          } else {
+            btn.disabled = !shopCanOrder;
+            btn.title = shopCanOrder
+              ? ""
+              : shopOrderBlockHint || "Ordering unavailable";
+          }
         }
 
         syncPaymentMethodUI();

@@ -206,6 +206,9 @@
             {% if shop_customer and not shop_can_order %}
               disabled
               title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
+            {% elif product_row.stock_enabled and product_row.is_out_of_stock %}
+              disabled
+              title="缺货，无法加入购物车"
             {% endif %}
           >Add to Cart</button>
           <p class="hint">Then open the cart and go to checkout to enter shipping details and place your order.</p>
@@ -272,6 +275,39 @@
           return sku + "_" + st;
         }
 
+        function needUnitsForProduct(pid, p, lines) {
+          var t = 0;
+          lines.forEach(function (l) {
+            if (Number(l.product_id) !== Number(pid)) return;
+            if (l.sale_type === "case") t += parseFloat(l.quantity) * (parseFloat(p.units_per_case) || 1);
+            else t += parseFloat(l.quantity);
+          });
+          return t;
+        }
+
+        function sellableStockUnits(pr) {
+          if (!pr || !pr.stock_enabled) return null;
+          var raw =
+            pr.sellable_stock != null
+              ? pr.sellable_stock
+              : pr.current_stock != null
+                ? pr.current_stock
+                : pr.stock_quantity;
+          if (raw === null || raw === undefined) return 0;
+          var v = parseFloat(raw);
+          return isNaN(v) ? 0 : v;
+        }
+
+        function maxQtyForDetailAdd(pid, pr, st, cart) {
+          var sell = sellableStockUnits(pr);
+          if (sell === null) return Infinity;
+          var other = needUnitsForProduct(pid, pr, cart);
+          var rem = Math.max(0, sell - other);
+          var upc = parseFloat(pr.units_per_case) || 1;
+          if (st === "case") return Math.floor(rem / upc + 1e-9);
+          return rem;
+        }
+
         var img = document.getElementById("pimg");
         img.src = p.image_url && p.image_url.length ? p.image_url : PLACEHOLDER;
         img.onerror = function () {
@@ -286,22 +322,28 @@
           if (!s) return "—";
           return containsCjk(s) ? "—" : s;
         }
+        function stockStatusZh() {
+          if (!p.stock_enabled) return "库存未跟踪（可下单）";
+          var s = parseFloat(p.sellable_stock != null ? p.sellable_stock : p.current_stock);
+          if (isNaN(s)) s = 0;
+          var safety = parseFloat(p.safety_stock) || 0;
+          var tag =
+            s <= 0 ? '<span style="color:#b91c1c;font-weight:700">缺货</span>' : s <= safety
+              ? '<span style="color:#c2410c;font-weight:700">库存紧张</span>'
+              : '<span style="color:#15803d;font-weight:700">有货</span>';
+          return "当前库存：" + fmtMoney(s) + " · 库存状态：" + tag;
+        }
         document.getElementById("pspec").innerHTML =
-          "Category: " +
+          "分类：" +
           (p.category_name && String(p.category_name).trim() && !containsCjk(p.category_name)
             ? p.category_name
             : "—") +
-          "<br/>Unit: " +
+          "<br/>规格（袋）：" +
           specOrDash(p.unit_label) +
-          "<br/>Case pack: " +
+          "<br/>规格（箱）：" +
           specOrDash(p.case_label) +
-          "<br/>Stock: " +
-          (p.stock_enabled ? fmtMoney(p.current_stock) : "Unlimited") +
-          (p.stock_enabled && p.current_stock <= 0
-            ? " (out of stock)"
-            : p.stock_enabled && p.current_stock <= (parseFloat(p.safety_stock) || 0)
-              ? " (low stock)"
-              : "");
+          "<br/>" +
+          stockStatusZh();
 
         var priceHtml = "";
         if (p.price_on_request) {
@@ -343,15 +385,6 @@
         qIn.value = minQ;
         qIn.min = minQ;
 
-        document.getElementById("bminus").onclick = function () {
-          var v = parseFloat(qIn.value) || 0;
-          qIn.value = Math.max(minQ, v - 1);
-        };
-        document.getElementById("bplus").onclick = function () {
-          var v = parseFloat(qIn.value) || 0;
-          qIn.value = v + 1;
-        };
-
         function unitPrice() {
           var sale = document.querySelector('input[name="sale"]:checked');
           var st = sale ? sale.value : "single";
@@ -363,6 +396,26 @@
           var sale = document.querySelector('input[name="sale"]:checked');
           return sale && sale.value === "case" ? "case" : "single";
         }
+
+        document.getElementById("bminus").onclick = function () {
+          var v = parseFloat(qIn.value) || 0;
+          qIn.value = Math.max(minQ, v - 1);
+        };
+        document.getElementById("bplus").onclick = function () {
+          var v = parseFloat(qIn.value) || 0;
+          var st = saleType();
+          var cart = getCart();
+          var pid = Number(p.id);
+          var maxQ = maxQtyForDetailAdd(pid, p, st, cart);
+          var next = v + 1;
+          if (maxQ !== Infinity && next > maxQ + 1e-9) {
+            if (maxQ <= 0) alert("库存不足。");
+            else alert("库存不足，最多可订购约 " + (st === "case" ? maxQ + " 箱" : maxQ + " 袋") + "。");
+            qIn.value = Math.min(v, maxQ);
+            return;
+          }
+          qIn.value = next;
+        };
 
         document.getElementById("padd").onclick = function () {
           if (shopLoggedIn && !shopCanOrder) {
@@ -386,6 +439,11 @@
             alert("No case price.");
             return;
           }
+          var sell0 = sellableStockUnits(p);
+          if (sell0 !== null && sell0 <= 0) {
+            alert("缺货，无法加入购物车。");
+            return;
+          }
           var qty = parseFloat(qIn.value);
           if (isNaN(qty) || qty < minQ) {
             alert("Quantity must be at least MOQ " + minQ);
@@ -399,6 +457,20 @@
           var cart = getCart();
           var pid = Number(p.id);
           var wantKey = lineKey({ sku: p.sku, sale_type: st, product_id: pid });
+          var sim = cart.map(function (l) {
+            return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
+          });
+          var fi = sim.findIndex(function (l) {
+            return Number(l.product_id) === Number(pid) && String(l.sale_type) === String(st);
+          });
+          if (fi >= 0) sim[fi].quantity = parseFloat(sim[fi].quantity) + qty;
+          else sim.push({ product_id: pid, sale_type: st, quantity: qty });
+          var needAfter = needUnitsForProduct(pid, p, sim);
+          var avail = sellableStockUnits(p);
+          if (avail !== null && needAfter > avail + 1e-6) {
+            alert("库存不足。可用约 " + avail + "（库存单位）。");
+            return;
+          }
           var found = null;
           for (var ci = 0; ci < cart.length; ci++) {
             if (lineKey(cart[ci]) === wantKey) {

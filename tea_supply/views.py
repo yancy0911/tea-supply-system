@@ -783,6 +783,7 @@ def _shop_product_row(customer, p):
         "can_quote_case": base_c > 0,
         "stock_quantity": stock_disp,
         "current_stock": stock_disp,
+        "sellable_stock": stock_disp,
         "safety_stock": safety,
         "stock_enabled": enabled,
         "is_out_of_stock": enabled and stock_disp <= 0,
@@ -1535,10 +1536,8 @@ def replenishment_dashboard(request):
         s7 = float(sold_7_map.get(p.id, 0.0))
         s30 = float(sold_30_map.get(p.id, 0.0))
         daily_avg = s30 / 30.0 if s30 > 1e-12 else 0.0
-        if p.ingredient_id:
-            stock = float(p.ingredient.stock)
-        else:
-            stock = float(p.stock_quantity)
+        # 与商城下单、扣减一致：可售库存统一为 Product.stock
+        stock = float(getattr(p, "stock", 0.0) or 0.0)
         days_cover = (stock / daily_avg) if daily_avg > 1e-12 else None
         ra = _replenishment_risk_and_action(stock, s30, days_cover)
         level = ra["level"]

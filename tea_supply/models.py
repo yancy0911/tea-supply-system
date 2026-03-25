@@ -861,7 +861,10 @@ def _apply_need_to_inventory(product, need, *, add_back=False, order=None):
                 raise ValidationError(f"库存不足：商品「{product.name}」现有 {cur:g}，本次需 {need:g}")
             new_stock = cur - need
         p2.stock = max(0.0, float(new_stock))
-        p2.save(update_fields=["stock"])
+        s = float(p2.stock)
+        p2.current_stock = s
+        p2.stock_quantity = s
+        p2.save(update_fields=["stock", "current_stock", "stock_quantity"])
         _write_inventory_log(
             p2,
             qty=need,
@@ -1366,32 +1369,35 @@ def _order_item_deleted_update_tier(sender, instance, **kwargs):
 
 
 @receiver(pre_save, sender=Product)
-def _product_prev_stock_qty(sender, instance, **kwargs):
+def _product_prev_and_mirror_stock(sender, instance, **kwargs):
+    """可售库存以 Product.stock 为唯一来源；同步 legacy 字段便于旧报表/导入。"""
     if instance.price_on_request is None:
         instance.price_on_request = False
-    if instance.stock_quantity is None:
-        instance.stock_quantity = 0.0
     if instance.pk:
         try:
-            old = Product.objects.only("stock_quantity").get(pk=instance.pk)
-            instance._prev_stock_qty = float(old.stock_quantity)
+            old = Product.objects.only("stock").get(pk=instance.pk)
+            instance._prev_stock = float(old.stock)
         except Product.DoesNotExist:
-            instance._prev_stock_qty = None
+            instance._prev_stock = None
     else:
-        instance._prev_stock_qty = None
+        instance._prev_stock = None
+    s = float(getattr(instance, "stock", 0) or 0)
+    instance.stock = s
+    instance.current_stock = s
+    instance.stock_quantity = s
 
 
 @receiver(post_save, sender=Product)
 def _product_manual_stock_log(sender, instance, created, **kwargs):
-    """后台直接改商品可售库存时记流水（与程序扣减区分）。"""
+    """后台直接改商品可售库存（Product.stock）时记流水（与程序扣减区分）。"""
     if created:
         return
     if getattr(_tls, "apply_depth", 0) > 0:
         return
-    prev = getattr(instance, "_prev_stock_qty", None)
+    prev = getattr(instance, "_prev_stock", None)
     if prev is None:
         return
-    cur = float(instance.stock_quantity)
+    cur = float(instance.stock)
     delta = cur - prev
     if abs(delta) < 1e-9:
         return
