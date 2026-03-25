@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.contrib import admin
 from django.contrib import messages
 from django import forms
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
@@ -526,7 +527,12 @@ class OrderAdmin(admin.ModelAdmin):
         "ordered_by",
         "stripe_session_id",
     )
-    actions = ("action_mark_paid", "action_mark_pending_confirmation", "action_mark_cancelled")
+    actions = (
+        "action_mark_paid",
+        "action_mark_pending_confirmation",
+        "action_mark_cancelled",
+        "action_auto_assign_dispatch",
+    )
 
     @admin.action(description="标记已收款")
     def action_mark_paid(self, request, queryset):
@@ -549,6 +555,89 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.action(description="标记已取消")
     def action_mark_cancelled(self, request, queryset):
         queryset.update(payment_status=Order.PaymentStatus.CANCELLED)
+
+    @admin.action(description="Auto Assign Dispatch")
+    def action_auto_assign_dispatch(self, request, queryset):
+        """
+        Dispatch V1 (minimal):
+        - only assign orders with assigned_driver/assigned_vehicle empty and delivery_status='pending'
+        - round-robin across available drivers and vehicles
+        """
+        eligible = queryset.filter(
+            assigned_driver__isnull=True,
+            assigned_vehicle__isnull=True,
+            delivery_status="pending",
+        )
+
+        if not eligible.exists():
+            self.message_user(request, "No pending unassigned orders selected.", level=messages.INFO)
+            return
+
+        UserModel = get_user_model()
+
+        # Prefer non-superuser drivers; if none, allow superusers as well.
+        drivers_qs = (
+            UserModel.objects.filter(is_active=True, is_staff=True)
+            .exclude(is_superuser=True)
+            .order_by("id")
+        )
+        if not drivers_qs.exists():
+            drivers_qs = (
+                UserModel.objects.filter(is_active=True, is_staff=True)
+                .order_by("id")
+            )
+
+        vehicles_qs = Vehicle.objects.filter(is_active=True).order_by("id")
+
+        if not drivers_qs.exists():
+            self.message_user(
+                request,
+                "Auto Assign Dispatch failed: no available drivers (is_active=True & is_staff=True).",
+                level=messages.ERROR,
+            )
+            return
+        if not vehicles_qs.exists():
+            self.message_user(
+                request,
+                "Auto Assign Dispatch failed: no available vehicles (is_active=True).",
+                level=messages.ERROR,
+            )
+            return
+
+        drivers = list(drivers_qs)
+        vehicles = list(vehicles_qs)
+
+        assigned_idx = 0
+        eligible_ids = list(eligible.values_list("id", flat=True).order_by("id"))
+        with transaction.atomic():
+            for oid in eligible_ids:
+                # Re-check conditions under lock to avoid racing assignments.
+                o = Order.objects.select_for_update().filter(
+                    pk=oid,
+                    assigned_driver__isnull=True,
+                    assigned_vehicle__isnull=True,
+                    delivery_status="pending",
+                ).first()
+                if not o:
+                    continue
+                o.assigned_driver = drivers[assigned_idx % len(drivers)]
+                o.assigned_vehicle = vehicles[assigned_idx % len(vehicles)]
+                o.delivery_status = "assigned"
+                o.save(update_fields=["assigned_driver", "assigned_vehicle", "delivery_status"])
+                assigned_idx += 1
+
+        if assigned_idx == 0:
+            self.message_user(
+                request,
+                "Auto Assign Dispatch: no orders were assigned (they may have been updated concurrently).",
+                level=messages.WARNING,
+            )
+        else:
+            self.message_user(
+                request,
+                f"Auto Assign Dispatch: successfully assigned {assigned_idx} orders.",
+                level=messages.SUCCESS,
+            )
 
     def has_view_permission(self, request, obj=None):
         return bool(request.user.is_authenticated and request.user.is_staff)
