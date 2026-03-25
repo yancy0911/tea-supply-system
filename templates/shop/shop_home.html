@@ -1336,7 +1336,14 @@
             <span>Total</span>
             <span id="cart-total" class="cart-total__amount">{{ currency_symbol }}0.00</span>
           </div>
-          <button type="button" class="cart-submit" id="btn-submit-order" disabled>Checkout</button>
+          <a
+            class="cart-submit"
+            id="btn-submit-order"
+            href="{% url 'shop-checkout' %}"
+            aria-label="Checkout"
+          >
+            Checkout
+          </a>
         </div>
       </aside>
     </div>
@@ -2093,27 +2100,8 @@
           });
         });
 
-        btnSubmitOrder.addEventListener("click", function () {
-          cart = getCart();
-          if (shopLoggedIn && !shopCanOrder) {
-            alert(shopOrderBlockHint || "Ordering is not available.");
-            return;
-          }
-          if (cart.length === 0) {
-            return;
-          }
-          if (cartStockIssueInfo(cart).bad) {
-            alert("库存不足，请调整购物车后再结账。");
-            return;
-          }
-          if (!shopLoggedIn) {
-            window.location.href = "/login/?next=/checkout/";
-            return;
-          }
-          if (cart.length > 0) {
-            window.location.href = "/checkout/";
-          }
-        });
+        // Keep navigation stable: checkout button is an <a href="...">.
+        // Cart/stock validation is still enforced on the checkout page (server + JS).
 
         applyProductFilter();
         renderCart();
