@@ -1089,6 +1089,7 @@ def shop_logout(request):
     return redirect("/logout/?next=/shop/")
 
 
+@ensure_csrf_cookie
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("shop-home")

@@ -88,6 +88,51 @@ if not SECRET_KEY:
 
 ALLOWED_HOSTS = ["*"]
 
+# ---- CSRF / HTTPS（Render / Railway / 反向代理）----
+# Django 4.x 在 HTTPS 下会校验 Origin/Referer；生产若未配置会导致
+# 「CSRF token from POST incorrect」或 403。
+# Render 提供 RENDER_EXTERNAL_URL（如 https://xxx.onrender.com）；也可在面板设置 CSRF_TRUSTED_ORIGINS（逗号分隔）。
+def _parse_csrf_trusted_origins():
+    raw = os.environ.get("CSRF_TRUSTED_ORIGINS", "").strip()
+    out = []
+    for part in raw.split(","):
+        p = part.strip()
+        if p:
+            out.append(p.rstrip("/"))
+    render_url = os.environ.get("RENDER_EXTERNAL_URL", "").strip()
+    if render_url:
+        u = render_url.rstrip("/")
+        if u not in out:
+            out.append(u)
+    railway_public = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
+    if railway_public:
+        u = railway_public
+        if not u.startswith("http"):
+            u = "https://" + u
+        u = u.rstrip("/")
+        if u not in out:
+            out.append(u)
+    # 去重且保持顺序
+    seen = set()
+    uniq = []
+    for o in out:
+        if o not in seen:
+            seen.add(o)
+            uniq.append(o)
+    return uniq
+
+
+CSRF_TRUSTED_ORIGINS = _parse_csrf_trusted_origins()
+
+# 终止 TLS 的反向代理（Render / nginx）会把原始协议放在 X-Forwarded-Proto
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+
+# 生产环境在 HTTPS 下使用安全 Cookie（与 CSRF 校验一致）
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 
 # Application definition
 
