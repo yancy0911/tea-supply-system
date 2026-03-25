@@ -76,6 +76,7 @@ urlpatterns = [
     path("replenishment/", replenishment_dashboard, name="replenishment-dashboard"),
     path("reports/", reports_dashboard, name="reports-dashboard"),
     path("reports/customers/", customer_insights_dashboard, name="reports-customers"),
+    path("customers/", customer_insights_dashboard, name="reports-customers-alt"),
     path("orders/", orders_list, name="orders-list"),
     path("order/<int:order_id>/paid/", mark_order_paid, name="order_paid"),
     path("order/<int:order_id>/payment-failed/", mark_order_payment_failed, name="order-payment-failed"),

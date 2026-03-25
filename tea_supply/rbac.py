@@ -1,8 +1,15 @@
 """
-Role-based access control (V1).
+Role-based access control (V1 / V1.5 hardening).
 
 Single source of truth: tea_supply.models.UserRole.role
 Roles: owner, manager, warehouse, driver, customer.
+
+All staff portal views must use decorators from this module — never rely on templates alone.
+
+Response policy (V1.5):
+- Not authenticated → redirect to /login/?next=...
+- customer on a view that does not allow CUSTOMER → redirect to shop home (/)
+- Any other disallowed role → 403 Forbidden
 """
 
 from functools import wraps
@@ -47,9 +54,9 @@ def is_staff_portal_role(role):
 def role_required(*allowed_roles):
     """
     Restrict view to given roles (use UserRole.Role constants).
-    - Unauthenticated -> redirect to login
-    - customer on staff-only page -> redirect to shop home
-    - other forbidden -> 403
+    - Unauthenticated → redirect to login
+    - customer when not allowed → redirect to shop home (name ``shop-home``)
+    - wrong internal role → 403
     """
 
     allowed = frozenset(allowed_roles)
@@ -77,10 +84,12 @@ def owner_required(view_func):
     return role_required(UserRole.Role.OWNER)(view_func)
 
 
-def staff_not_customer(view_func):
+def staff_required(view_func):
     """
-    Any internal role except customer (owner/manager/warehouse/driver).
-    Prefer role_required with explicit roles for new code.
+    Authenticated user must be an internal staff role (owner / manager / warehouse / driver).
+    customer → redirect to shop; missing/other → 403.
+
+    Prefer :func:`role_required` with an explicit role list for new views.
     """
 
     @wraps(view_func)
@@ -95,3 +104,7 @@ def staff_not_customer(view_func):
         return view_func(request, *args, **kwargs)
 
     return _wrapped
+
+
+# Backwards-compatible alias
+staff_not_customer = staff_required

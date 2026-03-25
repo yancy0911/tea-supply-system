@@ -2956,7 +2956,7 @@ def driver_orders(request):
         if not order_id or action not in ("start_delivery", "mark_completed"):
             messages.error(request, "Invalid request.")
             return redirect("driver-orders")
-        order = get_object_or_404(Order, pk=order_id, assigned_driver_id=request.user.id)
+        order = get_object_or_404(Order, pk=order_id, assigned_driver=request.user)
         if action == "start_delivery":
             # V1 state transition guard:
             # assigned -> delivering only.
@@ -2984,7 +2984,7 @@ def driver_orders(request):
         return redirect("driver-orders")
 
     orders = (
-        Order.objects.filter(assigned_driver_id=request.user.id)
+        Order.objects.filter(assigned_driver=request.user)
         .select_related("customer", "assigned_vehicle")
         .order_by("-created_at")
     )
