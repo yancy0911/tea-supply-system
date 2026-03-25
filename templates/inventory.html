@@ -3,7 +3,7 @@
 {% block content %}
   <h2 style="margin: 0 0 8px 0">Inventory alerts</h2>
   <p class="muted" style="margin: 0 0 16px 0; font-size: 14px">
-    Source: Product.current_stock / Product.safety_stock (same as replenishment dashboard).
+    Source: Product.stock / Product.safety_stock.
   </p>
 
   <div class="card-grid" style="margin-bottom: 16px; grid-template-columns: repeat(3, minmax(0, 1fr))">
@@ -12,12 +12,12 @@
       <div class="value" style="color: #111827">{{ stats.total }}</div>
     </div>
     <div class="card">
-      <div class="label">Low stock</div>
-      <div class="value" style="color: #dc2626">{{ stats.low }}</div>
+      <div class="label">Severe</div>
+      <div class="value" style="color: #dc2626">{{ stats.severe }}</div>
     </div>
     <div class="card">
-      <div class="label">OK</div>
-      <div class="value" style="color: #15803d">{{ stats.normal }}</div>
+      <div class="label">Low</div>
+      <div class="value" style="color: #ea580c">{{ stats.low }}</div>
     </div>
   </div>
 
@@ -36,15 +36,19 @@
         <tbody>
           {% for row in rows %}
             <tr
-              {% if row.low_stock %}
+              {% if row.severe_stock %}
                 style="background: #fef2f2; border-left: 4px solid #dc2626"
+              {% elif row.low_stock %}
+                style="background: #fffbeb; border-left: 4px solid #f59e0b"
               {% endif %}
             >
               <td><strong>{{ row.sku }}</strong></td>
               <td>{{ row.name }}</td>
               <td
-                {% if row.low_stock %}
-                  style="color: #dc2626; font-weight: 700"
+                {% if row.severe_stock %}
+                  style="color: #dc2626; font-weight: 800"
+                {% elif row.low_stock %}
+                  style="color: #b45309; font-weight: 800"
                 {% else %}
                   style="color: #15803d; font-weight: 600"
                 {% endif %}
@@ -53,8 +57,10 @@
               </td>
               <td>{{ row.safety_stock|floatformat:2 }}</td>
               <td>
-                {% if row.low_stock %}
-                  <span style="color: #dc2626; font-weight: 700">Low</span>
+                {% if row.severe_stock %}
+                  <span style="color: #dc2626; font-weight: 800">Severe</span>
+                {% elif row.low_stock %}
+                  <span style="color: #b45309; font-weight: 800">Low</span>
                 {% else %}
                   <span style="color: #15803d; font-weight: 600">OK</span>
                 {% endif %}

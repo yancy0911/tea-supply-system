@@ -65,8 +65,13 @@ class Product(models.Model):
         verbose_name="当前库存",
         help_text="稳版统一库存（默认假库存 100），用于商城下单校验与扣减。",
     )
+    stock = models.FloatField(
+        default=0,
+        verbose_name="当前库存（供应链）",
+        help_text="供应链库存（V1）：订单确认/收款后扣减；用于库存预警与补货。",
+    )
     safety_stock = models.FloatField(
-        default=10,
+        default=20,
         verbose_name="安全库存",
         help_text="低于或等于该值时前台显示低库存提醒。",
     )
@@ -616,13 +621,9 @@ class Order(models.Model):
 def _stock_need_for_line(order_item, product=None):
     """
     计算本行应扣减的库存数量（与 save/delete 一致）。
-    单品：扣减数量 = 下单数量；整箱：扣减 = 数量 × units_per_case。
-    关联原材料时扣原材料库存；否则扣商品可售库存 stock_quantity。
+    V1：扣减数量 = 下单数量（不区分单品/整箱）。
     """
-    p = product or order_item.product
     q = float(order_item.quantity)
-    if order_item.sale_type == OrderItem.SaleType.CASE:
-        return q * float(p.units_per_case)
     return q
 
 
@@ -646,7 +647,7 @@ def recalculate_order_totals(order_id):
 
 
 def assert_order_fits_available_stock(order_id):
-    """未扣库存订单：按商品汇总需求量，校验不超过 current_stock（stock_enabled=True 时）。"""
+    """未扣库存订单：按商品汇总需求量，校验不超过 Product.stock（stock_enabled=True 时）。"""
     order = Order.objects.filter(pk=order_id).first()
     if not order or order.stock_deducted:
         return
@@ -661,7 +662,7 @@ def assert_order_fits_available_stock(order_id):
         p = Product.objects.get(pk=pid)
         if not bool(getattr(p, "stock_enabled", True)):
             continue
-        cur = float(getattr(p, "current_stock", 0.0))
+        cur = float(getattr(p, "stock", 0.0))
         if cur < need:
             raise ValidationError(f"库存不足：{p.sku}")
 
@@ -712,27 +713,27 @@ def _apply_need_to_inventory(product, need, *, add_back=False, order=None):
         return
     _apply_depth_inc()
     try:
-        # 稳版统一库存：按 Product.current_stock 扣减/回补。
+        # V1 供应链库存：按 Product.stock 扣减/回补。
         # 浮点库存可能出现极小精度误差；这里做防负库存的兜底处理。
         eps = 1e-9
         p2 = Product.objects.select_for_update().get(pk=product.pk)
         if not bool(getattr(p2, "stock_enabled", True)):
             # 库存不限：不拦截、不扣减
             return
-        cur = float(p2.current_stock or 0.0)
+        cur = float(getattr(p2, "stock", 0.0) or 0.0)
         if add_back:
             new_stock = cur + need
         else:
             if bool(p2.stock_enabled) and cur + eps < need:
                 raise ValidationError(f"库存不足：商品「{product.name}」现有 {cur:g}，本次需 {need:g}")
             new_stock = cur - need
-        p2.current_stock = max(0.0, float(new_stock))
-        p2.save(update_fields=["current_stock"])
+        p2.stock = max(0.0, float(new_stock))
+        p2.save(update_fields=["stock"])
         _write_inventory_log(
             p2,
             qty=need,
             before_stock=cur,
-            after_stock=float(p2.current_stock),
+            after_stock=float(p2.stock),
             add_back=add_back,
             order=order,
             remark=("订单回库" if add_back else "订单扣减"),

@@ -1512,12 +1512,24 @@ def inventory_list(request):
     products = Product.objects.order_by("name", "sku")
     rows = []
     low_count = 0
+    severe_count = 0
     for p in products:
-        st = float(p.current_stock or 0.0)
+        st = float(getattr(p, "stock", 0.0) or 0.0)
         wl = float(p.safety_stock or 0.0)
-        is_low = st <= wl
+        is_severe = wl > 0 and st < (wl / 2.0)
+        is_low = st < wl and not is_severe
         if is_low:
             low_count += 1
+        if is_severe:
+            severe_count += 1
+        status_label = "OK"
+        status_level = "ok"
+        if is_severe:
+            status_label = "Severe"
+            status_level = "severe"
+        elif is_low:
+            status_label = "Low"
+            status_level = "low"
         rows.append(
             {
                 "product": p,
@@ -1526,14 +1538,17 @@ def inventory_list(request):
                 "current_stock": st,
                 "safety_stock": wl,
                 "low_stock": is_low,
-                "status_label": "Low stock" if is_low else "OK",
+                "severe_stock": is_severe,
+                "status_label": status_label,
+                "status_level": status_level,
             }
         )
     total_count = len(rows)
-    normal_count = total_count - low_count
+    normal_count = total_count - low_count - severe_count
     stats = {
         "total": total_count,
         "low": low_count,
+        "severe": severe_count,
         "normal": normal_count,
     }
     return render(request, "inventory.html", {"rows": rows, "stats": stats})
@@ -1993,6 +2008,26 @@ def boss_dashboard(request):
             }
         )
 
+    low_stock_rows = []
+    for p in (
+        Product.objects.filter(stock_enabled=True)
+        .filter(stock__lt=F("safety_stock"))
+        .order_by("stock", "sku")[:5]
+    ):
+        st = float(getattr(p, "stock", 0.0) or 0.0)
+        wl = float(getattr(p, "safety_stock", 0.0) or 0.0)
+        is_severe = wl > 0 and st < (wl / 2.0)
+        low_stock_rows.append(
+            {
+                "product": p,
+                "sku": p.sku,
+                "name": p.name,
+                "stock": st,
+                "safety_stock": wl,
+                "is_severe": is_severe,
+            }
+        )
+
     return render(
         request,
         "boss_dashboard.html",
@@ -2009,6 +2044,7 @@ def boss_dashboard(request):
             "customer_top5": customer_top5,
             "product_top5": product_top5,
             "trend7": trend,
+            "low_stock_rows": low_stock_rows,
         },
     )
 
@@ -2071,17 +2107,22 @@ def mark_order_paid(request, order_id):
     if order.status == Order.Status.PAID:
         messages.info(request, "Order was already settled; credit usage unchanged.")
         return redirect("orders-list")
-    with transaction.atomic():
-        # 禁止 select_related 可空外键与 select_for_update 混用（PostgreSQL：FOR UPDATE 不能锁 outer join 可空侧）
-        order = Order.objects.select_for_update().get(pk=order_id)
-        if order.status == Order.Status.PAID:
-            messages.info(request, "Order was already settled; credit usage unchanged.")
-            return redirect("orders-list")
-        order.status = Order.Status.PAID
-        order.payment_status = Order.PaymentStatus.PAID
-        order.paid_at = timezone.now()
-        order.save(update_fields=["status", "payment_status", "paid_at"])
-        reverse_credit_debt_if_counted(order)
+    try:
+        with transaction.atomic():
+            # 禁止 select_related 可空外键与 select_for_update 混用（PostgreSQL：FOR UPDATE 不能锁 outer join 可空侧）
+            order = Order.objects.select_for_update().get(pk=order_id)
+            if order.status == Order.Status.PAID:
+                messages.info(request, "Order was already settled; credit usage unchanged.")
+                return redirect("orders-list")
+            deduct_stock_for_order(order.pk)
+            order.status = Order.Status.PAID
+            order.payment_status = Order.PaymentStatus.PAID
+            order.paid_at = timezone.now()
+            order.save(update_fields=["status", "payment_status", "paid_at"])
+            reverse_credit_debt_if_counted(order)
+    except ValidationError as exc:
+        messages.error(request, str(exc))
+        return redirect("orders-list")
     messages.success(request, _MSG_SETTLED_RELEASE)
     return redirect("orders-list")
 
@@ -2089,23 +2130,24 @@ def mark_order_paid(request, order_id):
 @login_required
 @internal_user_required
 def confirm_order(request, order_id):
-    with transaction.atomic():
-        order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
-        if order.workflow_status == Order.WorkflowStatus.CANCELLED:
-            messages.error(request, "Cancelled orders cannot be confirmed.")
-            return redirect("orders-list")
-        guard_reason = _confirm_order_guard_reason(order)
-        if guard_reason:
-            messages.error(request, guard_reason)
-            return redirect("orders-list")
-        if order.workflow_status != Order.WorkflowStatus.CONFIRMED:
-            order.workflow_status = Order.WorkflowStatus.CONFIRMED
-            order.save(update_fields=["workflow_status"])
-        try:
+    try:
+        with transaction.atomic():
+            order = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
+            if order.workflow_status == Order.WorkflowStatus.CANCELLED:
+                messages.error(request, "Cancelled orders cannot be confirmed.")
+                return redirect("orders-list")
+            guard_reason = _confirm_order_guard_reason(order)
+            if guard_reason:
+                messages.error(request, guard_reason)
+                return redirect("orders-list")
+            deduct_stock_for_order(order.pk)
+            if order.workflow_status != Order.WorkflowStatus.CONFIRMED:
+                order.workflow_status = Order.WorkflowStatus.CONFIRMED
+                order.save(update_fields=["workflow_status"])
             apply_credit_debt_if_needed(order)
-        except ValidationError as exc:
-            messages.error(request, str(exc))
-            return redirect("orders-list")
+    except ValidationError as exc:
+        messages.error(request, str(exc))
+        return redirect("orders-list")
     messages.success(request, "Order confirmed.")
     return redirect("orders-list")
 
