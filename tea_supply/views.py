@@ -19,7 +19,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Min, Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -1896,6 +1896,121 @@ def reports_dashboard(request):
         "missing_cost_products": missing_cost_products,
     }
     return render(request, "reports_basic.html", context)
+
+
+@login_required
+@boss_required
+def boss_dashboard(request):
+    """Business control center for owner (B2B/ERP-style)."""
+    today = timezone.localdate()
+
+    valid_orders = Order.objects.exclude(workflow_status=Order.WorkflowStatus.CANCELLED)
+    today_orders = valid_orders.filter(created_at__date=today)
+    today_agg = today_orders.aggregate(
+        sales=Coalesce(Sum("total_revenue"), 0.0),
+        profit=Coalesce(Sum("profit"), 0.0),
+    )
+
+    kpi_today_order_count = int(today_orders.count())
+    kpi_today_sales = money_float(today_agg["sales"] or 0.0)
+    kpi_today_profit = money_float(today_agg["profit"] or 0.0)
+
+    unpaid_qs = Order.objects.filter(status=Order.Status.PENDING).exclude(
+        workflow_status=Order.WorkflowStatus.CANCELLED
+    )
+    kpi_unpaid_order_count = int(unpaid_qs.count())
+
+    kpi_dispatch_assigned_count = int(
+        Order.objects.filter(delivery_status="assigned").count()
+    )
+    kpi_dispatch_delivering_count = int(
+        Order.objects.filter(delivery_status="delivering").count()
+    )
+
+    recent_orders = list(
+        Order.objects.select_related("customer", "assigned_driver", "assigned_vehicle")
+        .order_by("-created_at")[:10]
+    )
+    unpaid_orders = list(
+        unpaid_qs.select_related("customer").order_by("-created_at")[:10]
+    )
+    dispatch_orders = list(
+        Order.objects.filter(delivery_status__in=["assigned", "delivering"])
+        .select_related("customer", "assigned_driver", "assigned_vehicle")
+        .order_by("-created_at")[:10]
+    )
+
+    customer_top5 = list(
+        valid_orders.exclude(customer__isnull=True)
+        .values("customer_id", "customer__name")
+        .annotate(value=Coalesce(Sum("total_revenue"), 0.0))
+        .order_by("-value")[:5]
+    )
+    customer_top5 = [{**r, "value": money_float(r["value"])} for r in customer_top5]
+
+    product_base = (
+        OrderItem.objects.exclude(order__workflow_status=Order.WorkflowStatus.CANCELLED)
+        .values("product_id", "product__name", "product__sku")
+        .annotate(
+            qty=Coalesce(Sum("quantity"), 0.0),
+            value=Coalesce(Sum("total_revenue"), 0.0),
+        )
+        .order_by("-value")[:5]
+    )
+    product_top5 = [
+        {
+            "product_id": r["product_id"],
+            "name": r["product__name"],
+            "sku": r["product__sku"],
+            "qty": float(r["qty"] or 0.0),
+            "value": money_float(r["value"] or 0.0),
+        }
+        for r in product_base
+    ]
+
+    # 7-day trend (orders + sales)
+    start = today - timedelta(days=6)
+    trend_qs = (
+        valid_orders.filter(created_at__date__gte=start, created_at__date__lte=today)
+        .annotate(d=TruncDate("created_at"))
+        .values("d")
+        .annotate(
+            orders=Coalesce(Count("id"), 0),
+            sales=Coalesce(Sum("total_revenue"), 0.0),
+        )
+        .order_by("d")
+    )
+    trend_map = {r["d"]: r for r in trend_qs}
+    trend = []
+    for i in range(7):
+        d = start + timedelta(days=i)
+        row = trend_map.get(d, {"orders": 0, "sales": 0.0})
+        trend.append(
+            {
+                "date": d,
+                "orders": int(row.get("orders") or 0),
+                "sales": money_float(row.get("sales") or 0.0),
+            }
+        )
+
+    return render(
+        request,
+        "boss_dashboard.html",
+        {
+            "kpi_today_order_count": kpi_today_order_count,
+            "kpi_today_sales": kpi_today_sales,
+            "kpi_today_profit": kpi_today_profit,
+            "kpi_unpaid_order_count": kpi_unpaid_order_count,
+            "kpi_dispatch_assigned_count": kpi_dispatch_assigned_count,
+            "kpi_dispatch_delivering_count": kpi_dispatch_delivering_count,
+            "recent_orders": recent_orders,
+            "unpaid_orders": unpaid_orders,
+            "dispatch_orders": dispatch_orders,
+            "customer_top5": customer_top5,
+            "product_top5": product_top5,
+            "trend7": trend,
+        },
+    )
 
 
 _MSG_SETTLED_RELEASE = (

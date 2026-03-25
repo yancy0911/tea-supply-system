@@ -144,6 +144,9 @@
           <a href="/shop/">Wholesale Shop</a>
           {% if user.is_authenticated and user.is_staff %}
           <a href="/">Staff Portal</a>
+          {% if user.is_superuser %}
+          <a href="/dashboard/">Dashboard</a>
+          {% endif %}
           <a href="/orders/">Orders</a>
           <a href="/reports/">Reports</a>
           <a href="/reports/customers/">Customer insights</a>

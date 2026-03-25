@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% block content %}
+  <style>
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 1100px) {
+      .dash-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 720px) {
+      .dash-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .kpi-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+      border: 1px solid #eef2f7;
+    }
+    .kpi-label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .kpi-value {
+      margin-top: 8px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #111827;
+    }
+    .kpi-sub {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+      border: 1px solid #eef2f7;
+    }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 900;
+      color: #111827;
+    }
+    .section-hint {
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 1100px) {
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .mini-table th,
+    .mini-table td {
+      padding: 10px 10px;
+      border-bottom: 1px solid #eef2f7;
+      font-size: 13px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .mini-table th {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      background: #f9fafb;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid #e5e7eb;
+      background: #f3f4f6;
+      color: #374151;
+      white-space: nowrap;
+    }
+    .pill.green {
+      background: #dcfce7;
+      color: #15803d;
+      border-color: #bbf7d0;
+    }
+    .pill.blue {
+      background: #e0f2fe;
+      color: #0369a1;
+      border-color: #bae6fd;
+    }
+    .pill.orange {
+      background: #ffedd5;
+      color: #9a3412;
+      border-color: #fed7aa;
+    }
+    .trend {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+      align-items: end;
+      height: 120px;
+      margin-top: 8px;
+    }
+    .bar {
+      border-radius: 10px;
+      background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      border: 1px solid rgba(37, 99, 235, 0.35);
+      min-height: 6px;
+    }
+    .bar-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 6px;
+      text-align: center;
+      font-weight: 700;
+    }
+  </style>
+
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom: 12px;">
+    <h2 style="margin:0;">Business control center</h2>
+    <div class="muted" style="font-size: 13px; font-weight: 700;">
+      <a href="/orders/" style="text-decoration:none;">Orders</a>
+      &nbsp;·&nbsp;
+      <a href="/reports/" style="text-decoration:none;">Reports</a>
+      &nbsp;·&nbsp;
+      <a href="/admin/" style="text-decoration:none;">Admin</a>
+    </div>
+  </div>
+
+  <div class="dash-grid" style="margin-bottom: 12px;">
+    <div class="kpi-card">
+      <div class="kpi-label">Today orders</div>
+      <div class="kpi-value">{{ kpi_today_order_count }}</div>
+      <div class="kpi-sub">All non-cancelled orders today</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Today sales</div>
+      <div class="kpi-value">{{ kpi_today_sales|floatformat:2 }}</div>
+      <div class="kpi-sub">Sum of revenue today</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Today profit</div>
+      <div class="kpi-value">{{ kpi_today_profit|floatformat:2 }}</div>
+      <div class="kpi-sub">Revenue − cost today</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Unpaid orders</div>
+      <div class="kpi-value">{{ kpi_unpaid_order_count }}</div>
+      <div class="kpi-sub">Settlement status = pending</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">To dispatch</div>
+      <div class="kpi-value">{{ kpi_dispatch_assigned_count }}</div>
+      <div class="kpi-sub">delivery_status = assigned</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Delivering</div>
+      <div class="kpi-value">{{ kpi_dispatch_delivering_count }}</div>
+      <div class="kpi-sub">delivery_status = delivering</div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom: 12px;">
+    <div class="section">
+      <div class="section-head">
+        <h3 class="section-title">Recent orders</h3>
+        <span class="section-hint">Latest 10</span>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in recent_orders %}
+            <tr>
+              <td><a href="{% url 'order-status-update' o.id %}">#{{ o.id }}</a></td>
+              <td>{{ o.customer.name|default:"—" }}</td>
+              <td>{{ o.total_revenue|floatformat:2 }}</td>
+              <td>
+                {% if o.status == "paid" %}
+                  <span class="pill green">Paid ✓</span>
+                {% elif o.workflow_status == "cancelled" %}
+                  <span class="pill">Cancelled</span>
+                {% else %}
+                  <span class="pill blue">{{ o.get_workflow_status_display }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h3 class="section-title">Unpaid orders</h3>
+        <span class="section-hint">Top 10</span>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Workflow</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in unpaid_orders %}
+            <tr>
+              <td><a href="{% url 'order-status-update' o.id %}">#{{ o.id }}</a></td>
+              <td>{{ o.customer.name|default:"—" }}</td>
+              <td>{{ o.total_revenue|floatformat:2 }}</td>
+              <td>
+                <span class="pill orange">{{ o.get_workflow_status_display }}</span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h3 class="section-title">Dispatch queue</h3>
+        <span class="section-hint">Assigned / Delivering</span>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Customer</th>
+            <th>Delivery</th>
+            <th>Driver</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in dispatch_orders %}
+            <tr>
+              <td><a href="{% url 'order-status-update' o.id %}">#{{ o.id }}</a></td>
+              <td>{{ o.customer.name|default:"—" }}</td>
+              <td>
+                {% if o.delivery_status == "assigned" %}
+                  <span class="pill blue">Assigned</span>
+                {% elif o.delivery_status == "delivering" %}
+                  <span class="pill orange">Delivering</span>
+                {% else %}
+                  <span class="pill">{{ o.delivery_status }}</span>
+                {% endif %}
+              </td>
+              <td>{{ o.assigned_driver.username|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="section">
+      <div class="section-head">
+        <h3 class="section-title">Top customers</h3>
+        <span class="section-hint">By sales</span>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Sales</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in customer_top5 %}
+            <tr>
+              <td>{{ r.customer__name }}</td>
+              <td>{{ r.value|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2" class="muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h3 class="section-title">Top products</h3>
+        <span class="section-hint">By sales</span>
+      </div>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Sales</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in product_top5 %}
+            <tr>
+              <td><span style="font-weight:800;">{{ r.sku }}</span> · {{ r.name }}</td>
+              <td>{{ r.qty|floatformat:2 }}</td>
+              <td>{{ r.value|floatformat:2 }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="muted">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h3 class="section-title">Last 7 days trend</h3>
+        <span class="section-hint">Orders + sales</span>
+      </div>
+      {% with max_sales=0 %}
+      {% endwith %}
+      {% comment %}
+        Simple bar chart: height scaled in JS to avoid template math.
+      {% endcomment %}
+      <div class="trend" id="trend-bars">
+        {% for t in trend7 %}
+          <div>
+            <div class="bar" data-sales="{{ t.sales }}"></div>
+            <div class="bar-label">{{ t.date|date:"m-d" }}</div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="muted" style="margin-top:10px; font-size:12px;">
+        {% for t in trend7 %}
+          <span style="margin-right:10px;"><strong>{{ t.date|date:"m-d" }}</strong>: {{ t.orders }} orders / {{ t.sales|floatformat:2 }}</span>
+        {% endfor %}
+      </div>
+      <script>
+        (function () {
+          var bars = document.querySelectorAll("#trend-bars .bar");
+          if (!bars || bars.length === 0) return;
+          var max = 0;
+          bars.forEach(function (b) {
+            var v = parseFloat(b.getAttribute("data-sales") || "0");
+            if (isFinite(v) && v > max) max = v;
+          });
+          bars.forEach(function (b) {
+            var v = parseFloat(b.getAttribute("data-sales") || "0");
+            var h = max <= 0 ? 6 : Math.max(6, Math.round((v / max) * 110));
+            b.style.height = h + "px";
+          });
+        })();
+      </script>
+    </div>
+  </div>
+{% endblock %}
+
