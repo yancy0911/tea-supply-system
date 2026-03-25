@@ -2,6 +2,7 @@ from django.urls import path
 from tea_supply.views import (
     cancel_order,
     boss_dashboard,
+    boss_start_delivery,
     checkout_submit_order,
     confirm_order,
     credit_apply_view,
@@ -40,6 +41,7 @@ urlpatterns = [
     path("login/", login_view, name="login"),
     path("logout/", logout_view, name="logout"),
     path("dashboard/", boss_dashboard, name="boss-dashboard"),
+    path("dashboard/order/<int:order_id>/start-delivery/", boss_start_delivery, name="boss-start-delivery"),
     path("profile/", profile_view, name="profile"),
     path("my-orders/", my_orders_view, name="my-orders"),
     path("credit/", credit_home_view, name="credit-home"),

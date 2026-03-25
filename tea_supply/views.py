@@ -2013,6 +2013,22 @@ def boss_dashboard(request):
     )
 
 
+@login_required
+@boss_required
+@require_POST
+def boss_start_delivery(request, order_id):
+    """Owner action: assigned -> delivering (one-click from dashboard)."""
+    with transaction.atomic():
+        o = get_object_or_404(Order.objects.select_for_update(), pk=order_id)
+        if o.delivery_status != "assigned":
+            messages.error(request, "Cannot start delivery: order is not in 'assigned' state.")
+            return redirect("boss-dashboard")
+        o.delivery_status = "delivering"
+        o.save(update_fields=["delivery_status"])
+    messages.success(request, "Delivery started.")
+    return redirect("boss-dashboard")
+
+
 _MSG_SETTLED_RELEASE = (
     "Settlement recorded: this receivable is cleared and no longer uses credit limit. "
     "Customer debt and risk views are updated; you may place new orders if you were blocked by limit."
