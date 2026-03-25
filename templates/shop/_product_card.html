@@ -37,6 +37,9 @@
           <span class="ecom-card__spec">{{ product.case_label|spec_en }}</span>
         {% endif %}
       </div>
+      {% if product.price_note %}
+        <div class="ecom-card__desc">{{ product.price_note }}</div>
+      {% endif %}
     </div>
 
     {% if product.price_on_request %}
@@ -141,7 +144,7 @@
       <div class="catalog-card__actions ecom-card__actions">
         <div class="qty-stepper ecom-qty-stepper">
           <button type="button" data-act="minus" aria-label="Decrease quantity">−</button>
-          <input type="number" min="0.01" step="0.01" value="{{ product.minimum_order_qty }}" aria-label="Quantity" />
+          <input type="number" min="0.01" step="0.01" value="1" aria-label="Quantity" />
           <button type="button" data-act="plus" aria-label="Increase quantity">+</button>
         </div>
         <button
@@ -156,6 +159,19 @@
           {% endif %}
         >
           Add to Cart
+        </button>
+        <button
+          type="button"
+          class="btn-buy-now ecom-btn-buy-now"
+          data-pid="{{ product.id }}"
+          {% if shop_customer and not shop_can_order %}
+            disabled
+            title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
+          {% elif product.price_on_request %}
+            disabled
+          {% endif %}
+        >
+          Buy Now
         </button>
       </div>
     </div>

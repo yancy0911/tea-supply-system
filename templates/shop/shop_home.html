@@ -403,6 +403,16 @@
         color: #cbd5e1;
         user-select: none;
       }
+      .ecom-card__desc {
+        font-size: 12px;
+        color: #6b7280;
+        line-height: 1.45;
+        margin: -2px 0 2px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
       .ecom-card__discount-row {
         display: flex;
         flex-wrap: wrap;
@@ -684,6 +694,32 @@
         transform: translateY(-1px);
       }
       .btn-add-cart.ecom-btn-add-cart:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+        filter: none;
+        box-shadow: none;
+      }
+      .btn-buy-now.ecom-btn-buy-now {
+        width: 100%;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.22);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      }
+      .btn-buy-now.ecom-btn-buy-now:hover:not(:disabled) {
+        filter: brightness(1.08);
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.30);
+        transform: translateY(-1px);
+      }
+      .btn-buy-now.ecom-btn-buy-now:disabled {
         opacity: 0.45;
         cursor: not-allowed;
         transform: none;
@@ -1420,6 +1456,21 @@
           if (delegationReady) return;
           delegationReady = true;
           grid.addEventListener("click", function (e) {
+            var buyBtn = e.target.closest(".btn-buy-now");
+            if (buyBtn) {
+              var pid = parseInt(buyBtn.getAttribute("data-pid"), 10);
+              var card = buyBtn.closest(".catalog-card");
+              var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
+              var saleType = mode ? mode.value : "single";
+              var qtyIn = card.querySelector(".qty-stepper input");
+              var qty = parseFloat(qtyIn.value);
+              if (isNaN(qty) || qty <= 0) {
+                alert("Enter a valid quantity");
+                return;
+              }
+              buyNow(pid, saleType, qty);
+              return;
+            }
             var addBtn = e.target.closest(".btn-add-cart");
             if (addBtn) {
               var pid = parseInt(addBtn.getAttribute("data-pid"), 10);
@@ -1596,6 +1647,25 @@
           }
           saveCart(cart);
           renderCart();
+        }
+
+        function buyNow(pid, saleType, qty) {
+          if (shopLoggedIn && !shopCanOrder) {
+            alert(shopOrderBlockHint || "Ordering is not available.");
+            return;
+          }
+          if (!shopLoggedIn) {
+            // Ensure checkout requires login; keep product/cart selection.
+            window.location.href = "/login/?next=/checkout/";
+            return;
+          }
+
+          // Buy Now: replace cart with a single line.
+          saveCart([]);
+          addToCart(pid, saleType, qty);
+          cart = getCart();
+          if (!cart || cart.length === 0) return;
+          window.location.href = "/checkout/";
         }
 
         function recalcLine(line) {
