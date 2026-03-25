@@ -7,7 +7,7 @@
     <a href="{% url 'reports-dashboard' %}">Back to basic reports</a>
   </p>
 
-  <div class="card-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 14px">
+  <div class="card-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 20px">
     <div class="card"><div class="label">Total customers</div><div class="value">{{ kpi_total_customers }}</div></div>
     <div class="card"><div class="label">Customers with orders</div><div class="value">{{ kpi_customers_with_orders }}</div></div>
     <div class="card"><div class="label">Suspended customers</div><div class="value" style="color:#b91c1c">{{ kpi_blocked_customers }}</div></div>

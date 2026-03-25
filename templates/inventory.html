@@ -30,8 +30,6 @@
             <th>Product</th>
             <th>On hand</th>
             <th>Safety stock</th>
-            <th>Reorder qty</th>
-            <th>Reason</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -58,15 +56,13 @@
                 {{ row.current_stock|floatformat:2 }}
               </td>
               <td>{{ row.safety_stock|floatformat:2 }}</td>
-              <td>{{ row.reorder_qty|floatformat:2 }}</td>
-              <td><span class="muted" style="font-size: 12px">{{ row.reorder_reason }}</span></td>
               <td>
                 {% if row.severe_stock %}
-                  <span style="color: #dc2626; font-weight: 800">Severe</span>
+                  <span class="badge badge--danger">Severe</span>
                 {% elif row.low_stock %}
-                  <span style="color: #b45309; font-weight: 800">Low</span>
+                  <span class="badge badge--warning">Low</span>
                 {% else %}
-                  <span style="color: #15803d; font-weight: 600">OK</span>
+                  <span class="badge badge--success">OK</span>
                 {% endif %}
               </td>
             </tr>

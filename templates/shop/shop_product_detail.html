@@ -4,20 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ product_row.name }} — Wholesale Shop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     {{ product_row|json_script:"shop-product-data" }}
     <style>
       :root {
-        --accent: #ff5000;
+        --accent: #15803d;
         --muted: #6b7280;
-        --border: #e8eaed;
+        --border: #e5e7eb;
       }
       * {
         box-sizing: border-box;
       }
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
-        background: #f4f6f8;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif;
+        background: #f8fafc;
       }
       .top {
         background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
@@ -41,9 +47,10 @@
         grid-template-columns: 1fr 1fr;
         gap: 24px;
         background: #fff;
-        border-radius: 12px;
+        border-radius: 8px;
         padding: 20px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       }
       @media (max-width: 720px) {
         .grid {
@@ -96,9 +103,14 @@
         font-weight: 600;
       }
       .big-price {
-        font-size: 24px;
-        font-weight: 900;
+        font-size: 28px;
+        font-weight: 800;
         color: var(--accent);
+      }
+      .case-price {
+        font-size: 15px;
+        font-weight: 600;
+        color: #64748b;
       }
       .mode {
         display: flex;
@@ -129,15 +141,16 @@
       }
       .btn {
         width: 100%;
-        padding: 12px;
-        border: none;
-        border-radius: 10px;
-        background: linear-gradient(90deg, #ea580c, var(--accent));
+        padding: 14px;
+        border: 1px solid #166534;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
         color: #fff;
         font-weight: 800;
         font-size: 16px;
         cursor: pointer;
         margin-top: 8px;
+        box-shadow: 0 4px 14px rgba(21, 128, 61, 0.25);
       }
       .btn:disabled {
         opacity: 0.5;
@@ -297,11 +310,11 @@
           priceHtml +=
             '<div><span class="big-price">{{ currency_symbol }}' +
             fmtMoney(p.display_single) +
-            '</span> <small style="color:#6b7280">Per Bag</small></div>';
+            '</span> <small style="color:#94a3b8;font-weight:600">Per Bag</small></div>';
           priceHtml +=
-            '<div><span class="big-price">{{ currency_symbol }}' +
+            '<div><span class="case-price">{{ currency_symbol }}' +
             fmtMoney(p.display_case) +
-            '</span> <small style="color:#6b7280">Per Case</small></div>';
+            '</span> <small style="color:#94a3b8;font-weight:600">Per Case</small></div>';
         }
         document.getElementById("pprice").innerHTML = priceHtml;
         var pnoteEl = document.getElementById("pnote");

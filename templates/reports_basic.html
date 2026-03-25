@@ -3,7 +3,7 @@
 {% block content %}
   <h2 style="margin: 0 0 12px 0">Basic reports</h2>
 
-  <div class="card-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px">
+  <div class="card-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 20px">
     <div class="card"><div class="label">Today revenue</div><div class="value">{{ kpi_today_sales|floatformat:2 }}</div></div>
     <div class="card"><div class="label">Today profit</div><div class="value">{{ kpi_today_profit|floatformat:2 }}</div></div>
     <div class="card"><div class="label">Pending confirmation</div><div class="value">{{ kpi_pending_confirm_count }}</div></div>

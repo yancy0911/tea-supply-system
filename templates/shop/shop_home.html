@@ -4,25 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Wholesale Shop — Boba Supply</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     {{ products|json_script:"shop-products-data" }}
     <style>
       :root {
-        --bg: #f6f6f7;
+        --bg: #f8fafc;
         --card: #ffffff;
         --text: #1a1a1a;
         --muted: #6d7175;
-        --border: #e3e3e3;
-        --accent: #008060;
-        --accent-hover: #006e52;
+        --border: #e5e7eb;
+        --accent: #15803d;
+        --accent-hover: #166534;
         --cartw: 380px;
         --header-h: 56px;
+        --radius: 8px;
       }
       * {
         box-sizing: border-box;
       }
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC",
+          "Microsoft YaHei", sans-serif;
         background: var(--bg);
         color: var(--text);
         min-height: 100vh;
@@ -301,16 +309,16 @@
       .product-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 24px;
+        gap: 20px;
       }
       .catalog-card.ecom-card {
         background: var(--card);
-        border-radius: 16px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         transition: transform 0.22s ease, box-shadow 0.22s ease;
       }
       .catalog-card.ecom-card:hover {
@@ -319,8 +327,10 @@
       }
       .ecom-card__media.catalog-card__media {
         display: block;
-        aspect-ratio: 1;
-        background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
+        height: 200px;
+        background: #fafafa;
+        padding: 12px;
+        box-sizing: border-box;
         overflow: hidden;
       }
       .ecom-card__media-inner {
@@ -329,7 +339,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 12px;
         box-sizing: border-box;
       }
       .ecom-card__media-inner img {
@@ -437,7 +446,7 @@
         gap: 12px;
         margin: 0;
         padding: 14px;
-        border-radius: 12px;
+        border-radius: var(--radius);
         background: #f8fafc;
         border: 1px solid #e2e8f0;
       }
@@ -449,7 +458,7 @@
       .price-block {
         background: #fff;
         border: 1px solid #e2e8f0;
-        border-radius: 12px;
+        border-radius: var(--radius);
         padding: 12px 12px 14px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         border-top: 3px solid var(--accent);
@@ -481,6 +490,19 @@
         color: #0f766e;
         letter-spacing: -0.03em;
         line-height: 1.1;
+      }
+      .price-block[data-price-type="bag"] .price-block__amount {
+        font-size: 26px;
+        color: #15803d;
+      }
+      .price-block[data-price-type="case"] .price-block__label,
+      .price-block[data-price-type="case"] .price-block__unit {
+        font-size: 10px;
+      }
+      .price-block[data-price-type="case"] .price-block__amount {
+        font-size: 16px;
+        font-weight: 700;
+        color: #475569;
       }
       .price-block__compare {
         display: flex;
@@ -677,20 +699,20 @@
       .btn-add-cart.ecom-btn-add-cart {
         width: 100%;
         padding: 14px 20px;
-        border: none;
-        border-radius: 12px;
-        background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
+        border: 1px solid #166534;
+        border-radius: var(--radius);
+        background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
         color: #fff;
         font-size: 15px;
         font-weight: 800;
         letter-spacing: 0.02em;
         cursor: pointer;
-        box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+        box-shadow: 0 4px 14px rgba(21, 128, 61, 0.25);
         transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
       }
       .btn-add-cart.ecom-btn-add-cart:hover:not(:disabled) {
         filter: brightness(1.05);
-        box-shadow: 0 8px 22px rgba(234, 88, 12, 0.45);
+        box-shadow: 0 8px 22px rgba(21, 128, 61, 0.35);
         transform: translateY(-1px);
       }
       .btn-add-cart.ecom-btn-add-cart:disabled {
@@ -703,28 +725,24 @@
       .btn-buy-now.ecom-btn-buy-now {
         width: 100%;
         padding: 14px 20px;
-        border: none;
-        border-radius: 12px;
-        background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
-        color: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: var(--radius);
+        background: #ffffff;
+        color: #374151;
         font-size: 15px;
-        font-weight: 800;
+        font-weight: 700;
         letter-spacing: 0.02em;
         cursor: pointer;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.22);
-        transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+        box-shadow: none;
+        transition: background 0.12s ease, border-color 0.12s ease;
       }
       .btn-buy-now.ecom-btn-buy-now:hover:not(:disabled) {
-        filter: brightness(1.08);
-        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.30);
-        transform: translateY(-1px);
+        background: #f9fafb;
+        border-color: #9ca3af;
       }
       .btn-buy-now.ecom-btn-buy-now:disabled {
         opacity: 0.45;
         cursor: not-allowed;
-        transform: none;
-        filter: none;
-        box-shadow: none;
       }
       .shop-cart-panel {
         align-self: start;

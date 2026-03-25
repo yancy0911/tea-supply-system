@@ -189,7 +189,7 @@
       height: 32px;
       width: 150px;
       padding: 0 12px;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 0;
@@ -198,7 +198,7 @@
       box-sizing: border-box;
     }
     .orders-main-action--primary {
-      background: #2563eb;
+      background: #15803d;
       color: #fff;
     }
     .orders-main-action--success {
@@ -220,7 +220,12 @@
       user-select: none;
     }
   </style>
-  <h2 style="margin: 0 0 12px 0">Orders</h2>
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px">
+    <h2 style="margin: 0">Orders</h2>
+    {% if user.is_staff %}
+      <a href="{% url 'admin:tea_supply_order_add' %}" class="btn">New order</a>
+    {% endif %}
+  </div>
 
   <form method="get" class="card" style="margin-bottom: 16px">
     <p class="muted" style="margin: 0 0 10px; font-size: 13px">Filter by date, workflow, settlement, customer</p>
@@ -273,7 +278,7 @@
         <input type="date" name="date_to" value="{{ filter_date_to }}" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #d1d5db" />
       </div>
     </div>
-    <button type="submit" class="btn" style="padding: 8px 16px; font-size: 14px">Apply</button>
+    <button type="submit" class="btn secondary" style="padding: 8px 16px; font-size: 14px">Apply</button>
     <a href="/orders/" class="btn secondary" style="padding: 8px 16px; font-size: 14px; margin-left: 8px">Reset</a>
   </form>
 
@@ -284,15 +289,9 @@
           <tr>
             <th>ID</th>
             <th>Customer</th>
-            <th>Items</th>
             <th>Amount</th>
-            <th>Cost</th>
-            <th>Profit</th>
+            <th>Status</th>
             <th>Created</th>
-            <th>Workflow</th>
-            <th>Settlement</th>
-            <th>Terms</th>
-            <th>Paid</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -309,65 +308,31 @@
                   No customer
                 {% endif %}
               </td>
-              <td>
-                <div style="font-weight:600">{{ row.items_text }}</div>
-                <div class="muted" style="font-size:12px">{{ row.product_preview }}</div>
-              </td>
               <td style="font-weight: 600">{{ row.amount|floatformat:2 }}</td>
-              <td>{{ row.cost|floatformat:2 }}</td>
               <td>
-                <span
-                  style="font-weight: 800; color: {% if row.profit is not None and row.profit < 0 %}#b91c1c{% else %}#15803d{% endif %}"
-                >{{ row.profit|floatformat:2 }}</span>
-                {% if row.profit is not None and row.profit < 0 %}
-                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">Loss</span>
-                {% endif %}
-                {% if row.profit_rate is not None and row.profit_rate < 10 %}
-                  <span style="margin-left:6px;color:#ea580c;font-weight:700;">Low margin</span>
-                {% endif %}
-                {% if row.cost_missing %}
-                  <span style="margin-left:6px;color:#b91c1c;font-weight:700;">No cost</span>
-                {% endif %}
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+                  {% if row.order.workflow_status == "cancelled" %}
+                    <span class="badge badge--danger">{{ row.order.get_workflow_status_display }}</span>
+                  {% elif row.order.workflow_status == "completed" %}
+                    <span class="badge badge--success">{{ row.order.get_workflow_status_display }}</span>
+                  {% elif row.order.workflow_status == "pending_confirm" or row.order.workflow_status == "preparing" or row.order.workflow_status == "confirmed" or row.order.workflow_status == "shipped" %}
+                    <span class="badge badge--info">{{ row.order.get_workflow_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge--neutral">{{ row.order.get_workflow_status_display }}</span>
+                  {% endif %}
+                  {% if row.order.status == "paid" %}
+                    <span class="badge badge--success">Paid</span>
+                  {% else %}
+                    <span class="badge badge--info">Unpaid</span>
+                  {% endif %}
+                  {% if row.profit is not None and row.profit < 0 %}
+                    <span class="badge badge--danger">Loss</span>
+                  {% elif row.cost_missing %}
+                    <span class="badge badge--danger">No cost</span>
+                  {% endif %}
+                </div>
               </td>
-              <td>{{ row.order.created_at|date:"Y-m-d H:i:s" }}</td>
-              <td>
-                {% if row.order.workflow_status == "cancelled" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-weight: 600">Cancelled</span>
-                {% elif row.order.workflow_status == "pending_confirm" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #e0f2fe; color: #0369a1; font-weight: 600">Pending</span>
-                {% elif row.order.workflow_status == "preparing" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #fff7ed; color: #9a3412; font-weight: 600">Preparing</span>
-                {% elif row.order.workflow_status == "shipped" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #ede9fe; color: #5b21b6; font-weight: 600">Shipped</span>
-                {% elif row.order.workflow_status == "completed" %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #15803d; font-weight: 600">Done</span>
-                {% else %}
-                  <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #4b5563">{{ row.order.get_workflow_status_display }}</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if row.order.status == "pending" %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#e5e7eb;color:#374151;">Pending</span>
-                {% elif row.order.status == "paid" %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">Settled</span>
-                {% else %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#4b5563;">{{ row.order.status }}</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if row.order.settlement_type == "credit" %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#fff7ed;color:#9a3412;">Credit</span>
-                {% else %}
-                  <span style="display:inline-block;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#15803d;">Cash</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if row.order.status == "paid" %}
-                  <span style="color:#15803d;font-weight:600;">Paid</span>
-                {% else %}
-                  <span style="color:#b45309;font-weight:600;">Unpaid</span>
-                {% endif %}
-              </td>
+              <td>{{ row.order.created_at|date:"Y-m-d H:i" }}</td>
               <td>
                 {% if row.order.status == "paid" %}
                   <span

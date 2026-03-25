@@ -4,7 +4,7 @@
     .dash-grid {
       display: grid;
       grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 14px;
+      gap: 16px;
     }
     @media (max-width: 1100px) {
       .dash-grid {
@@ -17,15 +17,36 @@
       }
     }
     .kpi-card {
-      background: #fff;
-      border-radius: 14px;
+      background: #ffffff;
+      border-radius: 8px;
       padding: 16px 18px;
-      box-shadow: 0 4px 14px rgba(16, 24, 40, 0.08);
-      border: 1px solid #e8edf5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
       min-height: 128px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+    }
+    .kpi-card.kpi-card--revenue {
+      border-left: 4px solid #15803d;
+      background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+    }
+    .kpi-card.kpi-card--cost {
+      border-left: 4px solid #ea580c;
+      background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+    }
+    .kpi-card.kpi-card--profit {
+      border-left: 4px solid #2563eb;
+      background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+    }
+    .kpi-card.kpi-card--revenue .kpi-value {
+      color: #15803d;
+    }
+    .kpi-card.kpi-card--cost .kpi-value {
+      color: #c2410c;
+    }
+    .kpi-card.kpi-card--profit .kpi-value {
+      color: #1d4ed8;
     }
     .kpi-card.is-danger {
       border-color: #fecaca;
@@ -37,15 +58,15 @@
     }
     .kpi-label {
       font-size: 12px;
-      color: #6b7280;
-      font-weight: 700;
+      color: #94a3b8;
+      font-weight: 600;
       letter-spacing: 0.02em;
       text-transform: uppercase;
     }
     .kpi-value {
       margin-top: 8px;
-      font-size: 24px;
-      font-weight: 900;
+      font-size: 28px;
+      font-weight: 800;
       color: #111827;
     }
     .kpi-sub {
@@ -54,18 +75,21 @@
       color: #6b7280;
     }
     .section {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
-      border: 1px solid #eef2f7;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
     }
     .section-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 0;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e5e7eb;
     }
     .section-title {
       margin: 0;
@@ -81,14 +105,14 @@
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
+      gap: 20px;
     }
     .dash-main {
       display: grid;
       grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
-      gap: 14px;
+      gap: 20px;
       align-items: start;
-      margin-bottom: 14px;
+      margin-bottom: 20px;
     }
     @media (max-width: 1150px) {
       .dash-main {
@@ -110,11 +134,17 @@
     }
     .mini-table th,
     .mini-table td {
-      padding: 10px 10px;
-      border-bottom: 1px solid #eef2f7;
+      padding: 12px 12px;
+      border-bottom: 1px solid #e5e7eb;
       font-size: 13px;
       text-align: left;
       vertical-align: top;
+    }
+    .mini-table tbody tr {
+      transition: background 0.12s ease;
+    }
+    .mini-table tbody tr:hover {
+      background: #f8fafc;
     }
     .mini-table td.actions,
     .mini-table th.actions {
@@ -135,7 +165,7 @@
       justify-content: center;
       height: 30px;
       padding: 0 12px;
-      border-radius: 10px;
+      border-radius: 8px;
       border: 1px solid transparent;
       font-size: 12px;
       font-weight: 900;
@@ -146,19 +176,22 @@
       min-width: 82px;
     }
     .btn-mini.primary {
-      background: #2563eb;
-      border-color: rgba(37, 99, 235, 0.25);
+      background: #15803d;
+      border-color: #166534;
       color: #fff;
     }
     .btn-mini.success {
       background: #15803d;
-      border-color: rgba(21, 128, 61, 0.25);
+      border-color: #166534;
       color: #fff;
     }
     .btn-mini.secondary {
-      background: #f3f4f6;
+      background: #ffffff;
       border-color: #d1d5db;
-      color: #4b5563;
+      color: #374151;
+    }
+    .btn-mini.secondary:hover {
+      background: #f9fafb;
     }
     .btn-mini:disabled,
     .btn-mini[disabled] {
@@ -199,6 +232,42 @@
       color: #9a3412;
       border-color: #fed7aa;
     }
+    .pill.red {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+    .dispatch-queue {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .dispatch-card {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .dispatch-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+    .dispatch-card__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dispatch-card__customer {
+      font-size: 14px;
+      color: #334155;
+      font-weight: 600;
+    }
     .trend {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -223,7 +292,7 @@
     }
   </style>
 
-  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom: 14px;">
+  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom: 20px;">
     <h2 style="margin:0;">老板驾驶舱</h2>
     <div class="muted" style="font-size: 13px; font-weight: 700;">
       <a href="/orders/" style="text-decoration:none;">订单</a>
@@ -234,23 +303,23 @@
     </div>
   </div>
 
-  <div class="dash-grid" style="margin-bottom: 12px;">
+  <div class="dash-grid" style="margin-bottom: 20px;">
     <div class="kpi-card">
       <div class="kpi-label">今日订单</div>
       <div class="kpi-value">{{ kpi_today_order_count }}</div>
       <div class="kpi-sub">今日有效订单数</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card--revenue">
       <div class="kpi-label">今日收入</div>
       <div class="kpi-value">{{ kpi_today_sales|floatformat:2 }}</div>
       <div class="kpi-sub">当日收入汇总</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card--cost">
       <div class="kpi-label">今日成本</div>
       <div class="kpi-value">{{ kpi_today_cost|floatformat:2 }}</div>
       <div class="kpi-sub">当日成本汇总</div>
     </div>
-    <div class="kpi-card">
+    <div class="kpi-card kpi-card--profit">
       <div class="kpi-label">今日利润</div>
       <div class="kpi-value">{{ kpi_today_profit|floatformat:2 }}</div>
       <div class="kpi-sub">利润率 {{ kpi_today_margin_pct|floatformat:2 }}%</div>
@@ -384,21 +453,12 @@
         <h3 class="section-title">调度队列</h3>
         <span class="section-hint">已分配 / 配送中</span>
       </div>
-      <table class="mini-table">
-        <thead>
-          <tr>
-            <th style="width:84px;">订单号</th>
-            <th>客户</th>
-            <th style="width:120px;">配送状态</th>
-            <th class="actions">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for o in dispatch_orders %}
-            <tr>
-              <td><a href="{% url 'order-status-update' o.id %}">#{{ o.id }}</a></td>
-              <td>{{ o.customer.name|default:"—" }}</td>
-              <td>
+      <div class="dispatch-queue">
+        {% for o in dispatch_orders %}
+          <div class="dispatch-card">
+            <div class="dispatch-card__row">
+              <a href="{% url 'order-status-update' o.id %}" style="font-weight: 800; color: #0f172a; text-decoration: none">#{{ o.id }}</a>
+              <div>
                 {% if o.delivery_status == "assigned" %}
                   <span class="pill blue">已分配</span>
                 {% elif o.delivery_status == "delivering" %}
@@ -406,26 +466,25 @@
                 {% else %}
                   <span class="pill">{{ o.delivery_status }}</span>
                 {% endif %}
-              </td>
-              <td class="actions">
-                <div class="row-actions">
-                  <a class="btn-mini secondary" href="/admin/tea_supply/order/{{ o.id }}/change/">分配司机</a>
-                  {% if o.delivery_status == "assigned" %}
-                    <form method="post" action="{% url 'boss-start-delivery' o.id %}" style="margin:0; display:inline;">
-                      {% csrf_token %}
-                      <button type="submit" class="btn-mini success">开始配送</button>
-                    </form>
-                  {% else %}
-                    <button type="button" class="btn-mini success" disabled>开始配送</button>
-                  {% endif %}
-                </div>
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="muted">暂无数据</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+              </div>
+            </div>
+            <div class="dispatch-card__customer">{{ o.customer.name|default:"—" }}</div>
+            <div class="row-actions" style="justify-content: flex-start">
+              <a class="btn-mini secondary" href="/admin/tea_supply/order/{{ o.id }}/change/">分配司机</a>
+              {% if o.delivery_status == "assigned" %}
+                <form method="post" action="{% url 'boss-start-delivery' o.id %}" style="margin: 0; display: inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-mini success">开始配送</button>
+                </form>
+              {% else %}
+                <button type="button" class="btn-mini secondary" disabled>开始配送</button>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <p class="muted" style="margin: 0">暂无数据</p>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
