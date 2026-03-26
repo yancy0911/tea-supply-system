@@ -873,12 +873,12 @@
           var submitBtn = document.getElementById("btn-place");
           if (submitBtn) {
             submitBtn.addEventListener("click", function () {
-              console.log("SUBMIT CLICK OK");
+              console.log("SUBMIT CLICK");
               console.log("SUBMIT BTN DISABLED:", !!submitBtn.disabled);
             });
           }
           checkoutForm.addEventListener("submit", function (ev) {
-            console.log("FORM SUBMIT OK");
+            console.log("FORM SUBMIT");
             if (!validateRequiredCheckoutFields()) {
               console.log("SUBMIT BLOCKED: required checkout fields missing");
               ev.preventDefault();
@@ -910,6 +910,9 @@
                 return;
               }
             }
+            // Explicit submit to avoid any silent interception path.
+            ev.preventDefault();
+            checkoutForm.submit();
           });
         }
 
