@@ -2319,61 +2319,6 @@ def boss_dashboard(request):
             }
         )
 
-    low_stock_rows = []
-    for p in (
-        Product.objects.filter(stock_enabled=True)
-        .filter(stock__lt=F("safety_stock"))
-        .order_by("stock", "sku")[:5]
-    ):
-        st = float(getattr(p, "stock", 0.0) or 0.0)
-        wl = float(getattr(p, "safety_stock", 0.0) or 0.0)
-        is_severe = wl > 0 and st < (wl / 2.0)
-        low_stock_rows.append(
-            {
-                "product": p,
-                "sku": p.sku,
-                "name": p.name,
-                "stock": st,
-                "safety_stock": wl,
-                "is_severe": is_severe,
-            }
-        )
-
-    reorder_rows = []
-    for p in Product.objects.filter(stock_enabled=True).order_by("sku", "id"):
-        st = float(getattr(p, "stock", 0.0) or 0.0)
-        wl = float(getattr(p, "safety_stock", 0.0) or 0.0)
-        calc = calculate_reorder(p)
-        reorder_qty = float(calc["reorder_qty"] or 0.0)
-        if reorder_qty <= 0:
-            continue
-        is_urgent = wl > 0 and st < (wl / 2.0)
-        status = "Reorder"
-        if is_urgent:
-            status = "Urgent"
-        reorder_rows.append(
-            {
-                "product": p,
-                "sku": p.sku,
-                "name": p.name,
-                "stock": st,
-                "safety_stock": wl,
-                "demand": float(calc["demand"] or 0.0),
-                "target_stock": float(calc["target_stock"] or 0.0),
-                "reorder_qty": reorder_qty,
-                "status": status,
-                "reason": calc["reason"],
-            }
-        )
-    reorder_rows.sort(
-        key=lambda r: (
-            0 if r["status"] == "Urgent" else (1 if r["status"] == "Reorder" else 2),
-            -float(r["reorder_qty"] or 0),
-            str(r["sku"] or ""),
-        )
-    )
-    reorder_rows = reorder_rows[:5]
-
     vip_count = int(Customer.objects.filter(level=Customer.ValueLevel.VIP).count())
     premium_count = int(
         Customer.objects.filter(level=Customer.ValueLevel.PREMIUM).count()
@@ -2401,8 +2346,6 @@ def boss_dashboard(request):
             "product_profit_top5": product_profit_top5,
             "recommendation_rows": recommendation_rows,
             "trend7": trend,
-            "low_stock_rows": low_stock_rows,
-            "reorder_rows": reorder_rows,
             "vip_count": vip_count,
             "premium_count": premium_count,
         },
