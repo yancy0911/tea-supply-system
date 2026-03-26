@@ -3500,6 +3500,8 @@
         }
 
         function bindCardControls() {
+          console.log("BIND RUNNING");
+          console.log("cards:", document.querySelectorAll(".catalog-card").length);
           document.querySelectorAll(".catalog-card").forEach(function (card) {
             if (card.getAttribute("data-bound") === "1") return;
             card.setAttribute("data-bound", "1");
