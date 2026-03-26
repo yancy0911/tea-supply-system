@@ -689,6 +689,7 @@
         height: 100%;
         object-fit: cover;
         display: block;
+        object-position: center;
         background: #fff;
         transition: transform 0.18s ease;
         transform: scale(1);
@@ -729,6 +730,205 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+      }
+
+      /* 1688 purchase card layout */
+      .ecom-card__body--purchase {
+        padding: 12px 12px 12px;
+      }
+      .ecom-card__prices {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 8px;
+        margin-bottom: 10px;
+      }
+      .ecom-price {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6px;
+        font-variant-numeric: tabular-nums;
+        min-width: 0;
+      }
+      .ecom-price__k {
+        font-size: 11px;
+        font-weight: 900;
+        color: #64748b;
+        flex: 0 0 auto;
+      }
+      .ecom-price__v {
+        font-size: 16px;
+        font-weight: 900;
+        color: #15803d;
+        white-space: nowrap;
+      }
+      .ecom-card__ops {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .ecom-card__cta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      @media (max-width: 520px) {
+        .ecom-card__cta {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* quick categories + hot zone */
+      .quick-entry {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        padding: 14px 14px;
+        margin-bottom: 14px;
+      }
+      .quick-entry__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .quick-entry__title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+      }
+      .quick-entry__sub {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .quick-entry__row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .quick-entry__btn {
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 12px 10px;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+        font-weight: 900;
+        color: #0f172a;
+      }
+      .quick-entry__btn:hover {
+        border-color: rgba(21, 128, 61, 0.35);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        transform: translateY(-1px);
+      }
+      .quick-entry__ico {
+        font-size: 20px;
+        line-height: 1;
+      }
+      @media (max-width: 520px) {
+        .quick-entry__row {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      .hot-zone {
+        margin-bottom: 14px;
+      }
+      .hot-zone__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 0 0 10px;
+      }
+      .hot-zone__title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+      }
+      .hot-zone__sub {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .hot-zone__track {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 2px 2px 10px;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+      }
+      .hot-mini {
+        scroll-snap-align: start;
+        flex: 0 0 auto;
+        width: 160px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 10px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      }
+      .hot-mini__img {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f1f5f9;
+        border: 1px solid rgba(15, 23, 42, 0.06);
+        margin-bottom: 8px;
+      }
+      .hot-mini__img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+      }
+      .hot-mini__name {
+        margin: 0 0 6px;
+        font-size: 12px;
+        font-weight: 900;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .hot-mini__price {
+        font-size: 13px;
+        font-weight: 900;
+        color: #15803d;
+        margin-bottom: 8px;
+      }
+      .hot-mini__btn {
+        width: 100%;
+        border: none;
+        background: #15803d;
+        color: #fff;
+        border-radius: 12px;
+        padding: 10px 10px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .hot-mini__btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
       }
       .ecom-card__price-strip {
         display: flex;
@@ -1606,6 +1806,10 @@
         display: flex;
         flex-direction: column;
         box-shadow: 0 10px 40px -12px rgba(15, 23, 42, 0.15), 0 4px 12px rgba(15, 23, 42, 0.06);
+      }
+      .shop-cart-panel.cart-flash {
+        box-shadow: 0 14px 50px -14px rgba(21, 128, 61, 0.28), 0 6px 18px rgba(15, 23, 42, 0.08);
+        transform: translateY(-1px);
       }
       .shop-cart-panel h3 {
         margin: 0;
@@ -2612,146 +2816,40 @@
       </div>
     {% endif %}
 
-    <section class="brand-hero" aria-label="品牌介绍">
-      <div class="brand-hero__card">
-        <div class="brand-hero__left">
-          <div class="brand-hero__logo" aria-hidden="true">MO</div>
-          <div class="brand-hero__text">
-            <p class="brand-hero__title">MO·CHA 批发商城</p>
-            <p class="brand-hero__sub">NYC 本地奶茶原料批发供应商</p>
-          </div>
-        </div>
-        <div class="brand-hero__perks" aria-label="优势">
-          <span class="perk"><b>现货</b> 本地仓</span>
-          <span class="perk"><b>批发</b> 价格</span>
-          <span class="perk"><b>支持</b> 配送</span>
-        </div>
-      </div>
-    </section>
-
-    {% if products %}
-      <section class="shop-discovery" aria-label="推荐与活动">
-        {% with hot_products=products|slice:":8" %}
-          {% if hot_products %}
-            <div class="discovery-rail">
-              <h3 class="discovery-rail__head">🔥 热卖商品</h3>
-              <div class="discovery-rail__track" role="list">
-                {% for product in hot_products %}
-                  <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
-                    <div class="discovery-mini__img">
-                      {% if product.image_url %}
-                        <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
-                      {% else %}
-                        <img
-                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
-                          alt=""
-                          loading="lazy"
-                        />
-                      {% endif %}
-                    </div>
-                    <p class="discovery-mini__name">{{ product.name }}</p>
-                    <div class="discovery-mini__price">
-                      {% if product.is_out_of_stock %}
-                        <span style="color:#b91c1c;font-weight:900">缺货</span>
-                      {% elif product.price_on_request %}
-                        询价
-                      {% elif product.can_quote_single %}
-                        {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
-                      {% elif product.can_quote_case %}
-                        {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
-                      {% else %}
-                        —
-                      {% endif %}
-                    </div>
-                  </a>
-                {% endfor %}
-              </div>
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        {% with rec_products=products|slice:"8:16" %}
-          {% if rec_products %}
-            <div class="discovery-rail">
-              <h3 class="discovery-rail__head">⭐ 推荐产品</h3>
-              <div class="discovery-rail__track" role="list">
-                {% for product in rec_products %}
-                  <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
-                    <div class="discovery-mini__img">
-                      {% if product.image_url %}
-                        <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
-                      {% else %}
-                        <img
-                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
-                          alt=""
-                          loading="lazy"
-                        />
-                      {% endif %}
-                    </div>
-                    <p class="discovery-mini__name">{{ product.name }}</p>
-                    <div class="discovery-mini__price">
-                      {% if product.is_out_of_stock %}
-                        <span style="color:#b91c1c;font-weight:900">缺货</span>
-                      {% elif product.price_on_request %}
-                        询价
-                      {% elif product.can_quote_single %}
-                        {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
-                      {% elif product.can_quote_case %}
-                        {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
-                      {% else %}
-                        —
-                      {% endif %}
-                    </div>
-                  </a>
-                {% endfor %}
-              </div>
-            </div>
-          {% endif %}
-        {% endwith %}
-
-        {% with restock_products=products|slice:"4:12" %}
-          {% if restock_products %}
-            <div class="discovery-rail">
-              <h3 class="discovery-rail__head">📦 今日补货推荐</h3>
-              <div class="discovery-rail__track" role="list">
-                {% for product in restock_products %}
-                  <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
-                    <div class="discovery-mini__img">
-                      {% if product.image_url %}
-                        <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
-                      {% else %}
-                        <img
-                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
-                          alt=""
-                          loading="lazy"
-                        />
-                      {% endif %}
-                    </div>
-                    <p class="discovery-mini__name">{{ product.name }}</p>
-                    <div class="discovery-mini__price">
-                      {% if product.is_out_of_stock %}
-                        <span style="color:#b91c1c;font-weight:900">缺货</span>
-                      {% elif product.price_on_request %}
-                        询价
-                      {% elif product.can_quote_single %}
-                        {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
-                      {% elif product.can_quote_case %}
-                        {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
-                      {% else %}
-                        —
-                      {% endif %}
-                    </div>
-                  </a>
-                {% endfor %}
-              </div>
-            </div>
-          {% endif %}
-        {% endwith %}
-      </section>
-    {% endif %}
-
     <div class="shop-layout">
       <main class="shop-main">
+        <section class="quick-entry" aria-label="快速分类">
+          <div class="quick-entry__head">
+            <h2 class="quick-entry__title">快速分类</h2>
+            <span class="quick-entry__sub">像 1688 一样快速进入类目</span>
+          </div>
+          <div class="quick-entry__row" role="list">
+            <button type="button" class="quick-entry__btn" data-qkey="tea" role="listitem">
+              <span class="quick-entry__ico" aria-hidden="true">🍵</span><span>茶叶</span>
+            </button>
+            <button type="button" class="quick-entry__btn" data-qkey="boba" role="listitem">
+              <span class="quick-entry__ico" aria-hidden="true">🧋</span><span>珍珠</span>
+            </button>
+            <button type="button" class="quick-entry__btn" data-qkey="syrup" role="listitem">
+              <span class="quick-entry__ico" aria-hidden="true">🍯</span><span>糖浆</span>
+            </button>
+            <button type="button" class="quick-entry__btn" data-qkey="cup" role="listitem">
+              <span class="quick-entry__ico" aria-hidden="true">🥤</span><span>杯子</span>
+            </button>
+            <button type="button" class="quick-entry__btn" data-qkey="machine" role="listitem">
+              <span class="quick-entry__ico" aria-hidden="true">🧰</span><span>设备</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="hot-zone" aria-label="热卖区">
+          <div class="hot-zone__head">
+            <h2 class="hot-zone__title">热卖区</h2>
+            <span class="hot-zone__sub">常用 SKU / 高频补货</span>
+          </div>
+          <div class="hot-zone__track" id="hot-track" role="list"></div>
+        </section>
+
         <section class="browse-categories" aria-label="Categories">
           <header class="shop-by-category-head">
             <h2 class="shop-by-category__title">Shop by Category</h2>
@@ -2783,82 +2881,6 @@
         <div class="product-grid" id="product-grid">
           {% for product in products %}
             {% include "shop/_product_card.html" with product=product shop_customer=shop_customer shop_can_order=shop_can_order shop_order_block_hint=shop_order_block_hint %}
-            {% if forloop.counter == 12 %}
-              <section class="brand-mid brand-mid--scenes" aria-label="About MO·CHA">
-                <div class="brand-mid__head">
-                  <h3 class="brand-mid__title">About MO·CHA</h3>
-                  <span class="brand-mid__sub">NYC 本地仓 · 批发供货 · 门店配送</span>
-                </div>
-                <div class="scene-strip">
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/k8-vl_l_JPGrxQ-unsplash_2ac59688-d2ab-4303-b666-ab3a1e539e7c_1600x.jpg?v=1635637256"
-                      alt="MO·CHA"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/shutterstock_435687631_copy_1600x.png?v=1642102322"
-                      alt="原料展示"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/samia-liamani-3DhS00cyC9A-unsplash_1600x.jpg?v=1635640056"
-                      alt="奶茶制作"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/Screen_Shot_2021-12-07_at_10.19.09_AM_1600x.png?v=1638893973"
-                      alt="门店场景"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                </div>
-              </section>
-            {% endif %}
-            {% if forloop.counter == 24 %}
-              <section class="brand-mid brand-mid--scenes" aria-label="场景图片">
-                <div class="brand-mid__head">
-                  <h3 class="brand-mid__title">MO·CHA Scenes</h3>
-                  <span class="brand-mid__sub">门店 · 原料 · 制作</span>
-                </div>
-                <div class="scene-strip">
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/samia-liamani-3DhS00cyC9A-unsplash_1600x.jpg?v=1635640056"
-                      alt="奶茶制作"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/shutterstock_435687631_copy_1600x.png?v=1642102322"
-                      alt="原料展示"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div class="scene">
-                    <img
-                      src="https://mochaboba.com/cdn/shop/files/Screen_Shot_2021-12-07_at_10.19.09_AM_1600x.png?v=1638893973"
-                      alt="门店场景"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                </div>
-              </section>
-            {% endif %}
           {% empty %}
             <div id="shop-catalog-empty" class="shop-empty-block">
               <p class="shop-empty-block__title">暂无商品，请联系供应商</p>
@@ -2920,23 +2942,6 @@
         >去结账</a>
       </div>
     </nav>
-
-    <footer class="shop-footer" aria-label="店铺信息">
-      <div class="shop-footer__card">
-        <div class="shop-footer__grid">
-          <div>
-            <div class="shop-footer__brand">MO·CHA</div>
-            <div class="shop-footer__desc">奶茶原料批发｜本地配送｜门店供货</div>
-          </div>
-          <div class="shop-footer__kv">
-            <div>地址：56-11 Arnold Ave Maspeth NY 11378</div>
-            <div>电话：<a href="tel:3478895788">347-889-5788</a></div>
-            <div>网站：<a href="https://www.mochaboba.com" target="_blank" rel="noopener">www.mochaboba.com</a></div>
-            <div>微信：nymochaboba</div>
-          </div>
-        </div>
-      </div>
-    </footer>
 
     <!-- Product quick view (home) -->
     <div class="pv" id="pv" aria-hidden="true">
@@ -3325,15 +3330,19 @@
                   var sku = p.sku || "";
                   var image = p.image_url || p.image || (sku ? "/static/products/" + String(sku).trim() + ".jpg" : PLACEHOLDER_IMG);
                   var category = p.category_name || "";
-                  var price = 0;
-                  if (p.display_single != null && !isNaN(parseFloat(p.display_single))) price = parseFloat(p.display_single);
-                  else if (p.price_single != null && !isNaN(parseFloat(p.price_single))) price = parseFloat(p.price_single);
+                  var priceBag = null;
+                  var priceCase = null;
+                  if (p.display_single != null && !isNaN(parseFloat(p.display_single))) priceBag = parseFloat(p.display_single);
+                  else if (p.price_single != null && !isNaN(parseFloat(p.price_single))) priceBag = parseFloat(p.price_single);
+                  if (p.display_case != null && !isNaN(parseFloat(p.display_case))) priceCase = parseFloat(p.display_case);
+                  else if (p.price_case != null && !isNaN(parseFloat(p.price_case))) priceCase = parseFloat(p.price_case);
 
                   var isOos = !!p.is_out_of_stock;
                   var catId = p.category_id != null ? String(p.category_id) : "";
-                  var showPrice = price;
-                  var priceText = "{{ currency_symbol }}" + (isNaN(showPrice) ? "0.00" : showPrice.toFixed(2)) + " 起";
-                  if (p.price_on_request) priceText = "询价";
+                  function money(x) {
+                    if (x == null || isNaN(x)) return "—";
+                    return "{{ currency_symbol }}" + Number(x).toFixed(2);
+                  }
                   html +=
                     '<div class="catalog-card ecom-card ecom-card--app' +
                     (isOos ? " ecom-card--oos" : "") +
@@ -3366,7 +3375,7 @@
                       : '<span class="stock-pill stock-pill--ok">现货</span>') +
                     "</div>" +
                     "</a>" +
-                    '<div class="catalog-card__body ecom-card__body ecom-card__body--browse">' +
+                    '<div class="catalog-card__body ecom-card__body ecom-card__body--purchase">' +
                     '<a class="ecom-card__title catalog-card__title" href="/shop/product/' +
                     pid +
                     '/">' +
@@ -3375,10 +3384,51 @@
                     '<p class="ecom-card__sku catalog-card__sku">' +
                     (sku ? sku : "—") +
                     "</p>" +
-                    '<div class="ecom-card__price-lite" aria-label="起价">' +
+                    '<div class="ecom-card__prices" aria-label="价格">' +
                     (p.price_on_request
                       ? '<span class="price-lite__quote">询价</span>'
-                      : '<span class="price-lite__amt">' + priceText + "</span>") +
+                      : '<div class="ecom-price"><span class="ecom-price__k">袋</span><span class="ecom-price__v">' +
+                        money(priceBag) +
+                        '</span></div><div class="ecom-price"><span class="ecom-price__k">箱</span><span class="ecom-price__v">' +
+                        money(priceCase) +
+                        "</span></div>") +
+                    "</div>" +
+                    '<div class="ecom-card__ops">' +
+                    '<div class="catalog-segment ecom-mode-toggle ecom-mode-toggle--compact" role="group" aria-label="单位">' +
+                    '<label class="catalog-segment__opt ecom-mode-btn"><input type="radio" name="mode-' +
+                    pid +
+                    '" value="single" checked ' +
+                    (p.price_on_request || isOos ? "disabled" : "") +
+                    ' /><span class="ecom-mode-btn__text">袋</span></label>' +
+                    '<label class="catalog-segment__opt ecom-mode-btn"><input type="radio" name="mode-' +
+                    pid +
+                    '" value="case" ' +
+                    (p.price_on_request || isOos ? "disabled" : "") +
+                    ' /><span class="ecom-mode-btn__text">箱</span></label>' +
+                    "</div>" +
+                    '<div class="qty-stepper ecom-qty-stepper">' +
+                    '<button type="button" data-act="minus" aria-label="减少" ' +
+                    (isOos ? "disabled" : "") +
+                    ">−</button>" +
+                    '<input type="number" min="0.01" step="0.01" value="1" inputmode="decimal" aria-label="数量" ' +
+                    (isOos ? "disabled" : "") +
+                    " />" +
+                    '<button type="button" data-act="plus" aria-label="增加" ' +
+                    (isOos ? "disabled" : "") +
+                    ">+</button>" +
+                    "</div>" +
+                    "</div>" +
+                    '<div class="ecom-card__cta">' +
+                    '<button type="button" class="btn-add-cart ecom-btn-add-cart" data-pid="' +
+                    pid +
+                    '" ' +
+                    (p.price_on_request || isOos ? "disabled" : "") +
+                    ">加入购物车</button>" +
+                    '<button type="button" class="btn-buy-now ecom-btn-buy-now" data-pid="' +
+                    pid +
+                    '" ' +
+                    (p.price_on_request || isOos ? "disabled" : "") +
+                    ">立即购买</button>" +
                     "</div>" +
                     "</div></div>";
                 } catch (eRow) {
@@ -3400,6 +3450,8 @@
 
           renderProductsFromJsonSafe();
           sanitizeProductNameDisplay();
+          initQuickEntry();
+          renderHotZone();
 
           grid.querySelectorAll(".catalog-card__media img").forEach(function (im) {
             im.addEventListener("error", function () {
@@ -3479,6 +3531,145 @@
               }
               inp.value = v;
             }
+          });
+        }
+
+        function initQuickEntry() {
+          var row = document.querySelectorAll(".quick-entry__btn[data-qkey]");
+          if (!row || !row.length) return;
+          var searchEl = document.getElementById("shop-search");
+          function clickBestCategory(wordList) {
+            var btns = document.querySelectorAll(".cat-card");
+            var best = null;
+            btns.forEach(function (b) {
+              var nm = b.querySelector(".cat-card__name");
+              var t = nm && nm.textContent ? String(nm.textContent).toLowerCase() : "";
+              wordList.forEach(function (w) {
+                if (t && t.indexOf(w) >= 0) best = best || b;
+              });
+            });
+            if (best) best.click();
+            return !!best;
+          }
+          function applySearchKeyword(k) {
+            if (!searchEl) return;
+            searchEl.value = k;
+            try {
+              applyProductFilter();
+            } catch (e) {}
+          }
+          row.forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var k = String(btn.getAttribute("data-qkey") || "").toLowerCase();
+              if (!k) return;
+              // Prefer category chip if present; otherwise fallback to keyword search.
+              if (k === "tea") {
+                if (!clickBestCategory(["tea", "茶"])) applySearchKeyword("tea");
+              } else if (k === "boba") {
+                if (!clickBestCategory(["boba", "珍珠", "popping", "tapioca"])) applySearchKeyword("boba");
+              } else if (k === "syrup") {
+                if (!clickBestCategory(["syrup", "糖浆", "果露"])) applySearchKeyword("syrup");
+              } else if (k === "cup") {
+                if (!clickBestCategory(["cup", "杯", "lid", "盖", "straw", "吸管"])) applySearchKeyword("cup");
+              } else if (k === "machine") {
+                if (!clickBestCategory(["machine", "设备", "sealer", "封口"])) applySearchKeyword("machine");
+              } else {
+                applySearchKeyword(k);
+              }
+              try {
+                var anchor = document.getElementById("product-grid");
+                if (anchor) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+              } catch (e) {}
+            });
+          });
+        }
+
+        function renderHotZone() {
+          var track = document.getElementById("hot-track");
+          if (!track) return;
+          if (!Array.isArray(PRODUCTS) || PRODUCTS.length === 0) return;
+
+          // Common/high-frequency SKUs (can be adjusted without touching backend).
+          var HOT_SKUS = [
+            "B030103",
+            "B030503",
+            "C010503",
+            "J010203",
+            "S011203",
+            "S011603",
+            "S011803",
+            "T010503",
+            "T030103",
+            "T030803",
+          ];
+          var skuSet = {};
+          HOT_SKUS.forEach(function (s) {
+            skuSet[String(s).trim().toUpperCase()] = true;
+          });
+
+          function esc(s) {
+            return String(s == null ? "" : s)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/"/g, "&quot;");
+          }
+          function money(x) {
+            var v = parseFloat(x);
+            if (!isFinite(v)) return "—";
+            return "{{ currency_symbol }}" + v.toFixed(2);
+          }
+
+          var picked = [];
+          PRODUCTS.forEach(function (p) {
+            var sku = (p && p.sku ? String(p.sku) : "").trim().toUpperCase();
+            if (!sku || !skuSet[sku]) return;
+            picked.push(p);
+          });
+          if (!picked.length) {
+            track.innerHTML =
+              '<div class="shop-empty" style="padding:10px 2px;">暂无热卖数据，您可直接在下方浏览全部商品。</div>';
+            return;
+          }
+
+          var html = "";
+          picked.forEach(function (p) {
+            var pid = p && p.id != null ? String(p.id) : "";
+            if (!pid) return;
+            var name = p.name || p.sku || "—";
+            var sku = p.sku || "";
+            var img =
+              p.image_url || p.image || (sku ? "/static/products/" + String(sku).trim() + ".jpg" : PLACEHOLDER_IMG);
+            var isOos = !!p.is_out_of_stock;
+            var bag = p.display_single != null ? p.display_single : p.price_single;
+            var price = !p.price_on_request ? money(bag) : "询价";
+            html +=
+              '<div class="hot-mini" role="listitem">' +
+              '<div class="hot-mini__img"><img src="' +
+              esc(img) +
+              '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\\'' +
+              PLACEHOLDER_IMG +
+              "\\'';\" /></div>" +
+              '<p class="hot-mini__name">' +
+              esc(name) +
+              "</p>" +
+              '<div class="hot-mini__price">' +
+              esc(price) +
+              "</div>" +
+              '<button type="button" class="hot-mini__btn" ' +
+              (isOos || p.price_on_request ? "disabled" : "") +
+              ' data-pid="' +
+              esc(pid) +
+              '">加入购物车</button>' +
+              "</div>";
+          });
+          track.innerHTML = html;
+
+          track.addEventListener("click", function (e) {
+            var b = e.target.closest(".hot-mini__btn");
+            if (!b) return;
+            var pid = parseInt(b.getAttribute("data-pid"), 10);
+            if (!isFinite(pid) || pid <= 0) return;
+            addToCart(pid, "single", 1);
           });
         }
 
@@ -3719,6 +3910,12 @@
             showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
           }
+          // UX: quick feedback + prevent double tap
+          var cartPanel = document.getElementById("shop-cart-anchor");
+          try {
+            if (cartPanel) cartPanel.classList.remove("cart-flash");
+          } catch (e) {}
+
           var p = productById(pid);
           if (!p) return;
           var sell0 = sellableStockUnits(p);
@@ -3817,6 +4014,16 @@
           }
           saveCart(cart);
           renderCart();
+          showToast("已加入购物车");
+          // Light refresh animation (optional, non-blocking)
+          try {
+            if (cartPanel) {
+              cartPanel.classList.add("cart-flash");
+              setTimeout(function () {
+                cartPanel.classList.remove("cart-flash");
+              }, 420);
+            }
+          } catch (e) {}
         }
 
         function buyNow(pid, saleType, qty) {
@@ -4058,6 +4265,16 @@
             floatCheckout.setAttribute("aria-disabled", checkoutBlocked ? "true" : "false");
           }
         }
+
+        // Cross-tab sync: if cart changes in another tab, refresh UI.
+        window.addEventListener("storage", function (e) {
+          if (!e) return;
+          if (e.key === "cart") {
+            try {
+              renderCart();
+            } catch (err) {}
+          }
+        });
 
         var searchEl = document.getElementById("shop-search");
         var searchIconBtn = document.getElementById("shop-search-icon");

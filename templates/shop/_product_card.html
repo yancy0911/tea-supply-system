@@ -1,5 +1,6 @@
 {% comment %}
-v3 紧凑点单卡 — 保留：catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
+1688-style purchase card (strong purchase CTA).
+Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
 {% endcomment %}
 {% load shop_tags static %}
 {% with FB="https://mochaboba.com/cdn/shop/files/k8-vl_l_JPGrxQ-unsplash_2ac59688-d2ab-4303-b666-ab3a1e539e7c_1600x.jpg?v=1635637256" %}
@@ -41,22 +42,93 @@ v3 紧凑点单卡 — 保留：catalog-card / data-pid / mode / qty-stepper / b
     </div>
   </a>
 
-  <div class="catalog-card__body ecom-card__body ecom-card__body--browse">
+  <div class="catalog-card__body ecom-card__body ecom-card__body--purchase">
     <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
     <p class="ecom-card__sku catalog-card__sku">{{ product.sku|default:"—" }}</p>
-    <div class="ecom-card__price-lite" aria-label="起价">
+
+    <div class="ecom-card__prices" aria-label="价格">
       {% if product.price_on_request %}
         <span class="price-lite__quote">询价</span>
-      {% elif product.can_quote_single %}
-        <span class="price-lite__from">袋</span>
-        <span class="price-lite__amt">{{ currency_symbol }}{{ product.display_single|floatformat:2 }}</span>
-        <span class="price-lite__from">起</span>
-      {% elif product.can_quote_case %}
-        <span class="price-lite__amt">{{ currency_symbol }}{{ product.display_case|floatformat:2 }}</span>
-        <span class="price-lite__from">起</span>
       {% else %}
-        <span class="price-lite__quote">—</span>
+        <div class="ecom-price">
+          <span class="ecom-price__k">袋</span>
+          <span class="ecom-price__v">
+            {% if product.can_quote_single %}
+              {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+            {% else %}
+              —
+            {% endif %}
+          </span>
+        </div>
+        <div class="ecom-price">
+          <span class="ecom-price__k">箱</span>
+          <span class="ecom-price__v">
+            {% if product.can_quote_case %}
+              {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+            {% else %}
+              —
+            {% endif %}
+          </span>
+        </div>
       {% endif %}
+    </div>
+
+    <div class="ecom-card__ops">
+      <div class="catalog-segment ecom-mode-toggle ecom-mode-toggle--compact" role="group" aria-label="单位">
+        <label class="catalog-segment__opt ecom-mode-btn">
+          <input
+            type="radio"
+            name="mode-{{ product.id }}"
+            value="single"
+            {% if product.can_quote_single %}{% if not product.can_quote_case %}checked{% else %}checked{% endif %}{% endif %}
+            {% if product.price_on_request or not product.can_quote_single or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+          />
+          <span class="ecom-mode-btn__text">袋</span>
+        </label>
+        <label class="catalog-segment__opt ecom-mode-btn">
+          <input
+            type="radio"
+            name="mode-{{ product.id }}"
+            value="case"
+            {% if not product.can_quote_single and product.can_quote_case %}checked{% endif %}
+            {% if product.price_on_request or not product.can_quote_case or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+          />
+          <span class="ecom-mode-btn__text">箱</span>
+        </label>
+      </div>
+
+      <div class="qty-stepper ecom-qty-stepper">
+        <button type="button" data-act="minus" aria-label="减少" {% if product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}>−</button>
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          value="1"
+          inputmode="decimal"
+          aria-label="数量"
+          {% if product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
+        />
+        <button type="button" data-act="plus" aria-label="增加" {% if product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}>+</button>
+      </div>
+    </div>
+
+    <div class="ecom-card__cta">
+      <button
+        type="button"
+        class="btn-add-cart ecom-btn-add-cart"
+        data-pid="{{ product.id }}"
+        {% if product.price_on_request or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+      >
+        加入购物车
+      </button>
+      <button
+        type="button"
+        class="btn-buy-now ecom-btn-buy-now"
+        data-pid="{{ product.id }}"
+        {% if product.price_on_request or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+      >
+        立即购买
+      </button>
     </div>
   </div>
 </div>
