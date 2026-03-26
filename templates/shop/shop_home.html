@@ -2824,7 +2824,6 @@
         <section class="quick-entry" aria-label="快速分类">
           <div class="quick-entry__head">
             <h2 class="quick-entry__title">快速分类</h2>
-            <span class="quick-entry__sub">像 1688 一样快速进入类目</span>
           </div>
           <div class="quick-entry__row" role="list">
             <button type="button" class="quick-entry__btn" data-qkey="tea" role="listitem">
@@ -3469,6 +3468,9 @@
           if (delegationReady) return;
           delegationReady = true;
           grid.addEventListener("click", function (e) {
+            try {
+              console.log("[shop] grid click", e && e.target ? e.target : e);
+            } catch (err0) {}
             // click-to-open quick view (1688-style). keep ctrl/cmd-click for open in new tab.
             var card = e.target.closest(".catalog-card");
             var a = e.target.closest("a");
@@ -3482,6 +3484,9 @@
             }
             var buyBtn = e.target.closest(".btn-buy-now");
             if (buyBtn) {
+              try {
+                console.log("[shop] buy now clicked");
+              } catch (err1) {}
               var pid = parseInt(buyBtn.getAttribute("data-pid"), 10);
               var card = buyBtn.closest(".catalog-card");
               var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
@@ -3497,6 +3502,9 @@
             }
             var addBtn = e.target.closest(".btn-add-cart");
             if (addBtn) {
+              try {
+                console.log("[shop] add to cart clicked");
+              } catch (err2) {}
               var pid = parseInt(addBtn.getAttribute("data-pid"), 10);
               var card = addBtn.closest(".catalog-card");
               var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
@@ -3512,6 +3520,9 @@
             }
             var qb = e.target.closest(".qty-stepper button");
             if (qb) {
+              try {
+                console.log("[shop] qty button clicked", qb.getAttribute("data-act") || "");
+              } catch (err3) {}
               var card = qb.closest(".catalog-card");
               var pid = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
               var p = productById(pid);
@@ -3533,6 +3544,14 @@
                 v = Math.max(minQ, v - 1);
               }
               inp.value = v;
+              return;
+            }
+            var modeToggle = e.target.closest(".ecom-mode-toggle");
+            if (modeToggle) {
+              try {
+                console.log("[shop] mode toggle clicked");
+              } catch (err4) {}
+              return;
             }
           });
         }
