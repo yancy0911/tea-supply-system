@@ -1,0 +1,8 @@
+{
+  "write_db": true,
+  "db_updates": 0,
+  "autobound_count": 0,
+  "blocked_low_conf_count": 0,
+  "autobound": [],
+  "blocked_low_conf_examples": []
+}

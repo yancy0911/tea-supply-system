@@ -1,96 +1,234 @@
 {
-  "min_score": 0.82,
+  "min_score": 0.7,
   "write_db": true,
-  "matched_count": 14,
-  "unmatched_count": 156,
+  "overwrite": false,
+  "matched_count": 25,
+  "unmatched_count": 145,
+  "db_updates": 0,
   "matched": [
     {
       "sku": "B030103",
       "name": "Mango Popping Boba 芒果爆爆珠",
-      "score": 0.8571,
+      "score": 1.0,
       "mochaboba_title": "Mango Popping Boba",
       "mochaboba_handle": "mango-popping-boba",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/DSC00438.png?v=1732052692"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/DSC00438.png?v=1732052692",
+      "keywords": [
+        "boba",
+        "mango"
+      ],
+      "second_best": 0.7267
     },
     {
       "sku": "B030503",
       "name": "Peach Popping Boba 水蜜桃爆爆珠",
-      "score": 0.8372,
+      "score": 1.0,
       "mochaboba_title": "Peach Popping Boba",
       "mochaboba_handle": "peach-popping-boba",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/IMG_2332.png?v=1732052832"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/IMG_2332.png?v=1732052832",
+      "keywords": [
+        "boba",
+        "peach"
+      ],
+      "second_best": 0.7418
     },
     {
       "sku": "B040403",
       "name": "Mango Star Jelly 芒果星鑽椰果",
-      "score": 0.8205,
+      "score": 1.0,
       "mochaboba_title": "Mango Star Jelly",
       "mochaboba_handle": "mango-star-jelly-1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/c7178636b7f9c980409b38f2ddff0754.png?v=1732051834"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/c7178636b7f9c980409b38f2ddff0754.png?v=1732051834",
+      "keywords": [
+        "jelly",
+        "mango"
+      ],
+      "second_best": 0.56
+    },
+    {
+      "sku": "B040603",
+      "name": "Coﬀee Jelly 咖啡椰果",
+      "score": 0.99,
+      "mochaboba_title": "Coffee Jelly",
+      "mochaboba_handle": "coffee-jelly",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/IMG_2339.png?v=1732052467",
+      "keywords": [
+        "jelly"
+      ],
+      "second_best": 0.6807
     },
     {
       "sku": "C010503",
       "name": "Grass Jelly Powder 仙草粉",
-      "score": 0.9,
+      "score": 1.0,
       "mochaboba_title": "Grass Jelly Powder",
       "mochaboba_handle": "grass-jelly-powder",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/57dcaa546d04430a1c7009621719e817.png?v=1732043536"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/57dcaa546d04430a1c7009621719e817.png?v=1732043536",
+      "keywords": [
+        "powder",
+        "jelly"
+      ],
+      "second_best": 0.6314
     },
     {
       "sku": "J010203",
       "name": "Strawberry Jam 草莓醬",
-      "score": 0.875,
+      "score": 0.99,
       "mochaboba_title": "Strawberry Jam",
       "mochaboba_handle": "strawberry-jam",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/IMG_2330.jpg?v=1732050765"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/IMG_2330.jpg?v=1732050765",
+      "keywords": [
+        "straw"
+      ],
+      "second_best": 0.7071
     },
     {
       "sku": "J010703",
       "name": "Pink Peach Jam 粉桃果醬",
-      "score": 0.8485,
-      "mochaboba_title": "Pink Peach Jam",
-      "mochaboba_handle": "pink-peach-jam",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/a182c7cf4898e84619f8a039462b99ce.jpg?v=1752081243"
+      "score": 0.99,
+      "mochaboba_title": "Peach Jam",
+      "mochaboba_handle": "peach-jam",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/c8ac4c9472d3f1a6b0db786cba17f162.jpg?v=1752081168",
+      "keywords": [
+        "peach"
+      ],
+      "second_best": 0.99
+    },
+    {
+      "sku": "L010203",
+      "name": "95 /90 PET 16 & 22oz Cold Cup Dome Lid 95/90 PET 冷飲杯凸蓋",
+      "score": 1.0,
+      "mochaboba_title": "16 & 22oz Cold Cup Dome Lid",
+      "mochaboba_handle": "95-90-pet-16-22oz-cold-cup-dome-lid",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/ad1a1b7183951dc89f508a6b6c422144.png?v=1732214422",
+      "keywords": [
+        "cup",
+        "lid"
+      ],
+      "second_best": 0.7947
+    },
+    {
+      "sku": "L020202",
+      "name": "LDPE Blank Two Cup Bag 透明兩杯袋",
+      "score": 0.81,
+      "mochaboba_title": "LDPE Blank Cup Bag",
+      "mochaboba_handle": "ldpe-blank-cup-bag",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/14.png?v=1732215001",
+      "keywords": [
+        "cup"
+      ],
+      "second_best": 0.6509
     },
     {
       "sku": "N010103",
       "name": "Popcorn Chicken Marinate Powder 鹽酥雞醃漬粉",
-      "score": 0.8986,
+      "score": 0.99,
       "mochaboba_title": "Popcorn Chicken Marinate Powder",
       "mochaboba_handle": "popcorn-chicken-marinate-powder",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/41bf9a88dc3186d5f5a100a6215765cc.png?v=1732043422"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/41bf9a88dc3186d5f5a100a6215765cc.png?v=1732043422",
+      "keywords": [
+        "powder"
+      ],
+      "second_best": 0.7544
+    },
+    {
+      "sku": "N010203",
+      "name": "Popcorn Chicken Brown Sugar Pepper Salt Powder 鹽酥雞胡椒粉",
+      "score": 0.8495,
+      "mochaboba_title": "Popcorn Chicken Pepper Salt Powder",
+      "mochaboba_handle": "popcorn-chicken-pepper-salt-powder",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/0383976adc53f8df8f74360ba55a75ba.png?v=1732043340",
+      "keywords": [
+        "powder",
+        "sugar"
+      ],
+      "second_best": 0.6816
     },
     {
       "sku": "P020503",
       "name": "Honeydew Powder 哈密瓜粉",
-      "score": 0.8571,
+      "score": 1.0,
       "mochaboba_title": "Honeydew Powder",
       "mochaboba_handle": "honeydew-powder",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/7176e09138bfc575e3c1323d824d2035.png?v=1732042683"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/7176e09138bfc575e3c1323d824d2035.png?v=1732042683",
+      "keywords": [
+        "powder",
+        "honey"
+      ],
+      "second_best": 0.6482
     },
     {
       "sku": "P040403",
       "name": "Blue Mountain Coﬀee Powder 藍山咖啡粉",
-      "score": 0.8475,
+      "score": 0.99,
       "mochaboba_title": "Blue Mountain Coffee Powder",
       "mochaboba_handle": "blue-mountain-coffee-powder",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/205b1edfcc3c9bb5bc749b42558aa140.png?v=1732042600"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/205b1edfcc3c9bb5bc749b42558aa140.png?v=1732042600",
+      "keywords": [
+        "powder"
+      ],
+      "second_best": 0.7138
+    },
+    {
+      "sku": "P050103",
+      "name": "Premium Creamer Premium 2.2 Medium 厚奶精粉 2.2 中珍珠",
+      "score": 0.99,
+      "mochaboba_title": "Premium Creamer",
+      "mochaboba_handle": "premium-non-dairy-creamer-m",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/b36015cab4754845ed233323d5c326aa.jpg?v=1754067008",
+      "keywords": [
+        "creamer"
+      ],
+      "second_best": 0.4304
+    },
+    {
+      "sku": "P070103",
+      "name": "Caramel Pudding Creme Brulee Powder 焦糖布丁粉",
+      "score": 0.99,
+      "mochaboba_title": "Creme Brulee Powder",
+      "mochaboba_handle": "creme-brulee-powder",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/8f25b6cc30acdb5652df2709b3ce24d4.png?v=1732043589",
+      "keywords": [
+        "powder",
+        "pudding"
+      ],
+      "second_best": 0.8343
     },
     {
       "sku": "S011203",
       "name": "Kumquat Lemon Syrup 金桔檸檬汁",
-      "score": 0.8636,
+      "score": 0.99,
       "mochaboba_title": "Kumquat Lemon Syrup",
       "mochaboba_handle": "kumquat-lemon-syrup",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/f584a77907624949e3f48687dfe40b76.png?v=1732046075"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/f584a77907624949e3f48687dfe40b76.png?v=1732046075",
+      "keywords": [
+        "syrup"
+      ],
+      "second_best": 0.6005
     },
     {
       "sku": "S011603",
       "name": "Blueberry Syrup 藍莓汁",
-      "score": 0.8824,
+      "score": 0.99,
       "mochaboba_title": "Blueberry Syrup",
       "mochaboba_handle": "blueberry-syrup-1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/BlueberrySyrup_64bdef0b-2a87-4c76-9aaf-6da94ae821ce.png?v=1690572673"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/BlueberrySyrup_64bdef0b-2a87-4c76-9aaf-6da94ae821ce.png?v=1690572673",
+      "keywords": [
+        "syrup"
+      ],
+      "second_best": 0.6886
+    },
+    {
+      "sku": "S011703",
+      "name": "Passion Fruit Rose Syrup Syrup Seedless 玫瑰汁 百香果汁(無籽)",
+      "score": 0.99,
+      "mochaboba_title": "Rose Syrup",
+      "mochaboba_handle": "rose-syrup",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/b394cc12c6ba2caaf9929aa816d970dd.png?v=1732045951",
+      "keywords": [
+        "syrup"
+      ],
+      "second_best": 0.7953
     },
     {
       "sku": "S011803",
@@ -98,1117 +236,1412 @@
       "score": 1.0,
       "mochaboba_title": "California Orange Syrup",
       "mochaboba_handle": "california-orange-syrup",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/7d6ea2569ae2214fe48d2abb5c9bdadb.png?v=1732045798"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/7d6ea2569ae2214fe48d2abb5c9bdadb.png?v=1732045798",
+      "keywords": [],
+      "second_best": 0.0
+    },
+    {
+      "sku": "S030203",
+      "name": "Lychee Longan Syrup Honey Syrup 荔枝汁 龍眼蜂蜜",
+      "score": 0.76,
+      "mochaboba_title": "Longan Honey Syrup",
+      "mochaboba_handle": "longan-honey-syrup",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/aea2c11b5fd27ccf4885b08b0666e3f4.png?v=1732046026",
+      "keywords": [
+        "syrup",
+        "lychee",
+        "honey"
+      ],
+      "second_best": 0.6089
+    },
+    {
+      "sku": "S030303",
+      "name": "Mango Taro Syrup 宇香蜜 芒果汁",
+      "score": 1.0,
+      "mochaboba_title": "Taro Syrup",
+      "mochaboba_handle": "taro-syrup",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/3b592c1ced7a64488f6d822e8b4d6944.png?v=1732045871",
+      "keywords": [
+        "syrup",
+        "taro",
+        "mango"
+      ],
+      "second_best": 0.7867
     },
     {
       "sku": "S030702",
       "name": "Fructose 果糖 50LBS",
-      "score": 0.9032,
+      "score": 0.9886,
       "mochaboba_title": "Fructose 50lbs",
       "mochaboba_handle": "fructose-50lbs-1",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/products/WeChatImage_20230317143754_93ebf981-52df-4044-8b1f-b56681652db3.jpg?v=1679078346"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/products/WeChatImage_20230317143754_93ebf981-52df-4044-8b1f-b56681652db3.jpg?v=1679078346",
+      "keywords": [
+        "fructose"
+      ],
+      "second_best": 0.0
+    },
+    {
+      "sku": "T010503",
+      "name": "Four Seasons Spring Phoenix Oolong Tea Leaves Oolong Tea Leaves 四季春烏龍茶葉 鸭屎香烏龍茶葉",
+      "score": 1.0,
+      "mochaboba_title": "Phoenix Oolong Tea Leaves",
+      "mochaboba_handle": "phoenix-oolong-tea-leaves",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/Phoneixoolong.png?v=1766091972",
+      "keywords": [
+        "tea",
+        "oolong"
+      ],
+      "second_best": 0.76
     },
     {
       "sku": "T030103",
       "name": "Earl Grey Espresso Black Tea Bag 伯爵紅茶萃茶包",
-      "score": 0.875,
+      "score": 0.99,
       "mochaboba_title": "Earl Grey Espresso Black Tea Bag",
       "mochaboba_handle": "earl-grey-espresso-black-tea-bag",
-      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/ad4c27b38e17981af95d5fbc3612ad20.png?v=1732047928"
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/ad4c27b38e17981af95d5fbc3612ad20.png?v=1732047928",
+      "keywords": [
+        "tea"
+      ],
+      "second_best": 0.7052
+    },
+    {
+      "sku": "T030803",
+      "name": "White Peach Espresso Four Seasons Springs Espresso Oolong Tea Bag 蜜桃青烏龍茶萃茶包",
+      "score": 1.0,
+      "mochaboba_title": "Four Seasons Springs Espresso Oolong Tea Bag",
+      "mochaboba_handle": "four-seasons-springs-espresso-oolong-tea-bag",
+      "image_url": "https://cdn.shopify.com/s/files/1/0258/2187/2216/files/4c46e378ba77621eac9e36d729374eb1.png?v=1732048247",
+      "keywords": [
+        "tea",
+        "oolong",
+        "peach"
+      ],
+      "second_best": 0.6941
     }
   ],
   "unmatched": [
     {
       "sku": "B010103",
       "name": "B010103",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.125,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B010203",
       "name": "B010203",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1481,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "B010303",
       "name": "B010303",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.125,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B020103",
       "name": "B020103",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1429,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "B020203",
       "name": "B020203",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1481,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "B030203",
       "name": "B030203",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1429,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "B030303",
       "name": "B030303",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.1176,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B030403",
       "name": "B030403",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.1176,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B030603",
       "name": "B030603",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.125,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B030702",
       "name": "B030702",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1429,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "B030802",
       "name": "Boba 奇异果爆爆珠",
-      "score": 0.3077,
+      "score": 0.4078,
+      "second_best": 0.38,
       "best_title": "Plain Agar Boba",
-      "best_handle": "plain-agar-boba"
+      "best_handle": "plain-agar-boba",
+      "keywords": [
+        "boba"
+      ]
     },
     {
       "sku": "B040103",
       "name": "B040103",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.125,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B040203",
       "name": "鳳梨椰果",
       "score": 0.0,
+      "second_best": 0.0,
       "best_title": "",
-      "best_handle": ""
+      "best_handle": "",
+      "keywords": []
     },
     {
       "sku": "B040303",
       "name": "B040303",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.1176,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "B040503",
       "name": "B040503",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
-    },
-    {
-      "sku": "B040603",
-      "name": "Coﬀee Jelly 咖啡椰果",
-      "score": 0.7143,
-      "best_title": "Coffee Jelly",
-      "best_handle": "coffee-jelly"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "B040703",
       "name": "B040703",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.1176,
       "best_title": "Red Bean",
-      "best_handle": "red-bean"
+      "best_handle": "red-bean",
+      "keywords": []
     },
     {
       "sku": "C010103",
       "name": "C010103",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "C010203",
       "name": "C010203",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "C010303",
       "name": "C010303",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "C010603",
       "name": "C010603",
-      "score": 0.3,
+      "score": 0.3333,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "C010703",
       "name": "C010703",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "C010803",
       "name": "C010803",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "C010903",
       "name": "C010903",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "G010103",
       "name": "G010103",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G010203",
       "name": "G010203",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.1538,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G010303",
       "name": "G010303",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G010403",
       "name": "G010403",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G010503",
       "name": "G010503",
-      "score": 0.2609,
+      "score": 0.2857,
+      "second_best": 0.2,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G010603",
       "name": "G010603",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1905,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "G010703",
       "name": "G010703",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G010803",
       "name": "G010803",
-      "score": 0.1818,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "MD-185TA Shaker Machine",
-      "best_handle": "md-185ta-shaker-machine"
+      "best_handle": "md-185ta-shaker-machine",
+      "keywords": []
     },
     {
       "sku": "G010903",
       "name": "G010903",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.1739,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G011003",
       "name": "G011003",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G011103",
       "name": "G011103",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G011303",
       "name": "G011303",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "G011403",
       "name": "G011403",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.125,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "H0103",
       "name": "H0103",
-      "score": 0.1429,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "H0203",
       "name": "Cane Sugar Syrup Dispenser Machine 蔗糖定量機",
-      "score": 0.5,
-      "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "score": 0.62,
+      "second_best": 0.5761,
+      "best_title": "Ginger Brown Sugar Syrup",
+      "best_handle": "ginger-brown-sugar-syrup",
+      "keywords": [
+        "syrup",
+        "sugar"
+      ]
     },
     {
       "sku": "H0303",
       "name": "H0303",
-      "score": 0.1429,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "H0403",
       "name": "H0403",
-      "score": 0.1429,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "H0603",
       "name": "H0603",
-      "score": 0.1429,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "H0803",
       "name": "Machine 雪克奶泡機",
       "score": 0.0,
+      "second_best": 0.0,
       "best_title": "",
-      "best_handle": ""
+      "best_handle": "",
+      "keywords": []
     },
     {
       "sku": "HO703",
       "name": "HO703",
-      "score": 0.2105,
+      "score": 0.2222,
+      "second_best": 0.2222,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "HOME-NAI-001",
       "name": "奶茶1号",
-      "score": 0.1176,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "HOME-NAI-002",
       "name": "奶茶2号",
-      "score": 0.0741,
+      "score": 0.087,
+      "second_best": 0.0833,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "IMGTEST1",
       "name": "ImgTest1",
-      "score": 0.3333,
+      "score": 0.3636,
+      "second_best": 0.3636,
       "best_title": "Mango Star Jelly",
-      "best_handle": "mango-star-jelly-1"
+      "best_handle": "mango-star-jelly-1",
+      "keywords": []
     },
     {
       "sku": "IMGTEST2",
       "name": "ImgTest2",
-      "score": 0.3333,
+      "score": 0.3636,
+      "second_best": 0.3636,
       "best_title": "Mango Star Jelly",
-      "best_handle": "mango-star-jelly-1"
+      "best_handle": "mango-star-jelly-1",
+      "keywords": []
     },
     {
       "sku": "ING-1",
       "name": "牛奶",
       "score": 0.0,
+      "second_best": 0.0,
       "best_title": "",
-      "best_handle": ""
+      "best_handle": "",
+      "keywords": []
     },
     {
       "sku": "J010103",
       "name": "J010103",
-      "score": 0.125,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "J010303",
       "name": "J010303",
-      "score": 0.125,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "J010403",
       "name": "J010403",
-      "score": 0.125,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "J010503",
       "name": "J010503",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.2,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "J010603",
       "name": "J010603",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1875,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "J010803",
       "name": "J010803",
-      "score": 0.1818,
+      "score": 0.2,
+      "second_best": 0.1333,
       "best_title": "MD-185TA Shaker Machine",
-      "best_handle": "md-185ta-shaker-machine"
+      "best_handle": "md-185ta-shaker-machine",
+      "keywords": []
     },
     {
       "sku": "J010903",
       "name": "J010903",
-      "score": 0.1481,
+      "score": 0.1739,
+      "second_best": 0.16,
       "best_title": "90 PP Blank Cold Cup",
-      "best_handle": "90-pp-blank-cold-cup"
+      "best_handle": "90-pp-blank-cold-cup",
+      "keywords": []
     },
     {
       "sku": "L010103",
       "name": "L010103",
-      "score": 0.125,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Aloe Vera",
-      "best_handle": "aloe-vera"
-    },
-    {
-      "sku": "L010203",
-      "name": "95 /90 PET 16 & 22oz Cold Cup Dome Lid 95/90 PET 冷飲杯凸蓋",
-      "score": 0.6747,
-      "best_title": "95 PET 16 & 22oz Cold Cup Flat Lid",
-      "best_handle": "95-pet-16-22oz-cold-cup-flat-lid"
+      "best_handle": "aloe-vera",
+      "keywords": []
     },
     {
       "sku": "L010603",
       "name": "L010603",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1875,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "L010703",
       "name": "L010703",
-      "score": 0.125,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Aloe Vera",
-      "best_handle": "aloe-vera"
+      "best_handle": "aloe-vera",
+      "keywords": []
     },
     {
       "sku": "L011103",
       "name": "L011103",
-      "score": 0.125,
+      "score": 0.1333,
+      "second_best": 0.125,
       "best_title": "Aloe Vera",
-      "best_handle": "aloe-vera"
+      "best_handle": "aloe-vera",
+      "keywords": []
     },
     {
       "sku": "L020102",
       "name": "L020102",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
-    },
-    {
-      "sku": "L020202",
-      "name": "LDPE Blank Two Cup Bag 透明兩杯袋",
-      "score": 0.7368,
-      "best_title": "LDPE Blank Cup Bag",
-      "best_handle": "ldpe-blank-cup-bag"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "L020302",
       "name": "L020302",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "L020602",
       "name": "Four Cup Hand Carrier 四杯手提杯托",
-      "score": 0.5909,
+      "score": 0.6509,
+      "second_best": 0.3996,
       "best_title": "Four Cup Holders",
-      "best_handle": "four-cup-holders"
+      "best_handle": "four-cup-holders",
+      "keywords": [
+        "cup"
+      ]
     },
     {
       "sku": "L020702",
       "name": "L020702",
-      "score": 0.1333,
+      "score": 0.1538,
+      "second_best": 0.1333,
       "best_title": "PC Double Jigger PC 2oz",
-      "best_handle": "pc-double-jigger-pc-2oz"
-    },
-    {
-      "sku": "N010203",
-      "name": "Popcorn Chicken Brown Sugar Pepper Salt Powder 鹽酥雞胡椒粉",
-      "score": 0.7816,
-      "best_title": "Popcorn Chicken Pepper Salt Powder",
-      "best_handle": "popcorn-chicken-pepper-salt-powder"
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "N010302",
       "name": "N010302",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.1818,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "N010403",
       "name": "N010403",
-      "score": 0.1739,
+      "score": 0.1905,
+      "second_best": 0.1818,
       "best_title": "Cane Sugar 50lbs",
-      "best_handle": "cane-sugar-50lbs"
+      "best_handle": "cane-sugar-50lbs",
+      "keywords": []
     },
     {
       "sku": "P010303",
       "name": "P010303",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1739,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P010313",
       "name": "P010313",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1739,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P020103",
       "name": "P020103",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1739,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P020203",
       "name": "P020203",
-      "score": 0.1579,
-      "best_title": "Premium 2.2 Medium Tapioca Boba",
-      "best_handle": "2-2-medium-black-tapioca-boba"
+      "score": 0.1875,
+      "second_best": 0.1818,
+      "best_title": "95 PET 16 & 22oz Cold Cup Flat Lid",
+      "best_handle": "95-pet-16-22oz-cold-cup-flat-lid",
+      "keywords": []
     },
     {
       "sku": "P020303",
       "name": "P020303",
-      "score": 0.1333,
-      "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
+      "score": 0.1538,
+      "second_best": 0.1429,
+      "best_title": "PC Double Jigger PC 2oz",
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "P020403",
       "name": "P020403",
-      "score": 0.1333,
-      "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
+      "score": 0.1538,
+      "second_best": 0.1429,
+      "best_title": "PC Double Jigger PC 2oz",
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "P020703",
       "name": "P020703",
-      "score": 0.1333,
-      "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
+      "score": 0.1538,
+      "second_best": 0.1429,
+      "best_title": "PC Double Jigger PC 2oz",
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "P020803",
       "name": "P020803",
-      "score": 0.1333,
-      "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
+      "score": 0.1538,
+      "second_best": 0.1429,
+      "best_title": "PC Double Jigger PC 2oz",
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "P020903",
       "name": "P020903",
-      "score": 0.1481,
+      "score": 0.1739,
+      "second_best": 0.16,
       "best_title": "90 PP Blank Cold Cup",
-      "best_handle": "90-pp-blank-cold-cup"
+      "best_handle": "90-pp-blank-cold-cup",
+      "keywords": []
     },
     {
       "sku": "P040203",
       "name": "P040203",
-      "score": 0.1333,
-      "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
+      "score": 0.1538,
+      "second_best": 0.1429,
+      "best_title": "PC Double Jigger PC 2oz",
+      "best_handle": "pc-double-jigger-pc-2oz",
+      "keywords": []
     },
     {
       "sku": "P040303",
       "name": "P040303",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.1333,
       "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
-    },
-    {
-      "sku": "P050103",
-      "name": "Premium Creamer Premium 2.2 Medium 厚奶精粉 2.2 中珍珠",
-      "score": 0.5128,
-      "best_title": "Premium 2.2 Medium Tapioca Boba",
-      "best_handle": "2-2-medium-black-tapioca-boba"
+      "best_handle": "cup-tray",
+      "keywords": []
     },
     {
       "sku": "P050203",
       "name": "P050203",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "P050303",
       "name": "P050303",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "P060103",
       "name": "P060103",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1739,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P060203",
       "name": "P060203",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1875,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
-    },
-    {
-      "sku": "P070103",
-      "name": "Caramel Pudding Creme Brulee Powder 焦糖布丁粉",
-      "score": 0.6984,
-      "best_title": "Caramel Pudding Powder",
-      "best_handle": "caramel-pudding-powder"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P070503",
       "name": "日式純抹茶粉",
       "score": 0.0,
+      "second_best": 0.0,
       "best_title": "",
-      "best_handle": ""
+      "best_handle": "",
+      "keywords": []
     },
     {
       "sku": "P070703",
       "name": "P070703",
-      "score": 0.1333,
+      "score": 0.1429,
+      "second_best": 0.1333,
       "best_title": "Cup Tray",
-      "best_handle": "cup-tray"
+      "best_handle": "cup-tray",
+      "keywords": []
     },
     {
       "sku": "P070903",
       "name": "P070903",
-      "score": 0.1481,
+      "score": 0.1739,
+      "second_best": 0.16,
       "best_title": "90 PP Blank Cold Cup",
-      "best_handle": "90-pp-blank-cold-cup"
+      "best_handle": "90-pp-blank-cold-cup",
+      "keywords": []
     },
     {
       "sku": "P071003",
       "name": "P071003",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1739,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P071102",
       "name": "P071102",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1875,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P071203",
       "name": "P071203",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.1875,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "P071403",
       "name": "Powder 鸡蛋仔预拌粉",
-      "score": 0.4828,
-      "best_title": "Powder Container",
-      "best_handle": "powder-container"
+      "score": 0.5817,
+      "second_best": 0.5428,
+      "best_title": "Mango Powder",
+      "best_handle": "mango-powder",
+      "keywords": [
+        "powder"
+      ]
     },
     {
       "sku": "PC010103",
       "name": "PC010103",
-      "score": 0.2353,
+      "score": 0.25,
+      "second_best": 0.2222,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "PC010403",
       "name": "PC010403",
-      "score": 0.2353,
+      "score": 0.25,
+      "second_best": 0.2222,
       "best_title": "Peach Jam",
-      "best_handle": "peach-jam"
+      "best_handle": "peach-jam",
+      "keywords": []
     },
     {
       "sku": "Q010103",
       "name": "Q010103",
-      "score": 0.1053,
+      "score": 0.125,
+      "second_best": 0.1111,
       "best_title": "90 PP Black Wavy 16oz Paper Cup",
-      "best_handle": "90-pp-wavy-paper-cup"
+      "best_handle": "90-pp-wavy-paper-cup",
+      "keywords": []
     },
     {
       "sku": "Q010203",
       "name": "Q010203",
-      "score": 0.125,
+      "score": 0.1481,
+      "second_best": 0.125,
       "best_title": "16 & 22oz Cold Cup Dome Lid",
-      "best_handle": "95-90-pet-16-22oz-cold-cup-dome-lid"
+      "best_handle": "95-90-pet-16-22oz-cold-cup-dome-lid",
+      "keywords": []
     },
     {
       "sku": "Q010303",
       "name": "Individually Wrapped Black Large Straw Individually Wrapped Black Medium 黑色獨立包裝大吸管 长度 23cm",
-      "score": 0.5246,
+      "score": 0.597,
+      "second_best": 0.5415,
       "best_title": "Individually Wrapped Black Straw",
-      "best_handle": "individually-wrapped-black-straw"
+      "best_handle": "individually-wrapped-black-straw",
+      "keywords": [
+        "straw"
+      ]
     },
     {
       "sku": "Q010403",
       "name": "Q010403",
-      "score": 0.1053,
+      "score": 0.125,
+      "second_best": 0.1111,
       "best_title": "90 PP Black Wavy 16oz Paper Cup",
-      "best_handle": "90-pp-wavy-paper-cup"
+      "best_handle": "90-pp-wavy-paper-cup",
+      "keywords": []
     },
     {
       "sku": "QP010103",
       "name": "QP010103",
-      "score": 0.1905,
+      "score": 0.2105,
+      "second_best": 0.1667,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "QP010203",
       "name": "Individually Wrapped Paper White Individually Wrapped Paper White Large Medium Straw 白色紙質 獨立包裝中吸管",
-      "score": 0.4496,
+      "score": 0.5161,
+      "second_best": 0.4986,
       "best_title": "Individually Wrapped Black Straw",
-      "best_handle": "individually-wrapped-black-straw"
+      "best_handle": "individually-wrapped-black-straw",
+      "keywords": [
+        "straw"
+      ]
     },
     {
       "sku": "S010103",
       "name": "S010103",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010203",
       "name": "S010203",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010303",
       "name": "S010303",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010403",
       "name": "S010403",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010503",
       "name": "S010503",
-      "score": 0.2857,
+      "score": 0.3,
+      "second_best": 0.2857,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010603",
       "name": "S010603",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "S010703",
       "name": "S010703",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010803",
       "name": "S010803",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S010903",
       "name": "S010903",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011003",
       "name": "S011003",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011103",
       "name": "S011103",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011303",
       "name": "S011303",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011403",
       "name": "S011403",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011503",
       "name": "S011503",
-      "score": 0.2857,
+      "score": 0.3,
+      "second_best": 0.2857,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
-    },
-    {
-      "sku": "S011703",
-      "name": "Passion Fruit Rose Syrup Syrup Seedless 玫瑰汁 百香果汁(無籽)",
-      "score": 0.7089,
-      "best_title": "Passion Fruit Syrup Seedless",
-      "best_handle": "passion-fruit-syrup-seedless-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011704",
       "name": "S011704",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S011903",
       "name": "S011903",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S012003",
       "name": "S012003",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S012202",
       "name": "S012202",
-      "score": 0.1905,
-      "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "score": 0.2222,
+      "second_best": 0.2,
+      "best_title": "16 & 22oz Cold Cup Dome Lid",
+      "best_handle": "95-90-pet-16-22oz-cold-cup-dome-lid",
+      "keywords": []
     },
     {
       "sku": "S012302",
       "name": "S012302",
-      "score": 0.1905,
-      "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "score": 0.2222,
+      "second_best": 0.2,
+      "best_title": "16 & 22oz Cold Cup Dome Lid",
+      "best_handle": "95-90-pet-16-22oz-cold-cup-dome-lid",
+      "keywords": []
     },
     {
       "sku": "S030103",
       "name": "S030103",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
-    },
-    {
-      "sku": "S030203",
-      "name": "Lychee Longan Syrup Honey Syrup 荔枝汁 龍眼蜂蜜",
-      "score": 0.6207,
-      "best_title": "Longan Honey Syrup",
-      "best_handle": "longan-honey-syrup"
-    },
-    {
-      "sku": "S030303",
-      "name": "Mango Taro Syrup 宇香蜜 芒果汁",
-      "score": 0.6286,
-      "best_title": "Mango Syrup",
-      "best_handle": "mango-syrup"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S030403",
       "name": "Ginger Brown 黑糖薑母",
       "score": 0.6341,
+      "second_best": 0.4783,
       "best_title": "Ginger Brown Sugar Syrup",
-      "best_handle": "ginger-brown-sugar-syrup"
+      "best_handle": "ginger-brown-sugar-syrup",
+      "keywords": []
     },
     {
       "sku": "S030502",
       "name": "S030502",
-      "score": 0.2857,
+      "score": 0.3,
+      "second_best": 0.2857,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S030803",
       "name": "S030803",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S030903",
       "name": "S030903",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "S090103",
       "name": "S090103",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T010103",
       "name": "T010103",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T010203",
       "name": "T010203",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1875,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
-    },
-    {
-      "sku": "T010503",
-      "name": "Four Seasons Spring Phoenix Oolong Tea Leaves Oolong Tea Leaves 四季春烏龍茶葉 鸭屎香烏龍茶葉",
-      "score": 0.6379,
-      "best_title": "Four Seasons Spring Oolong Tea Leaves",
-      "best_handle": "four-seasons-spring-oolong-tea-leaves"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T010603",
       "name": "T010603",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "T010703",
       "name": "T010703",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T010803",
       "name": "T010803",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T010903",
       "name": "T010903",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1739,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T011003",
       "name": "T011003",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T020103",
       "name": "T020103",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T020203",
       "name": "T020203",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1875,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T030203",
       "name": "T030203",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T030403",
       "name": "T030403",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T030503",
       "name": "T030503",
-      "score": 0.2857,
+      "score": 0.3,
+      "second_best": 0.1905,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T030603",
       "name": "T030603",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "T030703",
       "name": "T030703",
-      "score": 0.1905,
+      "score": 0.2,
+      "second_best": 0.1429,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
-    },
-    {
-      "sku": "T030803",
-      "name": "White Peach Espresso Four Seasons Springs Espresso Oolong Tea Bag 蜜桃青烏龍茶萃茶包",
-      "score": 0.7207,
-      "best_title": "Four Seasons Springs Espresso Oolong Tea Bag",
-      "best_handle": "four-seasons-springs-espresso-oolong-tea-bag"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "U010103",
       "name": "U010103",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U010203",
       "name": "U010203",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U010303",
       "name": "U010303",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U010403",
       "name": "U010403",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U010503",
       "name": "U010503",
-      "score": 0.2857,
+      "score": 0.3,
+      "second_best": 0.2857,
       "best_title": "Fructose 50lbs",
-      "best_handle": "fructose-50lbs-1"
+      "best_handle": "fructose-50lbs-1",
+      "keywords": []
     },
     {
       "sku": "U010603",
       "name": "90 PAPER Spring Artistic 22oz Hot / Cold Cup 90春季藝術霧面紙杯 Shaker Machine",
-      "score": 0.4565,
+      "score": 0.5165,
+      "second_best": 0.4746,
       "best_title": "95 PET 16 & 22oz Cold Cup Flat Lid",
-      "best_handle": "95-pet-16-22oz-cold-cup-flat-lid"
+      "best_handle": "95-pet-16-22oz-cold-cup-flat-lid",
+      "keywords": [
+        "cup"
+      ]
     },
     {
       "sku": "U010703",
       "name": "U010703",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U010803",
       "name": "U010803",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U010903",
       "name": "U010903",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     },
     {
       "sku": "U011003",
       "name": "90mm 22oz Double Wall Paper Cup 中空厚纸杯 Shaker Machine",
-      "score": 0.6087,
+      "score": 0.6687,
+      "second_best": 0.5667,
       "best_title": "90 Double Layer Paper Cup",
-      "best_handle": "90-double-layer-22oz-paper-cup"
+      "best_handle": "90-double-layer-22oz-paper-cup",
+      "keywords": [
+        "cup"
+      ]
     },
     {
       "sku": "U011203",
       "name": "U011203",
-      "score": 0.2,
+      "score": 0.2222,
+      "second_best": 0.2,
       "best_title": "Coke Cup 16oz",
-      "best_handle": "coke-cup-160z"
+      "best_handle": "coke-cup-160z",
+      "keywords": []
     }
   ]
 }
