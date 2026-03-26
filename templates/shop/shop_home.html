@@ -3220,60 +3220,7 @@
         }
 
         var grid = document.getElementById("product-grid");
-        try {
-          console.log("[shop] grid element:", grid);
-        } catch (e) {}
-
-        // Debug: capture clicks/taps even if overlays block grid.
-        // This is temporary instrumentation to identify "no response" root cause.
-        function _ancestors(el, limit) {
-          var out = [];
-          var cur = el;
-          var n = 0;
-          while (cur && n < (limit || 8)) {
-            var id = cur.id ? "#" + cur.id : "";
-            var cls = cur.className ? "." + String(cur.className).trim().replace(/\s+/g, ".") : "";
-            out.push(cur.tagName + id + cls);
-            cur = cur.parentElement;
-            n++;
-          }
-          return out;
-        }
-        function _logHit(prefix, ev) {
-          try {
-            var t = ev && ev.target ? ev.target : null;
-            var x = ev && ev.touches && ev.touches[0] ? ev.touches[0].clientX : ev && ev.clientX;
-            var y = ev && ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev && ev.clientY;
-            var topEl = null;
-            try {
-              if (typeof x === "number" && typeof y === "number") topEl = document.elementFromPoint(x, y);
-            } catch (e2) {}
-            console.log(prefix, {
-              target: t ? t.tagName + (t.id ? "#" + t.id : "") + (t.className ? "." + String(t.className).trim().replace(/\s+/g, ".") : "") : null,
-              target_chain: t ? _ancestors(t, 6) : [],
-              elementFromPoint: topEl
-                ? topEl.tagName +
-                  (topEl.id ? "#" + topEl.id : "") +
-                  (topEl.className ? "." + String(topEl.className).trim().replace(/\s+/g, ".") : "")
-                : null,
-              elementFromPoint_chain: topEl ? _ancestors(topEl, 6) : [],
-            });
-          } catch (e) {}
-        }
-        document.addEventListener(
-          "click",
-          function (ev) {
-            _logHit("[shop] CAPTURE click", ev);
-          },
-          true
-        );
-        document.addEventListener(
-          "touchend",
-          function (ev) {
-            _logHit("[shop] CAPTURE touchend", ev);
-          },
-          { capture: true, passive: true }
-        );
+        // (Debug capture removed after root cause confirmed)
         function getCartListEl() {
           return document.getElementById("cart-body");
         }
@@ -3519,9 +3466,6 @@
           if (delegationReady) return;
           delegationReady = true;
           grid.addEventListener("click", function (e) {
-            try {
-              console.log("[shop] grid click", e && e.target ? e.target : e);
-            } catch (err0) {}
             // click-to-open quick view (1688-style). keep ctrl/cmd-click for open in new tab.
             var card = e.target.closest(".catalog-card");
             var a = e.target.closest("a");
@@ -3533,75 +3477,72 @@
                 return;
               }
             }
+
+            // Standard action chain: never "return early" unless an action is handled.
             var buyBtn = e.target.closest(".btn-buy-now");
-            if (buyBtn) {
-              try {
-                console.log("[shop] buy now clicked");
-              } catch (err1) {}
-              var pid = parseInt(buyBtn.getAttribute("data-pid"), 10);
-              var card = buyBtn.closest(".catalog-card");
-              var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
-              var saleType = mode ? mode.value : "single";
-              var qtyIn = card.querySelector(".qty-stepper input");
-              var qty = parseFloat(qtyIn.value);
-              if (isNaN(qty) || qty <= 0) {
-                showToast("请输入有效数量");
-                return;
-              }
-              buyNow(pid, saleType, qty);
-              return;
-            }
             var addBtn = e.target.closest(".btn-add-cart");
-            if (addBtn) {
-              try {
-                console.log("[shop] add to cart clicked");
-              } catch (err2) {}
-              var pid = parseInt(addBtn.getAttribute("data-pid"), 10);
-              var card = addBtn.closest(".catalog-card");
-              var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
-              var saleType = mode ? mode.value : "single";
-              var qtyIn = card.querySelector(".qty-stepper input");
-              var qty = parseFloat(qtyIn.value);
-              if (isNaN(qty) || qty <= 0) {
-                showToast("请输入有效数量");
-                return;
-              }
-              addToCart(pid, saleType, qty);
-              return;
-            }
             var qb = e.target.closest(".qty-stepper button");
+
             if (qb) {
-              try {
-                console.log("[shop] qty button clicked", qb.getAttribute("data-act") || "");
-              } catch (err3) {}
-              var card = qb.closest(".catalog-card");
-              var pid = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
-              var p = productById(pid);
-              var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
-              var saleType = mode ? mode.value : "single";
-              var row = qb.closest(".qty-stepper");
-              var inp = row.querySelector("input");
-              var v = parseFloat(inp.value) || 0;
-              var minQ = p ? Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01) : 0.01;
+              var act = qb.getAttribute("data-act");
+              if (act !== "plus" && act !== "minus") return;
+              var cardQ = qb.closest(".catalog-card");
+              if (!cardQ) return;
+              var pidQ = parseInt(cardQ.getAttribute("data-pid") || cardQ.getAttribute("data-product-id"), 10);
+              if (!isFinite(pidQ) || pidQ <= 0) return;
+              var pQ = productById(pidQ);
+              var modeQ = cardQ.querySelector('input[name="mode-' + pidQ + '"]:checked');
+              var saleTypeQ = modeQ ? modeQ.value : "single";
+              var rowQ = qb.closest(".qty-stepper");
+              var inpQ = rowQ ? rowQ.querySelector("input") : null;
+              if (!inpQ) return;
+
+              var vQ = parseFloat(inpQ.value) || 0;
+              var minQ = pQ ? Math.max(parseFloat(pQ.minimum_order_qty) || 0.01, 0.01) : 0.01;
               var cartSnap = getCart();
-              var maxQ = p ? maxStepperQtyForCard(pid, p, saleType, cartSnap) : Infinity;
-              if (qb.getAttribute("data-act") === "plus") {
-                v = v + 1;
-                if (maxQ !== Infinity && v > maxQ + 1e-9) {
-                  v = maxQ;
+              var maxQ = pQ ? maxStepperQtyForCard(pidQ, pQ, saleTypeQ, cartSnap) : Infinity;
+
+              if (act === "plus") {
+                vQ = vQ + 1;
+                if (maxQ !== Infinity && vQ > maxQ + 1e-9) {
+                  vQ = maxQ;
                   if (maxQ <= 0) showToast("库存不足。");
                 }
               } else {
-                v = Math.max(minQ, v - 1);
+                vQ = Math.max(minQ, vQ - 1);
               }
-              inp.value = v;
+              inpQ.value = vQ;
+              refreshCartUI();
               return;
-            }
-            var modeToggle = e.target.closest(".ecom-mode-toggle");
-            if (modeToggle) {
-              try {
-                console.log("[shop] mode toggle clicked");
-              } catch (err4) {}
+            } else if (addBtn) {
+              var pidA = parseInt(addBtn.getAttribute("data-pid"), 10);
+              var cardA = addBtn.closest(".catalog-card");
+              if (!cardA || !isFinite(pidA) || pidA <= 0) return;
+              var modeA = cardA.querySelector('input[name="mode-' + pidA + '"]:checked');
+              var saleTypeA = modeA ? modeA.value : "single";
+              var qtyInA = cardA.querySelector(".qty-stepper input");
+              var qtyA = parseFloat(qtyInA ? qtyInA.value : "0");
+              if (isNaN(qtyA) || qtyA <= 0) {
+                showToast("请输入有效数量");
+                return;
+              }
+              addToCart(pidA, saleTypeA, qtyA);
+              refreshCartUI();
+              return;
+            } else if (buyBtn) {
+              var pidB = parseInt(buyBtn.getAttribute("data-pid"), 10);
+              var cardB = buyBtn.closest(".catalog-card");
+              if (!cardB || !isFinite(pidB) || pidB <= 0) return;
+              var modeB = cardB.querySelector('input[name="mode-' + pidB + '"]:checked');
+              var saleTypeB = modeB ? modeB.value : "single";
+              var qtyInB = cardB.querySelector(".qty-stepper input");
+              var qtyB = parseFloat(qtyInB ? qtyInB.value : "0");
+              if (isNaN(qtyB) || qtyB <= 0) {
+                showToast("请输入有效数量");
+                return;
+              }
+              buyNow(pidB, saleTypeB, qtyB);
+              refreshCartUI();
               return;
             }
           });
