@@ -3223,6 +3223,57 @@
         try {
           console.log("[shop] grid element:", grid);
         } catch (e) {}
+
+        // Debug: capture clicks/taps even if overlays block grid.
+        // This is temporary instrumentation to identify "no response" root cause.
+        function _ancestors(el, limit) {
+          var out = [];
+          var cur = el;
+          var n = 0;
+          while (cur && n < (limit || 8)) {
+            var id = cur.id ? "#" + cur.id : "";
+            var cls = cur.className ? "." + String(cur.className).trim().replace(/\s+/g, ".") : "";
+            out.push(cur.tagName + id + cls);
+            cur = cur.parentElement;
+            n++;
+          }
+          return out;
+        }
+        function _logHit(prefix, ev) {
+          try {
+            var t = ev && ev.target ? ev.target : null;
+            var x = ev && ev.touches && ev.touches[0] ? ev.touches[0].clientX : ev && ev.clientX;
+            var y = ev && ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev && ev.clientY;
+            var topEl = null;
+            try {
+              if (typeof x === "number" && typeof y === "number") topEl = document.elementFromPoint(x, y);
+            } catch (e2) {}
+            console.log(prefix, {
+              target: t ? t.tagName + (t.id ? "#" + t.id : "") + (t.className ? "." + String(t.className).trim().replace(/\s+/g, ".") : "") : null,
+              target_chain: t ? _ancestors(t, 6) : [],
+              elementFromPoint: topEl
+                ? topEl.tagName +
+                  (topEl.id ? "#" + topEl.id : "") +
+                  (topEl.className ? "." + String(topEl.className).trim().replace(/\s+/g, ".") : "")
+                : null,
+              elementFromPoint_chain: topEl ? _ancestors(topEl, 6) : [],
+            });
+          } catch (e) {}
+        }
+        document.addEventListener(
+          "click",
+          function (ev) {
+            _logHit("[shop] CAPTURE click", ev);
+          },
+          true
+        );
+        document.addEventListener(
+          "touchend",
+          function (ev) {
+            _logHit("[shop] CAPTURE touchend", ev);
+          },
+          { capture: true, passive: true }
+        );
         function getCartListEl() {
           return document.getElementById("cart-body");
         }
