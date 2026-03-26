@@ -295,6 +295,18 @@
         color: #15803d;
         font-variant-numeric: tabular-nums;
       }
+      .discovery-rail__placeholder {
+        margin: 0;
+        padding: 12px 14px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.45;
+        background: #f8fafc;
+        border-radius: 12px;
+        border: 1px dashed #e2e8f0;
+        flex: 1 1 100%;
+        min-width: 0;
+      }
       .shop-by-category-head {
         margin-bottom: 16px;
       }
@@ -398,8 +410,9 @@
         overflow: hidden;
         text-overflow: ellipsis;
         display: -webkit-box;
-        -webkit-line-clamp: 3;
+        -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
+        word-break: break-word;
         color: #334155;
       }
       .cat-card.active .cat-card__name {
@@ -452,19 +465,22 @@
         display: flex;
         flex-direction: row;
         align-items: flex-start;
-        gap: 12px;
-        padding: 12px 14px 10px;
+        gap: 10px;
+        padding: 10px 12px 8px;
         border-bottom: 1px solid #f1f5f9;
+      }
+      .ecom-card--app.ecom-card--oos .ecom-card__main {
+        border-bottom-color: #fecaca;
       }
       .ecom-card--app .ecom-card__media.catalog-card__media {
         display: block;
-        flex: 0 0 88px;
-        width: 88px;
-        min-width: 88px;
-        height: 88px;
+        flex: 0 0 76px;
+        width: 76px;
+        min-width: 76px;
+        height: 76px;
         background: #f8fafc;
-        padding: 8px;
-        border-radius: 14px;
+        padding: 6px;
+        border-radius: 12px;
         box-sizing: border-box;
         overflow: hidden;
       }
@@ -473,7 +489,15 @@
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 3px;
+      }
+      .ecom-card--oos {
+        background: #fafafa;
+        border-color: #fecaca !important;
+        box-shadow: 0 2px 10px rgba(220, 38, 38, 0.06);
+      }
+      .ecom-card--oos .ecom-card__footer {
+        opacity: 0.92;
       }
       .ecom-card__cat-pill {
         align-self: flex-start;
@@ -482,48 +506,70 @@
         color: #64748b;
         background: #f1f5f9;
         border-radius: 999px;
-        padding: 3px 8px;
-        line-height: 1.2;
-      }
-      .ecom-card__specs-mini {
-        font-size: 11px;
-        color: #94a3b8;
-        margin: 0;
-        line-height: 1.35;
+        padding: 2px 8px;
+        line-height: 1.25;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .ecom-card__price-strip {
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        gap: 8px 12px;
-        font-size: 15px;
-        font-weight: 800;
-        color: #15803d;
-        margin-top: 2px;
+        gap: 6px 10px;
+        margin-top: 4px;
         letter-spacing: -0.02em;
       }
       .ecom-card__price-strip--quote {
         font-size: 13px;
-        font-weight: 700;
-        color: #b45309;
+        font-weight: 800;
+        color: #c2410c;
+      }
+      .ecom-card__vip-flag {
+        display: inline-flex;
+        align-items: center;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 6px;
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+        margin-right: 2px;
       }
       .ecom-card__p {
         font-variant-numeric: tabular-nums;
+        font-size: 13px;
+        color: #334155;
       }
-      .ecom-card__p.ecom-p--hot {
+      .ecom-card__p strong {
+        font-weight: 800;
+        font-size: 17px;
         color: #15803d;
-        font-size: 16px;
+        letter-spacing: -0.03em;
+      }
+      .ecom-p--case strong {
+        font-size: 15px;
+        color: #0f766e;
+      }
+      .ecom-card__was {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 600;
+        margin-right: 4px;
       }
       .ecom-card__stock-row {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 6px;
-        margin-top: 4px;
-        font-size: 11px;
+        margin-top: 6px;
       }
-      .ecom-stock-num {
-        color: #64748b;
+      .ecom-card__quote-hint {
+        margin: 0 0 2px;
+        font-size: 12px;
+        color: #b45309;
         font-weight: 600;
       }
       .stock-pill--muted {
@@ -601,39 +647,39 @@
         letter-spacing: -0.02em;
       }
       .ecom-card--app .ecom-card__footer.catalog-card__body {
-        padding: 12px 14px 14px;
-        gap: 10px;
+        padding: 8px 10px 10px;
+        gap: 8px;
       }
       .ecom-card__qty-row {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-top: 2px;
-      }
-      .ecom-qty-lbl {
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: #64748b;
+        margin-top: 0;
       }
       .ecom-card--app .ecom-card__actions.catalog-card__actions {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
         align-items: stretch;
       }
       .ecom-card--app .qty-stepper.ecom-qty-stepper {
-        flex: 1 1 120px;
+        grid-column: 1 / -1;
+        width: 100%;
         min-width: 0;
       }
       .ecom-card--app .btn-add-cart.ecom-btn-add-cart {
-        flex: 1 1 140px;
-        min-width: min(100%, 160px);
+        grid-column: 1 / 2;
+        min-width: 0;
       }
       .ecom-card--app .btn-buy-now.ecom-btn-buy-now {
-        flex: 1 1 120px;
-        min-width: min(100%, 140px);
+        grid-column: 2 / 3;
+        min-width: 0;
+      }
+      .ecom-mode-toggle--compact {
+        padding: 3px;
+        border-radius: 999px;
+      }
+      .ecom-mode-toggle--compact .ecom-mode-btn__text {
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 800;
       }
       .ecom-card__sku.catalog-card__sku {
         font-size: 11px;
@@ -846,8 +892,11 @@
         color: #c2410c;
       }
       .stock-pill--out {
-        background: #fee2e2;
-        color: #991b1b;
+        background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%);
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        font-weight: 800;
+        box-shadow: 0 1px 3px rgba(220, 38, 38, 0.12);
       }
       .catalog-muted {
         color: var(--muted);
@@ -883,6 +932,12 @@
         gap: 10px;
         border-top: 1px solid #e2e8f0;
         padding-top: 16px;
+      }
+      .ecom-card--app .ecom-card__buy {
+        border-top: none;
+        padding-top: 0;
+        gap: 6px;
+        margin-top: 0;
       }
       .ecom-card__mode-label {
         font-size: 11px;
@@ -960,21 +1015,21 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
         overflow: hidden;
         background: #fff;
         box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
         width: 100%;
       }
       .qty-stepper.ecom-qty-stepper button {
-        width: 48px;
-        min-height: 48px;
-        height: 48px;
+        width: 40px;
+        min-height: 40px;
+        height: 40px;
         border: none;
         background: #f8fafc;
         cursor: pointer;
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 700;
         line-height: 1;
         color: #334155;
@@ -988,26 +1043,31 @@
         min-width: 0;
         text-align: center;
         border: none;
-        border-left: 2px solid #e2e8f0;
-        border-right: 2px solid #e2e8f0;
-        font-size: 17px;
+        border-left: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
+        font-size: 15px;
         font-weight: 800;
-        padding: 0 8px;
-        min-height: 48px;
+        padding: 0 6px;
+        min-height: 40px;
         color: #0f172a;
+      }
+      .qty-stepper.ecom-qty-stepper button:disabled,
+      .qty-stepper.ecom-qty-stepper input:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
       .btn-add-cart.ecom-btn-add-cart {
         width: 100%;
-        padding: 14px 20px;
+        padding: 12px 14px;
         border: 1px solid #166534;
-        border-radius: var(--radius);
-        background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
         color: #fff;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 800;
         letter-spacing: 0.02em;
         cursor: pointer;
-        box-shadow: 0 4px 14px rgba(21, 128, 61, 0.25);
+        box-shadow: 0 4px 14px rgba(21, 128, 61, 0.28);
         transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
       }
       .btn-add-cart.ecom-btn-add-cart:hover:not(:disabled) {
@@ -1024,17 +1084,17 @@
       }
       .btn-buy-now.ecom-btn-buy-now {
         width: 100%;
-        padding: 14px 20px;
-        border: 1px solid #d1d5db;
-        border-radius: var(--radius);
-        background: #ffffff;
-        color: #374151;
-        font-size: 15px;
-        font-weight: 700;
+        padding: 12px 14px;
+        border: 2px solid #15803d;
+        border-radius: 12px;
+        background: #fff;
+        color: #15803d;
+        font-size: 14px;
+        font-weight: 800;
         letter-spacing: 0.02em;
         cursor: pointer;
         box-shadow: none;
-        transition: background 0.12s ease, border-color 0.12s ease;
+        transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
       }
       .btn-buy-now.ecom-btn-buy-now:hover:not(:disabled) {
         background: #f9fafb;
@@ -1607,7 +1667,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
       }
       .shop-float-cart__info {
         flex: 1;
@@ -1615,8 +1675,21 @@
         text-decoration: none;
         color: #fff;
         display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+      }
+      .shop-float-cart__ico {
+        font-size: 28px;
+        line-height: 1;
+        flex-shrink: 0;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+      }
+      .shop-float-cart__text {
+        display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 1px;
+        min-width: 0;
       }
       .shop-float-cart__label {
         font-size: 11px;
@@ -1626,23 +1699,32 @@
         text-transform: uppercase;
       }
       .shop-float-cart__sum {
-        font-size: 20px;
+        font-size: 17px;
         font-weight: 800;
         letter-spacing: -0.03em;
         font-variant-numeric: tabular-nums;
         color: #fff;
+        line-height: 1.25;
+      }
+      .shop-float-cart.has-items {
+        border-top: 1px solid rgba(52, 211, 153, 0.35);
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.28);
       }
       .shop-float-cart__btn {
         flex-shrink: 0;
-        padding: 14px 26px;
+        padding: 14px 22px;
         border-radius: 999px;
-        background: linear-gradient(180deg, #34d399 0%, #16a34a 100%);
+        background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%);
         color: #fff;
         font-weight: 800;
         font-size: 16px;
         text-decoration: none;
-        box-shadow: 0 6px 22px rgba(22, 163, 74, 0.45);
-        border: none;
+        box-shadow: 0 6px 24px rgba(22, 163, 74, 0.5);
+        border: 2px solid rgba(255, 255, 255, 0.25);
+        min-height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
       .shop-float-cart__btn[aria-disabled="true"],
       .shop-float-cart__btn.disabled {
@@ -1684,8 +1766,17 @@
       }
 
       @media (max-width: 768px) {
-        .shop-layout {
-          padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        body.shop-cart-has-items .shop-layout {
+          padding: 12px 12px calc(78px + env(safe-area-inset-bottom, 0px));
+          gap: 0;
+        }
+        body:not(.shop-cart-has-items) .shop-layout {
+          padding: 12px;
+          gap: 0;
+        }
+        .shop-discovery {
+          padding: 0 12px;
+          margin-bottom: 4px;
         }
         .shop-menu-trigger {
           display: inline-flex;
@@ -1710,7 +1801,7 @@
           font-size: 0.95rem;
           padding-left: 34px;
         }
-        .shop-float-cart {
+        .shop-float-cart:not([hidden]) {
           display: block;
         }
         .shop-tier-note {
@@ -1758,13 +1849,9 @@
         .cat-card:hover {
           transform: none;
         }
-        .shop-layout {
-          padding: 12px;
-          gap: 0;
-        }
         .product-grid {
           grid-template-columns: 1fr;
-          gap: 14px;
+          gap: 10px;
         }
         .section-head {
           margin-bottom: 10px;
@@ -1776,105 +1863,34 @@
           border-radius: 16px;
           box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
         }
-        .ecom-card__top-row {
-          flex-direction: row;
-          align-items: flex-start;
-          gap: 12px;
-          padding: 12px 12px 0;
-        }
-        .ecom-card__media.catalog-card__media {
-          width: 96px;
-          min-width: 96px;
-          height: 96px;
-          padding: 10px;
-          border-radius: 14px;
-        }
-        .ecom-card__media-inner {
-          max-height: 76px;
-        }
-        .ecom-card__meta-block {
-          flex: 1;
-          min-width: 0;
-          padding: 0 12px 0 0;
-        }
-        .ecom-card__body.catalog-card__body {
-          padding: 10px 12px 12px;
+        .ecom-card--app .ecom-card__main {
+          padding: 8px 10px 6px;
           gap: 8px;
         }
-        .ecom-card__category-pill {
-          display: none;
+        .ecom-card--app .ecom-card__media.catalog-card__media {
+          flex-basis: 68px;
+          width: 68px;
+          min-width: 68px;
+          height: 68px;
+          padding: 5px;
+          border-radius: 10px;
         }
-        .ecom-card__title.catalog-card__title {
-          font-size: 15px;
-          font-weight: 800;
-          min-height: 0;
-          -webkit-line-clamp: 2;
+        .ecom-card--app .ecom-card__footer.catalog-card__body {
+          padding: 6px 8px 8px;
+          gap: 6px;
         }
-        .ecom-card__sku {
-          font-size: 11px;
+        .ecom-card--app .ecom-card__title.catalog-card__title {
+          font-size: 14px;
+          line-height: 1.3;
         }
-        .ecom-card__specs {
-          font-size: 11px;
+        .ecom-card--app .ecom-card__p strong {
+          font-size: 16px;
         }
-        .ecom-card__desc {
-          font-size: 11px;
-          -webkit-line-clamp: 1;
-          margin: 0;
+        .ecom-card--app .ecom-p--case strong {
+          font-size: 14px;
         }
-        .catalog-card__prices.ecom-card__prices {
-          display: flex;
-          flex-direction: row;
-          flex-wrap: nowrap;
-          gap: 10px;
-          padding: 10px 12px;
-          margin: 0;
-          max-width: 100%;
-        }
-        .price-block {
-          flex: 1;
-          min-width: 0;
-          padding: 8px 10px;
-          border-radius: 12px;
-          border: 1px solid #e2e8f0;
-          box-shadow: none;
-          border-top-width: 1px;
-        }
-        .price-block--default {
-          border-color: #86efac;
-          background: linear-gradient(180deg, #ecfdf5 0%, #fff 100%);
-        }
-        .price-block:not(.price-block--default) {
-          opacity: 0.92;
-        }
-        .price-block:not(.price-block--default) .price-block__amount {
-          font-size: 15px !important;
-          color: #64748b !important;
-        }
-        .price-block__label {
-          font-size: 9px;
-          margin-bottom: 2px;
-        }
-        .price-block__unit {
-          font-size: 10px;
-          min-height: 0;
-          margin-bottom: 4px;
-        }
-        .price-block__unit::before {
-          content: "";
-          display: none;
-        }
-        .price-block__value {
-          min-height: 0;
-        }
-        .price-block--default .price-block__amount {
-          font-size: 15px !important;
-          color: #15803d !important;
-        }
-        .price-block[data-price-type="case"] .price-block__amount {
-          font-size: 15px !important;
-        }
-        .catalog-card__prices--quote {
-          padding: 10px 12px;
+        .ecom-card--app .ecom-card__cat-pill {
+          max-width: 160px;
         }
         .shop-cart-panel {
           display: none !important;
@@ -1884,26 +1900,37 @@
           font-size: 10px;
           margin-top: 0;
         }
-        .ecom-mode-toggle .ecom-mode-btn__text {
-          padding: 8px 14px;
-          font-size: 13px;
+        .ecom-mode-toggle--compact .ecom-mode-btn__text {
+          padding: 6px 12px;
+          font-size: 12px;
         }
         .qty-stepper.ecom-qty-stepper button {
-          width: 44px;
-          min-height: 44px;
-          height: 44px;
-        }
-        .qty-stepper.ecom-qty-stepper input {
-          min-height: 44px;
+          width: 36px;
+          min-height: 36px;
+          height: 36px;
           font-size: 16px;
         }
+        .qty-stepper.ecom-qty-stepper input {
+          min-height: 36px;
+          font-size: 14px;
+        }
         .btn-add-cart.ecom-btn-add-cart {
-          padding: 12px 16px;
-          font-size: 15px;
+          padding: 11px 10px;
+          font-size: 14px;
+          border-radius: 10px;
         }
         .btn-buy-now.ecom-btn-buy-now {
-          padding: 11px 16px;
-          font-size: 14px;
+          padding: 10px 10px;
+          font-size: 13px;
+          border-radius: 10px;
+        }
+        .shop-float-cart__btn {
+          padding: 12px 18px;
+          font-size: 15px;
+          min-height: 48px;
+        }
+        .shop-float-cart__sum {
+          font-size: 15px;
         }
         .section-head {
           padding: 0 2px;
@@ -2062,6 +2089,8 @@
                   {% endif %}
                 </div>
               </a>
+            {% empty %}
+              <p class="discovery-rail__placeholder">暂无推荐，热门商品请在下方浏览</p>
             {% endfor %}
           </div>
         </div>
@@ -2094,6 +2123,8 @@
                   {% endif %}
                 </div>
               </a>
+            {% empty %}
+              <p class="discovery-rail__placeholder">暂无推荐，热门商品请在下方浏览</p>
             {% endfor %}
           </div>
         </div>
@@ -2126,6 +2157,8 @@
                   {% endif %}
                 </div>
               </a>
+            {% empty %}
+              <p class="discovery-rail__placeholder">暂无推荐，热门商品请在下方浏览</p>
             {% endfor %}
           </div>
         </div>
@@ -2213,14 +2246,17 @@
     <nav class="shop-float-cart" id="shop-float-cart" aria-label="购物车快捷栏" hidden>
       <div class="shop-float-cart__inner">
         <a href="#shop-cart-anchor" class="shop-float-cart__info" id="float-cart-info">
-          <span class="shop-float-cart__label">购物车</span>
-          <span id="float-cart-summary" class="shop-float-cart__sum">🛒 0 件 · {{ currency_symbol }}0.00</span>
+          <span class="shop-float-cart__ico" aria-hidden="true">🛒</span>
+          <div class="shop-float-cart__text">
+            <span class="shop-float-cart__label">购物车</span>
+            <span id="float-cart-summary" class="shop-float-cart__sum">0 件 · {{ currency_symbol }}0.00</span>
+          </div>
         </a>
         <a
           href="{% url 'shop-checkout' %}"
           class="shop-float-cart__btn"
           id="float-cart-checkout"
-        >Checkout →</a>
+        >去结账</a>
       </div>
     </nav>
 
@@ -2936,12 +2972,17 @@
           var floatSummary = document.getElementById("float-cart-summary");
           var floatCheckout = document.getElementById("float-cart-checkout");
           var floatBar = document.getElementById("shop-float-cart");
-          if (floatSummary && floatBar) {
+          if (floatBar) {
+            floatBar.hidden = cart.length === 0;
+            floatBar.classList.toggle("is-empty", cart.length === 0);
+            floatBar.classList.toggle("has-items", cart.length > 0);
+          }
+          document.body.classList.toggle("shop-cart-has-items", cart.length > 0);
+          if (floatSummary) {
             floatSummary.textContent =
               (badgeNum % 1 === 0 ? String(badgeNum) : badgeNum.toFixed(1)) +
               " 件 · {{ currency_symbol }}" +
               fmtMoney(sum);
-            floatBar.classList.toggle("is-empty", cart.length === 0);
           }
           if (floatCheckout) {
             floatCheckout.classList.toggle("disabled", checkoutBlocked);
@@ -2956,11 +2997,19 @@
 
         function fillCategoryGlyphs() {
           document.querySelectorAll('.cat-card[data-category-id]').forEach(function (btn) {
-            if (String(btn.getAttribute("data-category-id")) === "all") return;
-            var nm = btn.querySelector(".cat-card__name");
             var g = btn.querySelector(".cat-card__glyph");
-            if (!nm || !g) return;
-            var t = (nm.textContent || "").trim();
+            if (!g) return;
+            var emoji = btn.getAttribute("data-emoji");
+            if (emoji) {
+              g.textContent = emoji;
+              return;
+            }
+            if (String(btn.getAttribute("data-category-id")) === "all") {
+              g.textContent = "🏠";
+              return;
+            }
+            var nm = btn.querySelector(".cat-card__name");
+            var t = (nm && nm.textContent || "").trim();
             if (t) g.textContent = t.charAt(0).toUpperCase();
           });
         }
