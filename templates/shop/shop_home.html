@@ -3508,11 +3508,15 @@
           document.querySelectorAll(".catalog-card").forEach(function (card) {
             if (card.getAttribute("data-bound") === "1") return;
             card.setAttribute("data-bound", "1");
+            var pid = card.dataset && card.dataset.productId ? parseInt(card.dataset.productId, 10) : NaN;
+            if (!isFinite(pid) || pid <= 0) return;
 
             var addBtn = card.querySelector('[data-act="add"]');
             if (addBtn) {
               addBtn.onclick = function () {
                 console.log("ADD CLICK OK");
+                var qty = getQtyFromCard(card);
+                addToCart(pid, getSaleType(card, pid), qty);
               };
             }
 
@@ -3520,13 +3524,15 @@
             if (buyBtn) {
               buyBtn.onclick = function () {
                 console.log("BUY CLICK OK");
+                var qty = getQtyFromCard(card);
+                buyNow(pid, getSaleType(card, pid), qty);
               };
             }
 
             var plus = card.querySelector('[data-act="plus"]');
             var minus = card.querySelector('[data-act="minus"]');
-            if (plus) plus.onclick = function () { console.log("PLUS CLICK OK"); };
-            if (minus) minus.onclick = function () { console.log("MINUS CLICK OK"); };
+            if (plus) plus.onclick = function () { console.log("PLUS CLICK OK"); changeQty(card, +1); };
+            if (minus) minus.onclick = function () { console.log("MINUS CLICK OK"); changeQty(card, -1); };
           });
         }
 
@@ -3907,6 +3913,7 @@
         }
 
         function addToCart(pid, saleType, qty) {
+          console.log("ADDING:", pid, saleType, qty);
           if (shopLoggedIn && !shopCanOrder) {
             showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
@@ -4016,6 +4023,7 @@
             });
           }
           saveCart(cart);
+          console.log("CART AFTER:", cart);
           refreshCartUI();
           showToast("已加入购物车");
           // Light refresh animation (optional, non-blocking)
@@ -4273,6 +4281,10 @@
 
         // Single entry point: keep all cart UIs in sync.
         function refreshCartUI() {
+          console.log("REFRESH CART UI");
+          console.log("DOM #shop-float-cart:", document.querySelector("#shop-float-cart"));
+          console.log("DOM .cart-panel:", document.querySelector(".cart-panel"));
+          console.log("DOM .mobile-cart-bar:", document.querySelector(".mobile-cart-bar"));
           try {
             renderCart();
           } catch (e) {}
