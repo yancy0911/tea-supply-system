@@ -3227,6 +3227,25 @@
         function getCartListEl() {
           return document.getElementById("cart-body");
         }
+        function ensureCartPanelStructure() {
+          var panel = document.getElementById("shop-cart-anchor");
+          if (!panel) return;
+          var hasBody = !!panel.querySelector("#cart-body");
+          var hasTotal = !!panel.querySelector("#cart-total");
+          var hasCheckout = !!panel.querySelector("#btn-submit-order");
+          if (hasBody && hasTotal && hasCheckout) return;
+
+          panel.innerHTML =
+            '<h3>Cart</h3>' +
+            '<div class="cart-scroll">' +
+            '<div id="cart-stock-banner" class="cart-stock-banner" style="display:none" hidden></div>' +
+            '<div id="cart-body"><p class="cart-empty-msg">Your cart is empty</p></div>' +
+            "</div>" +
+            '<div class="cart-footer">' +
+            '<div class="cart-total"><span>Total</span><span id="cart-total" class="cart-total__amount">{{ currency_symbol }}0.00</span></div>' +
+            '<a class="cart-submit" id="btn-submit-order" href="{% url "shop-checkout" %}" aria-label="Checkout">Checkout</a>' +
+            "</div>";
+        }
         var cartBody = getCartListEl();
         var cartTotal = document.getElementById("cart-total");
         var cartBadge = document.getElementById("cart-badge");
@@ -4064,8 +4083,11 @@
         }
 
         function renderCart() {
+          ensureCartPanelStructure();
           cart = getCart();
           cartBody = document.getElementById("cart-body") || getCartListEl();
+          cartTotal = document.getElementById("cart-total");
+          btnSubmitOrder = document.getElementById("btn-submit-order");
           if (!cartTotal || !cartBadge) return;
           if (!cartBody) return;
           normalizeCartLines();
