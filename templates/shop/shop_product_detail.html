@@ -246,9 +246,30 @@
         margin-left: auto;
         margin-right: auto;
       }
+      .toast {
+        position: fixed;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        opacity: 0;
+        transition: 0.3s;
+        z-index: 9999;
+        pointer-events: none;
+        max-width: min(90vw, 360px);
+        text-align: center;
+      }
+      .toast.show {
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
+    <div id="toast" class="toast"></div>
     <header class="pd-top">
       <a href="{% url 'shop-home' %}" class="pd-back" aria-label="返回商城">←</a>
       <span class="pd-title">商品详情</span>
@@ -300,6 +321,15 @@
         var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
         var shopLoggedIn = {% if shop_customer %}true{% else %}false{% endif %};
         var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
+        function showToast(msg) {
+          var t = document.getElementById("toast");
+          if (!t) return;
+          t.innerText = msg;
+          t.classList.add("show");
+          setTimeout(function () {
+            t.classList.remove("show");
+          }, 2000);
+        }
         var p = {};
         try {
           var el = document.getElementById("shop-product-data");
@@ -489,8 +519,8 @@
           var maxQ = maxQtyForDetailAdd(pid, p, st, cart);
           var next = v + 1;
           if (maxQ !== Infinity && next > maxQ + 1e-9) {
-            if (maxQ <= 0) alert("库存不足。");
-            else alert("库存不足，最多可订购约 " + (st === "case" ? maxQ + " 箱" : maxQ + " 袋") + "。");
+            if (maxQ <= 0) showToast("库存不足。");
+            else showToast("库存不足，最多可订购约 " + (st === "case" ? maxQ + " 箱" : maxQ + " 袋") + "。");
             qIn.value = Math.min(v, maxQ);
             return;
           }
@@ -499,39 +529,39 @@
 
         document.getElementById("padd").onclick = function () {
           if (shopLoggedIn && !shopCanOrder) {
-            alert(shopOrderBlockHint || "Ordering is not available for your account.");
+            showToast(shopOrderBlockHint || "Ordering is not available for your account.");
             return;
           }
           if (p.price_on_request) {
-            alert("This product requires a quote.");
+            showToast("This product requires a quote.");
             return;
           }
           var st = saleType();
           if (st === "single" && !p.can_split_sale) {
-            alert("Case pack only — please choose case.");
+            showToast("Case pack only — please choose case.");
             return;
           }
           if (st === "single" && !p.can_quote_single) {
-            alert("No single-unit price.");
+            showToast("No single-unit price.");
             return;
           }
           if (st === "case" && !p.can_quote_case) {
-            alert("No case price.");
+            showToast("No case price.");
             return;
           }
           var sell0 = sellableStockUnits(p);
           if (sell0 !== null && sell0 <= 0) {
-            alert("缺货，无法加入购物车。");
+            showToast("缺货，无法加入购物车。");
             return;
           }
           var qty = parseFloat(qIn.value);
           if (isNaN(qty) || qty < minQ) {
-            alert("Quantity must be at least MOQ " + minQ);
+            showToast("Quantity must be at least MOQ " + minQ);
             return;
           }
           var unit = unitPrice();
           if (unit <= 0) {
-            alert("Invalid price");
+            showToast("Invalid price");
             return;
           }
           var cart = getCart();
@@ -548,7 +578,7 @@
           var needAfter = needUnitsForProduct(pid, p, sim);
           var avail = sellableStockUnits(p);
           if (avail !== null && needAfter > avail + 1e-6) {
-            alert("库存不足。可用约 " + avail + "（库存单位）。");
+            showToast("库存不足。可用约 " + avail + "（库存单位）。");
             return;
           }
           var found = null;
@@ -582,8 +612,10 @@
             });
           }
           saveCart(cart);
-          alert("Added to cart");
-          window.location.href = "/shop/#shop-cart-anchor";
+          showToast("已加入购物车");
+          setTimeout(function () {
+            window.location.href = "/shop/#shop-cart-anchor";
+          }, 400);
         };
       })();
     </script>

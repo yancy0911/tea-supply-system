@@ -376,6 +376,27 @@
         color: var(--muted);
         font-size: 12px;
       }
+      .sf-note {
+        margin-top: 6px;
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .field-error {
+        display: none;
+        margin-top: 6px;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--danger);
+      }
+      .field-error.is-show {
+        display: block;
+      }
+      .input-error {
+        border-color: #dc2626 !important;
+        background: #fff5f5;
+      }
       @media (max-width: 768px) {
         .summary-card {
           position: fixed;
@@ -399,9 +420,30 @@
           padding: 15px;
         }
       }
+      .toast {
+        position: fixed;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        opacity: 0;
+        transition: 0.3s;
+        z-index: 9999;
+        pointer-events: none;
+        max-width: min(90vw, 360px);
+        text-align: center;
+      }
+      .toast.show {
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
+    <div id="toast" class="toast"></div>
     <header class="sf-header">
       <div class="sf-header__inner">
         <div class="sf-logo">Boba <span>Supply</span></div>
@@ -429,7 +471,7 @@
           <div class="msg-warn">{{ shop_order_block_hint }}</div>
         </div>
       {% endif %}
-      <form method="post" action="{% url 'checkout-submit' %}" id="checkout-form">
+      <form method="post" action="{% url 'checkout-submit' %}" id="checkout-form" novalidate>
         <div class="layout">
           <div>
             <div class="card">
@@ -441,6 +483,9 @@
 
             <div class="card">
               <h2 class="section-title">收货信息</h2>
+              <div class="sf-note">
+                首次下单请填写客户资料（公司/店名、联系人、联系电话、收货地址）
+              </div>
               <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token_value }}" />
               <input type="hidden" name="next" value="checkout" />
               <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
@@ -448,24 +493,55 @@
               <input type="hidden" name="payment_method" id="payment-method-hidden" value="bank_transfer" />
               <div class="row2">
                 <div>
-                  <label for="contact_name">姓名 *</label>
-                  <input id="contact_name" name="contact_name" required maxlength="100" autocomplete="name" />
+                  <label for="contact_name">联系人 <span style="color:#b91c1c;font-weight:900">*</span></label>
+                  <input
+                    id="contact_name"
+                    name="contact_name"
+                    maxlength="100"
+                    autocomplete="name"
+                    value="{{ shop_customer.contact_name|default:'' }}"
+                    placeholder="请输入联系人"
+                  />
+                  <div class="field-error" id="err-contact_name"></div>
                 </div>
                 <div>
-                  <label for="delivery_phone">手机 *</label>
-                  <input id="delivery_phone" name="delivery_phone" required maxlength="30" autocomplete="tel" />
+                  <label for="delivery_phone">联系电话 <span style="color:#b91c1c;font-weight:900">*</span></label>
+                  <input
+                    id="delivery_phone"
+                    name="delivery_phone"
+                    maxlength="30"
+                    autocomplete="tel"
+                    value="{{ shop_customer.phone|default:'' }}"
+                    placeholder="请输入联系电话"
+                  />
+                  <div class="field-error" id="err-delivery_phone"></div>
                 </div>
               </div>
               <div class="field-gap">
-                <label for="delivery_address">地址 *</label>
-                <input id="delivery_address" name="delivery_address" required maxlength="500" autocomplete="street-address" />
+                <label for="delivery_address">收货地址 <span style="color:#b91c1c;font-weight:900">*</span></label>
+                <input
+                  id="delivery_address"
+                  name="delivery_address"
+                  maxlength="500"
+                  autocomplete="street-address"
+                  value="{{ shop_customer.address|default:'' }}"
+                  placeholder="请输入收货地址"
+                />
+                <div class="field-error" id="err-delivery_address"></div>
               </div>
               <div class="field-gap">
-                <label for="store_name">门店 / 公司（选填）</label>
-                <input id="store_name" name="store_name" maxlength="200" placeholder="选填" />
+                <label for="store_name">公司/店名 <span style="color:#b91c1c;font-weight:900">*</span></label>
+                <input
+                  id="store_name"
+                  name="store_name"
+                  maxlength="200"
+                  placeholder="请输入公司/店名"
+                  value="{{ shop_customer.shop_name|default:'' }}"
+                />
+                <div class="field-error" id="err-store_name"></div>
               </div>
               <div class="field-gap">
-                <label for="order_note">备注（选填）</label>
+                <label for="order_note">备注（可选）</label>
                 <textarea id="order_note" name="order_note" maxlength="2000" placeholder="配送时间、卸货点等"></textarea>
               </div>
               <div class="field-gap" style="display: none" id="transfer-reference-wrap">
@@ -540,6 +616,16 @@
 
     <script>
       (function () {
+        function showToast(msg) {
+          var t = document.getElementById("toast");
+          if (!t) return;
+          t.innerText = msg;
+          t.classList.add("show");
+          setTimeout(function () {
+            t.classList.remove("show");
+          }, 2000);
+        }
+        var TEST_MODE = {% if checkout_test_mode_skip_stock %}true{% else %}false{% endif %};
         var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
         var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
         var creditAllow = {% if credit_allow %}true{% else %}false{% endif %};
@@ -650,29 +736,87 @@
         summaryPaymentRadios.forEach(function (radio) {
           radio.addEventListener("change", syncPaymentMethodUI);
         });
+        function clearFieldErrors() {
+          var ids = ["store_name", "contact_name", "delivery_phone", "delivery_address"];
+          ids.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.remove("input-error");
+            var err = document.getElementById("err-" + id);
+            if (err) {
+              err.textContent = "";
+              err.classList.remove("is-show");
+            }
+          });
+        }
+
+        function setFieldError(id, msg) {
+          var el = document.getElementById(id);
+          if (el) el.classList.add("input-error");
+          var err = document.getElementById("err-" + id);
+          if (err) {
+            err.textContent = msg;
+            err.classList.add("is-show");
+          }
+        }
+
+        function validateRequiredCheckoutFields() {
+          clearFieldErrors();
+
+          var company = (document.getElementById("store_name").value || "").trim();
+          var cn = (document.getElementById("contact_name").value || "").trim();
+          var ph = (document.getElementById("delivery_phone").value || "").trim();
+          var addr = (document.getElementById("delivery_address").value || "").trim();
+
+          if (!company) {
+            setFieldError("store_name", "请填写公司/店名");
+            document.getElementById("store_name").focus();
+            return false;
+          }
+          if (!cn) {
+            setFieldError("contact_name", "请填写联系人");
+            document.getElementById("contact_name").focus();
+            return false;
+          }
+          if (!ph) {
+            setFieldError("delivery_phone", "请填写联系电话");
+            document.getElementById("delivery_phone").focus();
+            return false;
+          }
+          if (!addr) {
+            setFieldError("delivery_address", "请填写收货地址");
+            document.getElementById("delivery_address").focus();
+            return false;
+          }
+          return true;
+        }
+
         if (checkoutForm) {
           checkoutForm.addEventListener("submit", function (ev) {
-            var c = getCart();
-            if (cartStockIssueInfo(c).bad) {
+            if (!validateRequiredCheckoutFields()) {
               ev.preventDefault();
-              alert("库存不足，无法提交订单。请返回商店调整购物车。");
+              return;
+            }
+            var c = getCart();
+            if (!TEST_MODE && cartStockIssueInfo(c).bad) {
+              ev.preventDefault();
+              showToast("库存不足，无法提交订单。请返回商店调整购物车。");
               return;
             }
             if (!shopCanOrder) {
               ev.preventDefault();
-              alert(shopOrderBlockHint || "Ordering is not available.");
+              showToast(shopOrderBlockHint || "Ordering is not available.");
               return;
             }
             var selectedPay = paymentHidden ? String(paymentHidden.value || "") : "";
             if (selectedPay === "credit") {
               if (!creditAllow) {
                 ev.preventDefault();
-                alert("Credit is not enabled for your account.");
+                showToast("Credit is not enabled for your account.");
                 return;
               }
               if (creditLimit <= 0 || currentDebt + currentOrderTotal > creditLimit) {
                 ev.preventDefault();
-                alert("Over credit limit — cannot place this order.");
+                showToast("Over credit limit — cannot place this order.");
                 return;
               }
             }
@@ -738,7 +882,7 @@
           var sum = 0;
           var qtyTotal = 0;
           var html = "";
-          if (issueInfo.bad) {
+          if (!TEST_MODE && issueInfo.bad) {
             html +=
               '<div class="msg-banner" style="margin-bottom:12px"><div class="msg-err">部分商品库存不足，请返回商店调整数量后再下单。</div></div>';
           }
@@ -817,7 +961,7 @@
               return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
             })
           );
-          if (issueInfo.bad) {
+          if (!TEST_MODE && issueInfo.bad) {
             btn.disabled = true;
             btn.title = "库存不足，无法提交订单";
           } else {

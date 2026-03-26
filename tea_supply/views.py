@@ -442,29 +442,33 @@ def submit_order_from_lines(
                 }
             )
 
-        needs = defaultdict(float)
-        for v in validated:
-            p = Product.objects.get(pk=v["product_id"])
-            probe = OrderItem(
-                product=p, quantity=v["quantity"], sale_type=v["sale_type"]
-            )
-            needs[v["product_id"]] += float(_stock_need_for_line(probe, p))
-        for pid, need in needs.items():
-            if need <= 0:
-                continue
-            p = Product.objects.get(pk=pid)
-            if not bool(getattr(p, "stock_enabled", True)):
-                continue
-            cur = float(getattr(p, "stock", 0.0))
-            logger.info(
-                "CHECKOUT_STOCK_VALIDATE sku=%s product_id=%s required_qty=%s stock=%s",
-                p.sku,
-                pid,
-                float(need),
-                cur,
-            )
-            if cur < need:
-                raise ValidationError(f"Insufficient stock: {p.sku}")
+        if not (
+            from_shop
+            and getattr(settings, "SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK", False)
+        ):
+            needs = defaultdict(float)
+            for v in validated:
+                p = Product.objects.get(pk=v["product_id"])
+                probe = OrderItem(
+                    product=p, quantity=v["quantity"], sale_type=v["sale_type"]
+                )
+                needs[v["product_id"]] += float(_stock_need_for_line(probe, p))
+            for pid, need in needs.items():
+                if need <= 0:
+                    continue
+                p = Product.objects.get(pk=pid)
+                if not bool(getattr(p, "stock_enabled", True)):
+                    continue
+                cur = float(getattr(p, "stock", 0.0))
+                logger.info(
+                    "CHECKOUT_STOCK_VALIDATE sku=%s product_id=%s required_qty=%s stock=%s",
+                    p.sku,
+                    pid,
+                    float(need),
+                    cur,
+                )
+                if cur < need:
+                    raise ValidationError(f"Insufficient stock: {p.sku}")
 
         if settlement_type == Order.SettlementType.CREDIT:
             if customer_obj is None:
@@ -621,10 +625,12 @@ def ensure_customer_profile(user):
     defaults = {
         "name": username[:100],
         "company": company,
-        "contact_name": username[:100],
-        "phone": username[:30],
-        "shop_name": username[:200],
-        "address": "To be completed",
+        # Checkout 必填字段（公司名/联系电话/地址）由前端引导填写。
+        # 若 customer 还没有 Customer profile，则这里创建“空 profile”，避免后端因缺字段报错。
+        "contact_name": "",
+        "phone": "",
+        "shop_name": "",
+        "address": "",
         "delivery_zone": "Unassigned",
         "customer_level": Customer.Level.C,
         "allow_credit": False,
@@ -1259,6 +1265,9 @@ def shop_checkout(request):
                 money_float(customer.current_debt or 0.0) if customer else 0.0
             ),
             "csrf_token_value": csrf_token_value,
+            "checkout_test_mode_skip_stock": getattr(
+                settings, "SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK", False
+            ),
         },
     )
     response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -1383,6 +1392,22 @@ def shop_submit_order(request):
 
     try:
         lines = json.loads(lines_raw)
+        # 先把客户资料保存到 Customer/Profile（用于首次下单后回填）。
+        # 不改订单核心逻辑：后续 submit_order_from_lines 仍负责创建订单并校验非空字段。
+        try:
+            if customer is not None:
+                customer.contact_name = (
+                    request.POST.get("contact_name") or customer.contact_name or customer.name
+                )[:100]
+                customer.phone = (request.POST.get("delivery_phone") or customer.phone)[:30]
+                customer.address = (request.POST.get("delivery_address") or customer.address)[:255]
+                customer.shop_name = (request.POST.get("store_name") or customer.shop_name or "")[:200]
+                customer.save(
+                    update_fields=["contact_name", "phone", "address", "shop_name"]
+                )
+        except Exception:
+            # 客户资料保存失败不影响订单走向（最终仍由 submit_order_from_lines 提示缺字段）
+            pass
         shipping = {
             "contact_name": request.POST.get("contact_name", ""),
             "delivery_phone": request.POST.get("delivery_phone", ""),

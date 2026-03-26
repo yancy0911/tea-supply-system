@@ -124,6 +124,12 @@ def _parse_csrf_trusted_origins():
 
 CSRF_TRUSTED_ORIGINS = _parse_csrf_trusted_origins()
 
+# 商城 checkout 测试模式：submit_order_from_lines(from_shop=True) 时跳过「库存是否充足」校验（前后端一致）。批发录单仍校验。生产务必保持 False。
+# 环境变量：SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK=1 或 true
+SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK = _env_bool(
+    "SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK", default=False
+)
+
 # 终止 TLS 的反向代理（Render / nginx）会把原始协议放在 X-Forwarded-Proto
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True

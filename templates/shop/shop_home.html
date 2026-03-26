@@ -1967,9 +1967,30 @@
           padding: 10px 18px 20px;
         }
       }
+      .toast {
+        position: fixed;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        opacity: 0;
+        transition: 0.3s;
+        z-index: 9999;
+        pointer-events: none;
+        max-width: min(90vw, 360px);
+        text-align: center;
+      }
+      .toast.show {
+        opacity: 1;
+      }
     </style>
   </head>
   <body>
+    <div id="toast" class="toast"></div>
     <header class="shop-top">
       <div class="shop-top-inner">
         <div class="shop-brand">
@@ -2296,6 +2317,15 @@
 
     <script>
       (function () {
+        function showToast(msg) {
+          var t = document.getElementById("toast");
+          if (!t) return;
+          t.innerText = msg;
+          t.classList.add("show");
+          setTimeout(function () {
+            t.classList.remove("show");
+          }, 2000);
+        }
         var PRODUCTS = [];
         try {
           var el = document.getElementById("shop-products-data");
@@ -2488,7 +2518,7 @@
               var qtyIn = card.querySelector(".qty-stepper input");
               var qty = parseFloat(qtyIn.value);
               if (isNaN(qty) || qty <= 0) {
-                alert("Enter a valid quantity");
+                showToast("Enter a valid quantity");
                 return;
               }
               buyNow(pid, saleType, qty);
@@ -2503,7 +2533,7 @@
               var qtyIn = card.querySelector(".qty-stepper input");
               var qty = parseFloat(qtyIn.value);
               if (isNaN(qty) || qty <= 0) {
-                alert("Enter a valid quantity");
+                showToast("Enter a valid quantity");
                 return;
               }
               addToCart(pid, saleType, qty);
@@ -2526,7 +2556,7 @@
                 v = v + 1;
                 if (maxQ !== Infinity && v > maxQ + 1e-9) {
                   v = maxQ;
-                  if (maxQ <= 0) alert("库存不足。");
+                  if (maxQ <= 0) showToast("库存不足。");
                 }
               } else {
                 v = Math.max(minQ, v - 1);
@@ -2647,39 +2677,39 @@
 
         function addToCart(pid, saleType, qty) {
           if (shopLoggedIn && !shopCanOrder) {
-            alert(shopOrderBlockHint || "Ordering is not available.");
+            showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
           }
           var p = productById(pid);
           if (!p) return;
           var sell0 = sellableStockUnits(p);
           if (sell0 !== null && sell0 <= 0) {
-            alert("缺货，无法加入购物车。");
+            showToast("缺货，无法加入购物车。");
             return;
           }
           if (p.price_on_request) {
-            alert("Quote required — cannot add to cart.");
+            showToast("Quote required — cannot add to cart.");
             return;
           }
           if (saleType === "single" && !p.can_quote_single) {
-            alert("No per-bag price — choose case or request a quote.");
+            showToast("No per-bag price — choose case or request a quote.");
             return;
           }
           if (saleType === "case" && !p.can_quote_case) {
-            alert("No case price — choose single or request a quote.");
+            showToast("No case price — choose single or request a quote.");
             return;
           }
           if (saleType === "single" && !p.can_split_sale) {
-            alert("Case pack only for this product.");
+            showToast("Case pack only for this product.");
             return;
           }
           if (qty < p.minimum_order_qty) {
-            alert("MOQ is " + p.minimum_order_qty);
+            showToast("MOQ is " + p.minimum_order_qty);
             return;
           }
           var unit = unitPriceFor(p, saleType);
           if (unit <= 0) {
-            alert("Invalid price");
+            showToast("Invalid price");
             return;
           }
           cart = getCart();
@@ -2706,7 +2736,7 @@
           var needAfter = needUnitsForProduct(pid, p, sim);
           var avail = sellableStockUnits(p);
           if (avail !== null && !isNaN(avail) && needAfter > avail + 1e-6) {
-            alert(
+            showToast(
               "库存不足。可用约 " +
                 avail +
                 "（库存单位），请减少数量或联系客服。"
@@ -2752,7 +2782,7 @@
 
         function buyNow(pid, saleType, qty) {
           if (shopLoggedIn && !shopCanOrder) {
-            alert(shopOrderBlockHint || "Ordering is not available.");
+            showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
           }
           if (!shopLoggedIn) {
@@ -2882,7 +2912,7 @@
               qtyInput.addEventListener("change", function () {
                 var v = parseFloat(this.value);
                 if (isNaN(v) || v < minQ) {
-                  alert("MOQ is " + minQ);
+                  showToast("MOQ is " + minQ);
                   this.value = line.quantity;
                   return;
                 }
@@ -2892,7 +2922,7 @@
                 });
                 if (li < 0) return;
                 if (!cartQtyAllowed(cart, li, v)) {
-                  alert("库存不足，无法调整为该数量。");
+                  showToast("库存不足，无法调整为该数量。");
                   this.value = line.quantity;
                   return;
                 }
@@ -2918,7 +2948,7 @@
                   } else if (act === "plus") {
                     var tryV = v + 1;
                     if (!cartQtyAllowed(cart, li, tryV)) {
-                      alert("库存不足。");
+                      showToast("库存不足。");
                       return;
                     }
                     v = tryV;
