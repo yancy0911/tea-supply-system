@@ -508,13 +508,14 @@
                   <label for="delivery_phone">联系电话 <span style="color:#b91c1c;font-weight:900">*</span></label>
                   <input
                     id="delivery_phone"
-                    name="delivery_phone"
+                    name="phone"
                     maxlength="30"
                     autocomplete="tel"
                     value="{{ shop_customer.phone|default:'' }}"
                     placeholder="请输入联系电话"
                   />
                   <div class="field-error" id="err-delivery_phone"></div>
+                  <input type="hidden" name="delivery_phone" id="delivery_phone-hidden" value="{{ shop_customer.phone|default:'' }}" />
                 </div>
               </div>
               <div class="field-gap">
@@ -533,12 +534,13 @@
                 <label for="store_name">公司/店名 <span style="color:#b91c1c;font-weight:900">*</span></label>
                 <input
                   id="store_name"
-                  name="store_name"
+                  name="company_name"
                   maxlength="200"
                   placeholder="请输入公司/店名"
                   value="{{ shop_customer.shop_name|default:'' }}"
                 />
                 <div class="field-error" id="err-store_name"></div>
+                <input type="hidden" name="store_name" id="store_name-hidden" value="{{ shop_customer.shop_name|default:'' }}" />
               </div>
               <div class="field-gap">
                 <label for="order_note">备注（可选）</label>
@@ -796,6 +798,25 @@
               ev.preventDefault();
               return;
             }
+            // Sync fields for backend compatibility.
+            var hStore = document.getElementById("store_name-hidden");
+            if (hStore) hStore.value = (document.getElementById("store_name").value || "").trim();
+            var hPhone = document.getElementById("delivery_phone-hidden");
+            if (hPhone) hPhone.value = (document.getElementById("delivery_phone").value || "").trim();
+
+            // Debug: confirm payload.
+            try {
+              var payload = {
+                company_name: document.getElementById("store_name").value || "",
+                contact_name: document.getElementById("contact_name").value || "",
+                phone: document.getElementById("delivery_phone").value || "",
+                delivery_address: document.getElementById("delivery_address").value || "",
+                store_name_for_backend: hStore ? hStore.value : "",
+                delivery_phone_for_backend: hPhone ? hPhone.value : "",
+              };
+              console.log("[checkout submit payload]", payload);
+            } catch (e) {}
+
             var c = getCart();
             if (!TEST_MODE && cartStockIssueInfo(c).bad) {
               ev.preventDefault();
