@@ -3033,24 +3033,11 @@
     <script>
       (function () {
         try {
-          console.log("SHOP SCRIPT VERSION 2026-03-26-1");
+          console.log("SHOP SCRIPT VERSION 2026-03-26-2");
         } catch (e) {}
         var PLACEHOLDER_IMG = "/static/products/_fallback.jpg";
         var MOCHA_CDN_FALLBACK =
           "https://mochaboba.com/cdn/shop/files/k8-vl_l_JPGrxQ-unsplash_2ac59688-d2ab-4303-b666-ab3a1e539e7c_1600x.jpg?v=1635637256";
-
-        function _safeClone(o) {
-          try {
-            return JSON.parse(JSON.stringify(o));
-          } catch (e) {
-            return o;
-          }
-        }
-        function _step(act, step, data) {
-          try {
-            console.log("[shop][" + act + "] " + step, data || "");
-          } catch (e) {}
-        }
 
         function showToast(msg) {
           var t = document.getElementById("toast");
@@ -3476,16 +3463,13 @@
             });
           });
           installGridDelegation();
+          bindCardControls();
         }
 
         function installGridDelegation() {
           if (delegationReady) return;
           delegationReady = true;
           grid.addEventListener("click", function (e) {
-            _step("delegate", "[STEP 1] click captured", {
-              target: e && e.target ? e.target.tagName : null,
-              cls: e && e.target ? e.target.className : null,
-            });
             // click-to-open quick view (1688-style). keep ctrl/cmd-click for open in new tab.
             var card = e.target.closest(".catalog-card");
             var a = e.target.closest("a");
@@ -3505,19 +3489,15 @@
 
             if (qb) {
               var act = qb.getAttribute("data-act");
-              _step("qty", "[STEP 2] action detected", act);
               if (act !== "plus" && act !== "minus") {
-                _step("qty", "exit: unknown data-act", act);
                 return;
               }
               var cardQ = qb.closest(".catalog-card");
               if (!cardQ) {
-                _step("qty", "exit: no card", null);
                 return;
               }
               var pidQ = parseInt(cardQ.getAttribute("data-pid") || cardQ.getAttribute("data-product-id"), 10);
               if (!isFinite(pidQ) || pidQ <= 0) {
-                _step("qty", "exit: bad pid", pidQ);
                 return;
               }
               var pQ = productById(pidQ);
@@ -3526,17 +3506,14 @@
               var rowQ = qb.closest(".qty-stepper");
               var inpQ = rowQ ? rowQ.querySelector("input") : null;
               if (!inpQ) {
-                _step("qty", "exit: no qty input", null);
                 return;
               }
 
-              _step("qty", "[STEP 3] before action cart", _safeClone(getCart()));
               var vQ = parseFloat(inpQ.value) || 0;
               var minQ = pQ ? Math.max(parseFloat(pQ.minimum_order_qty) || 0.01, 0.01) : 0.01;
               var cartSnap = getCart();
               var maxQ = pQ ? maxStepperQtyForCard(pidQ, pQ, saleTypeQ, cartSnap) : Infinity;
 
-              _step("qty", "[STEP 4] action function entered", { pid: pidQ, saleType: saleTypeQ, v: vQ });
               if (act === "plus") {
                 vQ = vQ + 1;
                 if (maxQ !== Infinity && vQ > maxQ + 1e-9) {
@@ -3547,20 +3524,12 @@
                 vQ = Math.max(minQ, vQ - 1);
               }
               inpQ.value = vQ;
-              _step("qty", "[STEP 5] after action cart", _safeClone(getCart()));
-              _step("qty", "[STEP 6] refreshCartUI called", null);
               refreshCartUI();
-              _step("qty", "[STEP 7] DOM updated", {
-                badge: (document.getElementById("cart-badge") || {}).textContent,
-                float: (document.getElementById("float-cart-summary") || {}).textContent,
-              });
               return;
             } else if (addBtn) {
-              _step("add", "[STEP 2] action detected", "add_to_cart");
               var pidA = parseInt(addBtn.getAttribute("data-pid"), 10);
               var cardA = addBtn.closest(".catalog-card");
               if (!cardA || !isFinite(pidA) || pidA <= 0) {
-                _step("add", "exit: bad pid/card", { pid: pidA, hasCard: !!cardA });
                 return;
               }
               var modeA = cardA.querySelector('input[name="mode-' + pidA + '"]:checked');
@@ -3568,27 +3537,16 @@
               var qtyInA = cardA.querySelector(".qty-stepper input");
               var qtyA = parseFloat(qtyInA ? qtyInA.value : "0");
               if (isNaN(qtyA) || qtyA <= 0) {
-                _step("add", "exit: invalid qty", qtyA);
                 showToast("请输入有效数量");
                 return;
               }
-              _step("add", "[STEP 3] before action cart", _safeClone(getCart()));
-              _step("add", "[STEP 4] action function entered", { pid: pidA, saleType: saleTypeA, qty: qtyA });
               addToCart(pidA, saleTypeA, qtyA);
-              _step("add", "[STEP 5] after action cart", _safeClone(getCart()));
-              _step("add", "[STEP 6] refreshCartUI called", null);
               refreshCartUI();
-              _step("add", "[STEP 7] DOM updated", {
-                badge: (document.getElementById("cart-badge") || {}).textContent,
-                float: (document.getElementById("float-cart-summary") || {}).textContent,
-              });
               return;
             } else if (buyBtn) {
-              _step("buy", "[STEP 2] action detected", "buy_now");
               var pidB = parseInt(buyBtn.getAttribute("data-pid"), 10);
               var cardB = buyBtn.closest(".catalog-card");
               if (!cardB || !isFinite(pidB) || pidB <= 0) {
-                _step("buy", "exit: bad pid/card", { pid: pidB, hasCard: !!cardB });
                 return;
               }
               var modeB = cardB.querySelector('input[name="mode-' + pidB + '"]:checked');
@@ -3596,21 +3554,82 @@
               var qtyInB = cardB.querySelector(".qty-stepper input");
               var qtyB = parseFloat(qtyInB ? qtyInB.value : "0");
               if (isNaN(qtyB) || qtyB <= 0) {
-                _step("buy", "exit: invalid qty", qtyB);
                 showToast("请输入有效数量");
                 return;
               }
-              _step("buy", "[STEP 3] before action cart", _safeClone(getCart()));
-              _step("buy", "[STEP 4] action function entered", { pid: pidB, saleType: saleTypeB, qty: qtyB });
               buyNow(pidB, saleTypeB, qtyB);
-              _step("buy", "[STEP 5] after action cart", _safeClone(getCart()));
-              _step("buy", "[STEP 6] refreshCartUI called", null);
               refreshCartUI();
-              _step("buy", "[STEP 7] DOM updated", {
-                badge: (document.getElementById("cart-badge") || {}).textContent,
-                float: (document.getElementById("float-cart-summary") || {}).textContent,
-              });
               return;
+            }
+          });
+        }
+
+        // More robust than delegation if DOM differs or other handlers interfere.
+        function bindCardControls() {
+          if (!grid) return;
+          var cards = grid.querySelectorAll(".catalog-card");
+          if (!cards || !cards.length) return;
+          cards.forEach(function (card) {
+            if (card.getAttribute("data-bound") === "1") return;
+            card.setAttribute("data-bound", "1");
+
+            var pid = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
+            if (!isFinite(pid) || pid <= 0) return;
+
+            var qtyWrap = card.querySelector(".qty-stepper");
+            if (qtyWrap) {
+              qtyWrap.addEventListener("click", function (e) {
+                var b = e.target.closest("button[data-act]");
+                if (!b) return;
+                var inp = qtyWrap.querySelector("input");
+                if (!inp) return;
+                var v = parseFloat(inp.value);
+                if (!isFinite(v) || v <= 0) v = 1;
+                var act = b.getAttribute("data-act");
+                v = act === "plus" ? v + 1 : Math.max(0.01, v - 1);
+                inp.value = String(v);
+                refreshCartUI();
+              });
+            }
+
+            var addBtn = card.querySelector(".btn-add-cart");
+            if (addBtn) {
+              addBtn.addEventListener("click", function (ev) {
+                try {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                } catch (e) {}
+                var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
+                var saleType = mode ? mode.value : "single";
+                var qtyIn = card.querySelector(".qty-stepper input");
+                var qty = parseFloat(qtyIn ? qtyIn.value : "0");
+                if (!isFinite(qty) || qty <= 0) {
+                  showToast("请输入有效数量");
+                  return;
+                }
+                addToCart(pid, saleType, qty);
+                refreshCartUI();
+              });
+            }
+
+            var buyBtn = card.querySelector(".btn-buy-now");
+            if (buyBtn) {
+              buyBtn.addEventListener("click", function (ev) {
+                try {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                } catch (e) {}
+                var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
+                var saleType = mode ? mode.value : "single";
+                var qtyIn = card.querySelector(".qty-stepper input");
+                var qty = parseFloat(qtyIn ? qtyIn.value : "0");
+                if (!isFinite(qty) || qty <= 0) {
+                  showToast("请输入有效数量");
+                  return;
+                }
+                buyNow(pid, saleType, qty);
+                refreshCartUI();
+              });
             }
           });
         }
@@ -3987,9 +4006,7 @@
         }
 
         function addToCart(pid, saleType, qty) {
-          _step("addToCart()", "[STEP 4] action function entered", { pid: pid, saleType: saleType, qty: qty });
           if (shopLoggedIn && !shopCanOrder) {
-            _step("addToCart()", "exit: shopCanOrder=false", { shopLoggedIn: shopLoggedIn, shopCanOrder: shopCanOrder });
             showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
           }
@@ -4001,43 +4018,35 @@
 
           var p = productById(pid);
           if (!p) {
-            _step("addToCart()", "exit: product not found", pid);
             return;
           }
           var sell0 = sellableStockUnits(p);
           if (sell0 !== null && sell0 <= 0) {
-            _step("addToCart()", "exit: out of stock", sell0);
             showToast("缺货，无法加入购物车。");
             return;
           }
           if (p.price_on_request) {
-            _step("addToCart()", "exit: price_on_request", true);
             showToast("需询价，无法加入购物车");
             return;
           }
           if (saleType === "single" && !p.can_quote_single) {
-            _step("addToCart()", "exit: cannot quote single", true);
             showToast("该商品暂无按袋价，请选择按箱或询价");
             return;
           }
           if (saleType === "case" && !p.can_quote_case) {
-            _step("addToCart()", "exit: cannot quote case", true);
             showToast("该商品暂无按箱价，请选择按袋或询价");
             return;
           }
           if (saleType === "single" && !p.can_split_sale) {
-            _step("addToCart()", "exit: case only", true);
             showToast("该商品仅支持整箱起订");
             return;
           }
           if (qty < p.minimum_order_qty) {
-            _step("addToCart()", "exit: below min qty", { qty: qty, min: p.minimum_order_qty });
             showToast("起订量为 " + p.minimum_order_qty);
             return;
           }
           var unit = unitPriceFor(p, saleType);
           if (unit <= 0) {
-            _step("addToCart()", "exit: invalid unit price", unit);
             showToast("价格无效");
             return;
           }
@@ -4117,18 +4126,14 @@
               }, 420);
             }
           } catch (e) {}
-          _step("addToCart()", "success end", _safeClone(getCart()));
         }
 
         function buyNow(pid, saleType, qty) {
-          _step("buyNow()", "[STEP 4] action function entered", { pid: pid, saleType: saleType, qty: qty });
           if (shopLoggedIn && !shopCanOrder) {
-            _step("buyNow()", "exit: shopCanOrder=false", { shopLoggedIn: shopLoggedIn, shopCanOrder: shopCanOrder });
             showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
           }
           if (!shopLoggedIn) {
-            _step("buyNow()", "exit: not logged in (redirect)", true);
             // Ensure checkout requires login; keep product/cart selection.
             window.location.href = "/login/?next=/checkout/";
             return;
@@ -4139,10 +4144,8 @@
           addToCart(pid, saleType, qty);
           cart = getCart();
           if (!cart || cart.length === 0) {
-            _step("buyNow()", "exit: cart empty after addToCart", _safeClone(cart));
             return;
           }
-          _step("buyNow()", "success end (redirect to checkout)", _safeClone(cart));
           window.location.href = "/checkout/";
         }
 
@@ -4370,43 +4373,7 @@
         // Single entry point: keep all cart UIs in sync.
         function refreshCartUI() {
           try {
-            var c0 = [];
-            try {
-              c0 = getCart();
-            } catch (e0) {
-              c0 = [];
-            }
-            var badgeEl = document.getElementById("cart-badge");
-            var cartBodyEl = document.getElementById("cart-body") || getCartListEl();
-            var floatBarEl = document.getElementById("shop-float-cart");
-            var floatSumEl = document.getElementById("float-cart-summary");
-            var cartTotalEl = document.getElementById("cart-total");
-
-            var sum = 0;
-            var qty = 0;
-            try {
-              (c0 || []).forEach(function (l) {
-                qty += parseFloat(l.quantity) || 0;
-                sum += (parseFloat(l.unit_price) || 0) * (parseFloat(l.quantity) || 0);
-              });
-            } catch (e2) {}
-
-            _step("refreshCartUI()", "[STEP 6] refreshCartUI called", {
-              lines: (c0 || []).length,
-              qty: qty,
-              sum: sum,
-              badge_missing: !badgeEl,
-              cart_panel_missing: !cartBodyEl,
-              mobile_cart_bar_missing: !floatBarEl,
-              float_summary_missing: !floatSumEl,
-              total_missing: !cartTotalEl,
-            });
             renderCart();
-            _step("refreshCartUI()", "[STEP 7] DOM updated", {
-              badge: badgeEl ? badgeEl.textContent : "badge element missing",
-              float: floatSumEl ? floatSumEl.textContent : "mobile cart bar missing",
-              total: cartTotalEl ? cartTotalEl.textContent : "cart panel missing",
-            });
           } catch (e) {}
         }
 
