@@ -1097,71 +1097,6 @@
         display: block;
       }
 
-      /* video modal */
-      .vm {
-        position: fixed;
-        inset: 0;
-        z-index: 1100;
-        display: none;
-      }
-      .vm.is-open {
-        display: block;
-      }
-      .vm__backdrop {
-        position: absolute;
-        inset: 0;
-        background: rgba(2, 6, 23, 0.6);
-      }
-      .vm__panel {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: min(960px, 92vw);
-        background: #0b1220;
-        border-radius: 18px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
-      }
-      .vm__head {
-        padding: 10px 12px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        color: rgba(255, 255, 255, 0.9);
-        font-weight: 900;
-      }
-      .vm__close {
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        background: rgba(255, 255, 255, 0.06);
-        color: #fff;
-        border-radius: 10px;
-        width: 36px;
-        height: 36px;
-        cursor: pointer;
-        font-size: 18px;
-        line-height: 1;
-      }
-      .vm__video {
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        max-height: min(72vh, 640px);
-        background: #000;
-        border: 0;
-      }
-      @media (min-width: 900px) {
-        .vm__video {
-          max-height: min(72vh, 720px);
-        }
-      }
-      @media (max-width: 520px) {
-        .vm__panel {
-          width: 94vw;
-          border-radius: 16px;
-        }
-      }
       .ecom-card__meta {
         display: flex;
         flex-direction: column;
@@ -2849,24 +2784,43 @@
           {% for product in products %}
             {% include "shop/_product_card.html" with product=product shop_customer=shop_customer shop_can_order=shop_can_order shop_order_block_hint=shop_order_block_hint %}
             {% if forloop.counter == 12 %}
-              <section class="brand-mid brand-mid--video" aria-label="About MO·CHA">
+              <section class="brand-mid brand-mid--scenes" aria-label="About MO·CHA">
                 <div class="brand-mid__head">
                   <h3 class="brand-mid__title">About MO·CHA</h3>
-                  <span class="brand-mid__sub">Trusted Boba Supplier in NYC</span>
+                  <span class="brand-mid__sub">NYC 本地仓 · 批发供货 · 门店配送</span>
                 </div>
-                <div class="brand-video">
-                  <div class="brand-video__thumb" id="watch-story" role="button" tabindex="0" aria-label="▶ Watch Our Story">
+                <div class="scene-strip">
+                  <div class="scene">
                     <img
                       src="https://mochaboba.com/cdn/shop/files/k8-vl_l_JPGrxQ-unsplash_2ac59688-d2ab-4303-b666-ab3a1e539e7c_1600x.jpg?v=1635637256"
                       alt="MO·CHA"
                       loading="lazy"
                       decoding="async"
                     />
-                    <div class="brand-video__play" aria-hidden="true"><span>▶</span></div>
                   </div>
-                  <div class="brand-video__copy">
-                    <h4>▶ Watch Our Story</h4>
-                    <p>NYC 本地仓现货，批发供货与门店配送。视频仅辅助了解品牌，不影响您继续浏览商品下单。</p>
+                  <div class="scene">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/shutterstock_435687631_copy_1600x.png?v=1642102322"
+                      alt="原料展示"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div class="scene">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/samia-liamani-3DhS00cyC9A-unsplash_1600x.jpg?v=1635640056"
+                      alt="奶茶制作"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div class="scene">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/Screen_Shot_2021-12-07_at_10.19.09_AM_1600x.png?v=1638893973"
+                      alt="门店场景"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                 </div>
               </section>
@@ -3032,25 +2986,6 @@
           </div>
           <div class="pv__hint" id="pv-hint"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- Brand video modal -->
-    <div class="vm" id="vm" aria-hidden="true">
-      <div class="vm__backdrop" id="vm-backdrop"></div>
-      <div class="vm__panel" role="dialog" aria-modal="true" aria-labelledby="vm-title">
-        <div class="vm__head">
-          <div id="vm-title">About MO·CHA</div>
-          <button type="button" class="vm__close" id="vm-close" aria-label="关闭">×</button>
-        </div>
-        <iframe
-          class="vm__video"
-          id="vm-iframe"
-          src=""
-          title="About MO·CHA"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowfullscreen
-        ></iframe>
       </div>
     </div>
 
@@ -3704,44 +3639,6 @@
             buyNow(pvPid, pvSaleType(), pvQty());
           });
         }
-
-        // Brand video modal (youtube)
-        var vm = document.getElementById("vm");
-        var vmBackdrop = document.getElementById("vm-backdrop");
-        var vmClose = document.getElementById("vm-close");
-        var vmIframe = document.getElementById("vm-iframe");
-        var watchStory = document.getElementById("watch-story");
-        var ABOUT_VIDEO =
-          "https://www.youtube.com/embed/c8OlT_wsttQ?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1";
-
-        function closeVideo() {
-          if (!vm) return;
-          vm.classList.remove("is-open");
-          vm.setAttribute("aria-hidden", "true");
-          if (vmIframe) vmIframe.src = "";
-          document.body.style.overflow = "";
-        }
-        function openVideo() {
-          if (!vm) return;
-          vm.classList.add("is-open");
-          vm.setAttribute("aria-hidden", "false");
-          if (vmIframe) vmIframe.src = ABOUT_VIDEO;
-          document.body.style.overflow = "hidden";
-        }
-        if (watchStory) {
-          watchStory.addEventListener("click", openVideo);
-          watchStory.addEventListener("keydown", function (e) {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              openVideo();
-            }
-          });
-        }
-        if (vmBackdrop) vmBackdrop.addEventListener("click", closeVideo);
-        if (vmClose) vmClose.addEventListener("click", closeVideo);
-        document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape") closeVideo();
-        });
 
         /** Stock need in outbound units (same as backend _stock_need_for_line) */
         function needUnitsForProduct(pid, p, lines) {
