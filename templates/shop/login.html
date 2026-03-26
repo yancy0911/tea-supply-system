@@ -29,7 +29,12 @@
           <div class="msg">{{ message }}</div>
         {% endfor %}
       {% endif %}
-      <form method="post" action="{% url 'login' %}" novalidate>
+      <form
+        method="post"
+        action="{% url 'login' %}"
+        novalidate
+        onsubmit="try{localStorage.setItem('shop_cart_reset','1')}catch(e){}"
+      >
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}" />
         <label>Username</label>

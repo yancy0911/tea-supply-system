@@ -12,7 +12,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{% static 'css/ui-system.css' %}" />
-    {{ products|json_script:"shop-products-data" }}
+    <script id="shop-products-data" type="application/json">
+{{ shop_products_json|safe }}
+    </script>
     <style>
       :root {
         --bg: #f8fafc;
@@ -40,78 +42,140 @@
       .shop-top {
         background: var(--card);
         color: var(--text);
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid #eef2f7;
         padding: 0;
         min-height: var(--header-h);
         position: sticky;
         top: 0;
         z-index: 100;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
       }
       .shop-top-inner {
-        max-width: 1320px;
+        max-width: 1400px;
         margin: 0 auto;
-        padding: 10px 20px;
+        padding: 10px 18px;
         display: flex;
         align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
+        gap: 14px;
+        flex-wrap: nowrap;
+      }
+      .shop-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 190px;
+      }
+      .brand-lockup {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.05;
       }
       .shop-logo {
         font-weight: 700;
         font-size: 18px;
         letter-spacing: -0.03em;
         color: var(--text);
+        white-space: nowrap;
+      }
+      .shop-logo .dot {
+        color: var(--accent);
+        padding: 0 1px;
+      }
+      .shop-tagline {
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        white-space: nowrap;
+        margin-top: 3px;
       }
       .shop-logo span {
         color: var(--accent);
       }
       .shop-search {
         flex: 1;
-        min-width: 200px;
-        max-width: 420px;
+        min-width: 240px;
+        max-width: 720px;
       }
       .shop-search input {
         width: 100%;
-        padding: 11px 14px 11px 40px;
+        padding: 12px 14px 12px 52px;
         border-radius: 999px;
-        border: 1px solid var(--border);
+        border: 1px solid #e5e7eb;
         background: #f8fafc;
-        font-size: 14px;
+        font-size: 15px;
         color: var(--text);
+        outline: none;
+        transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      }
+      .shop-search input:focus {
+        background: #fff;
+        border-color: rgba(21, 128, 61, 0.45);
+        box-shadow: 0 0 0 4px rgba(21, 128, 61, 0.12);
       }
       .shop-search-wrap {
         position: relative;
       }
-      .shop-search-wrap::before {
-        content: "⌕";
+      .shop-search-icon {
         position: absolute;
-        left: 12px;
+        left: 6px;
         top: 50%;
         transform: translateY(-50%);
+        z-index: 2;
+        border: none;
+        background: transparent;
+        padding: 8px;
+        margin: 0;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
         color: var(--muted);
-        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        min-width: 40px;
+        min-height: 40px;
+      }
+      .shop-search-icon span {
+        font-size: 20px;
+        line-height: 1;
+        display: block;
+      }
+      .shop-header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
       }
       .shop-cart-mini {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: #fafafa;
-        padding: 8px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--border);
+        background: #111827;
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(17, 24, 39, 0.12);
         cursor: pointer;
         text-decoration: none;
-        color: var(--text);
-        font-size: 13px;
-        font-weight: 500;
-      }
-      .shop-cart-mini strong {
-        background: var(--text);
         color: #fff;
-        border-radius: 6px;
-        padding: 2px 7px;
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 13px;
+        font-weight: 800;
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+      }
+      .shop-cart-mini:hover {
+        transform: translateY(-1px);
+      }
+      .shop-cart-ico {
+        font-size: 16px;
+        line-height: 1;
+      }
+      .shop-cart-badge,
+      .shop-cart-mini strong {
+        background: #22c55e;
+        color: #052e16;
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 12px;
+        font-weight: 900;
       }
       .shop-user {
         display: flex;
@@ -179,6 +243,27 @@
         color: var(--muted);
         text-align: center;
       }
+      .shop-nav-desktop {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+      }
+      .shop-nav-desktop a {
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 10px;
+        border-radius: 10px;
+      }
+      .shop-nav-desktop a:hover {
+        background: #f1f5f9;
+      }
+      .shop-nav-hi {
+        color: var(--muted);
+        font-size: 13px;
+      }
       .shop-empty {
         color: var(--muted);
         margin: 0;
@@ -220,6 +305,117 @@
       }
       .shop-discovery {
         margin-bottom: 8px;
+      }
+      .brand-hero {
+        max-width: 1400px;
+        margin: 14px auto 0;
+        padding: 0 18px;
+      }
+      .brand-hero__card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 55%, #ecfeff 100%);
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+        padding: 16px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .brand-hero__left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+      .brand-hero__logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: #0f172a;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        flex: 0 0 auto;
+      }
+      .brand-hero__title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+      }
+      .brand-hero__sub {
+        margin: 4px 0 0;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .brand-hero__perks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .perk {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        color: #0f172a;
+        font-weight: 800;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .perk b {
+        color: #15803d;
+      }
+      .shop-footer {
+        max-width: 1400px;
+        margin: 22px auto 20px;
+        padding: 0 18px;
+      }
+      .shop-footer__card {
+        background: #0b1220;
+        color: rgba(255, 255, 255, 0.86);
+        border-radius: 18px;
+        padding: 16px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+      }
+      .shop-footer__grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 10px 14px;
+        align-items: start;
+      }
+      .shop-footer__brand {
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: -0.02em;
+      }
+      .shop-footer__desc {
+        margin-top: 6px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .shop-footer__kv {
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .shop-footer__kv a {
+        color: #bbf7d0;
+        text-decoration: none;
+        font-weight: 800;
+      }
+      .shop-footer__kv a:hover {
+        text-decoration: underline;
       }
       .discovery-rail {
         margin-bottom: 14px;
@@ -308,21 +504,21 @@
         min-width: 0;
       }
       .shop-by-category-head {
-        margin-bottom: 16px;
+        margin-bottom: 10px;
       }
       .shop-by-category__title {
         margin: 0;
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 800;
         letter-spacing: -0.03em;
         color: var(--text);
       }
       .cat-card-row {
         display: flex;
-        gap: 14px;
+        gap: 10px;
         overflow-x: auto;
         overflow-y: hidden;
-        padding: 4px 4px 12px;
+        padding: 2px 2px 10px;
         margin: 0 -4px;
         scrollbar-width: thin;
         scrollbar-color: #cbd5e1 transparent;
@@ -343,51 +539,51 @@
       .cat-card {
         flex: 0 0 auto;
         scroll-snap-align: start;
-        width: 118px;
-        min-height: 118px;
-        padding: 12px 10px 14px;
-        border: 2px solid #e2e8f0;
-        border-radius: 16px;
+        width: auto;
+        min-height: 44px;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
         background: #fff;
         cursor: pointer;
         text-align: center;
         transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.18s ease,
           background 0.2s ease;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
-        justify-content: flex-start;
-        gap: 10px;
+        justify-content: center;
+        gap: 8px;
         font: inherit;
         color: var(--text);
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       }
       .cat-card:hover {
         border-color: #94a3b8;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        transform: translateY(-1px);
       }
       .cat-card:active {
         transform: translateY(0);
       }
       .cat-card.active {
         border-color: #059669;
-        background: linear-gradient(180deg, #ecfdf5 0%, #fff 55%);
-        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25), 0 8px 20px rgba(5, 150, 105, 0.12);
+        background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 85%);
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.18), 0 8px 18px rgba(5, 150, 105, 0.12);
       }
       .cat-card:focus-visible {
         outline: none;
         box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.35);
       }
       .cat-card__glyph {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
+        width: 26px;
+        height: 26px;
+        border-radius: 999px;
         background: #f1f5f9;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 14px;
         font-weight: 800;
         color: #64748b;
         line-height: 1;
@@ -403,17 +599,14 @@
         box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
       }
       .cat-card__name {
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 1.3;
-        max-width: 100%;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.1;
+        max-width: 160px;
         overflow: hidden;
         text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        word-break: break-word;
-        color: #334155;
+        white-space: nowrap;
+        color: #0f172a;
       }
       .cat-card.active .cat-card__name {
         color: #065f46;
@@ -438,12 +631,24 @@
       }
       .product-grid {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (min-width: 600px) {
+        .product-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
       }
       @media (min-width: 900px) {
         .product-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+        }
+      }
+      @media (min-width: 1200px) {
+        .product-grid {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 14px;
         }
       }
@@ -461,42 +666,49 @@
         transform: translateY(-2px);
         box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
       }
-      .ecom-card--app .ecom-card__main {
-        display: flex;
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 10px 12px 8px;
-        border-bottom: 1px solid #f1f5f9;
-      }
-      .ecom-card--app.ecom-card--oos .ecom-card__main {
-        border-bottom-color: #fecaca;
-      }
-      .ecom-card--app .ecom-card__media.catalog-card__media {
+      .ecom-card__media.catalog-card__media {
         display: block;
-        flex: 0 0 76px;
-        width: 76px;
-        min-width: 76px;
-        height: 76px;
+        width: 100%;
+        aspect-ratio: 1 / 1;
         background: #f8fafc;
-        padding: 6px;
-        border-radius: 12px;
+        padding: 10px;
         box-sizing: border-box;
         overflow: hidden;
+        position: relative;
       }
-      .ecom-card--app .ecom-card__info {
-        flex: 1;
-        min-width: 0;
+      .ecom-card__media-inner {
+        width: 100%;
+        height: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #eef2f7;
+      }
+      .ecom-card__media-inner img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+        background: #fff;
+      }
+      .ecom-card__badges {
+        position: absolute;
+        left: 10px;
+        top: 10px;
         display: flex;
-        flex-direction: column;
-        gap: 3px;
+        gap: 6px;
+        align-items: center;
+        pointer-events: none;
+      }
+      .ecom-card__badges .stock-pill {
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
       }
       .ecom-card--oos {
         background: #fafafa;
         border-color: #fecaca !important;
         box-shadow: 0 2px 10px rgba(220, 38, 38, 0.06);
       }
-      .ecom-card--oos .ecom-card__footer {
+      .ecom-card--oos .ecom-card__body {
         opacity: 0.92;
       }
       .ecom-card__cat-pill {
@@ -518,7 +730,7 @@
         flex-wrap: wrap;
         align-items: baseline;
         gap: 6px 10px;
-        margin-top: 4px;
+        margin-top: 6px;
         letter-spacing: -0.02em;
       }
       .ecom-card__price-strip--quote {
@@ -540,17 +752,17 @@
       }
       .ecom-card__p {
         font-variant-numeric: tabular-nums;
-        font-size: 13px;
+        font-size: 12px;
         color: #334155;
       }
       .ecom-card__p strong {
         font-weight: 800;
-        font-size: 17px;
+        font-size: 16px;
         color: #15803d;
         letter-spacing: -0.03em;
       }
       .ecom-p--case strong {
-        font-size: 15px;
+        font-size: 14px;
         color: #0f766e;
       }
       .ecom-card__was {
@@ -559,53 +771,384 @@
         font-weight: 600;
         margin-right: 4px;
       }
-      .ecom-card__stock-row {
+      .ecom-card__meta-row {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
         gap: 6px;
-        margin-top: 6px;
+        align-items: center;
+        flex-wrap: wrap;
       }
-      .ecom-card__quote-hint {
-        margin: 0 0 2px;
+      .ecom-card__body.catalog-card__body {
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+      }
+      .ecom-card__title.catalog-card__title {
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-decoration: none;
+        color: #0f172a;
+      }
+      .ecom-card__sku.catalog-card__sku {
+        margin: 0;
         font-size: 12px;
-        color: #b45309;
-        font-weight: 600;
+        color: #94a3b8;
       }
-      .stock-pill--muted {
-        background: #f1f5f9;
+      .ecom-card__price-lite {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .price-lite__amt {
+        font-weight: 900;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+        color: #111827;
+      }
+      .price-lite__from {
+        font-size: 12px;
         color: #64748b;
-        font-weight: 600;
+        font-weight: 800;
       }
-      .ecom-card__media.catalog-card__media {
+      .price-lite__quote {
+        font-size: 13px;
+        font-weight: 900;
+        color: #c2410c;
+      }
+
+      /* product quick-view drawer (home) */
+      .pv {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: none;
+      }
+      .pv.is-open {
         display: block;
-        height: 200px;
-        background: #fafafa;
-        padding: 12px;
-        box-sizing: border-box;
+      }
+      .pv__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.55);
+      }
+      .pv__panel {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: min(420px, 92vw);
+        background: #fff;
+        border-left: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: -16px 0 48px rgba(15, 23, 42, 0.18);
+        display: flex;
+        flex-direction: column;
+      }
+      @media (max-width: 768px) {
+        .pv__panel {
+          right: 0;
+          left: 0;
+          top: auto;
+          bottom: 0;
+          width: 100%;
+          height: min(78vh, 720px);
+          border-left: none;
+          border-top: 1px solid rgba(15, 23, 42, 0.08);
+          border-radius: 18px 18px 0 0;
+        }
+      }
+      .pv__head {
+        padding: 14px 14px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid #eef2f7;
+      }
+      .pv__title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+      }
+      .pv__close {
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        border-radius: 10px;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+      }
+      .pv__body {
+        padding: 14px;
+        overflow: auto;
+      }
+      .pv__img {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #eef2f7;
         overflow: hidden;
       }
-      .ecom-card__media-inner {
+      .pv__img img {
         width: 100%;
         height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .pv__meta {
+        margin-top: 12px;
+      }
+      .pv__name {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+      }
+      .pv__sku {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 800;
+      }
+      .pv__prices {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .pv-price {
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 10px 10px;
+        background: #fff;
+      }
+      .pv-price__k {
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 800;
+      }
+      .pv-price__v {
+        margin-top: 4px;
+        font-size: 16px;
+        font-weight: 900;
+        color: #111827;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+      }
+      .pv__ops {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+      .pv__ops .qty-stepper {
+        width: 100%;
+      }
+      .pv__cta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .pv__cta .btn-add-cart,
+      .pv__cta .btn-buy-now {
+        width: 100%;
+      }
+      .pv__hint {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      /* Brand media modules (inserted mid product list) */
+      .brand-mid {
+        grid-column: 1 / -1;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+      }
+      .brand-mid__head {
+        padding: 14px 14px 10px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: 1px solid #eef2f7;
+      }
+      .brand-mid__title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+      }
+      .brand-mid__sub {
+        font-size: 12px;
+        font-weight: 800;
+        color: #64748b;
+      }
+      .brand-video {
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 14px;
+        align-items: center;
+      }
+      @media (max-width: 900px) {
+        .brand-video {
+          grid-template-columns: 1fr;
+        }
+      }
+      .brand-video__thumb {
+        border-radius: 16px;
+        border: 1px solid #eef2f7;
+        background: #0b1220;
+        min-height: 220px;
+        max-height: 300px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-sizing: border-box;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
       }
-      .ecom-card__media-inner img {
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
-        object-fit: contain;
+      .brand-video__thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.92;
+        display: block;
       }
-      .ecom-card__body.catalog-card__body {
-        padding: 16px 18px 20px;
+      .brand-video__play {
+        position: absolute;
+        inset: 0;
         display: flex;
-        flex-direction: column;
-        gap: 12px;
-        flex: 1;
+        align-items: center;
+        justify-content: center;
+      }
+      .brand-video__play span {
+        width: 64px;
+        height: 64px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.92);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 900;
+        color: #111827;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
+      }
+      .brand-video__copy h4 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+      }
+      .brand-video__copy p {
+        margin: 8px 0 0;
+        color: #334155;
+        font-weight: 700;
+        line-height: 1.5;
+        font-size: 13px;
+      }
+      .scene-strip {
+        padding: 0 14px 14px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (max-width: 600px) {
+        .scene-strip {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .scene {
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #eef2f7;
+        background: #f8fafc;
+        aspect-ratio: 4 / 3;
+      }
+      .scene img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      /* video modal */
+      .vm {
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        display: none;
+      }
+      .vm.is-open {
+        display: block;
+      }
+      .vm__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.6);
+      }
+      .vm__panel {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(960px, 92vw);
+        background: #0b1220;
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+      }
+      .vm__head {
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 900;
+      }
+      .vm__close {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        border-radius: 10px;
+        width: 36px;
+        height: 36px;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+      }
+      .vm__video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        max-height: 300px;
+        background: #000;
+      }
+      @media (min-width: 900px) {
+        .vm__video {
+          max-height: 300px;
+        }
       }
       .ecom-card__meta {
         display: flex;
@@ -1789,8 +2332,33 @@
           gap: 10px;
           padding: 10px 12px;
         }
+        .shop-brand {
+          min-width: auto;
+        }
         .shop-logo {
           font-size: 16px;
+        }
+        .shop-tagline {
+          display: none;
+        }
+        .brand-hero {
+          padding: 0 12px;
+          margin-top: 10px;
+        }
+        .brand-hero__card {
+          padding: 14px 12px;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .brand-hero__perks {
+          width: 100%;
+          justify-content: flex-start;
+        }
+        .shop-footer {
+          padding: 0 12px;
+        }
+        .shop-footer__grid {
+          grid-template-columns: 1fr;
         }
         .shop-search {
           flex: 1;
@@ -1799,7 +2367,18 @@
         }
         .shop-search input {
           font-size: 0.95rem;
-          padding-left: 34px;
+          padding-left: 52px;
+        }
+        .shop-search-icon {
+          padding: 8px;
+          min-width: 44px;
+          min-height: 44px;
+        }
+        .shop-cart-mini {
+          padding: 9px 10px;
+        }
+        .shop-cart-ico {
+          font-size: 16px;
         }
         .shop-float-cart:not([hidden]) {
           display: block;
@@ -1945,13 +2524,14 @@
           padding-bottom: 20px;
         }
         .shop-top-inner {
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
         }
         .shop-nav-desktop {
-          width: 100%;
+          width: auto;
+          margin-left: 6px;
           justify-content: flex-end;
-          padding-top: 6px;
-          border-top: 1px solid #f1f5f9;
+          padding-top: 0;
+          border-top: none;
         }
         .ecom-card__top-row {
           flex-direction: column;
@@ -1994,10 +2574,16 @@
     <header class="shop-top">
       <div class="shop-top-inner">
         <div class="shop-brand">
-          <div class="shop-logo">Boba <span>Supply</span></div>
+          <div class="brand-lockup">
+            <div class="shop-logo">MO<span class="dot">·</span>CHA</div>
+            <div class="shop-tagline">墨茶珍珠奶茶原料批发</div>
+          </div>
         </div>
         <div class="shop-search">
           <div class="shop-search-wrap">
+            <button type="button" class="shop-search-icon" id="shop-search-icon" aria-label="搜索商品">
+              <span aria-hidden="true">⌕</span>
+            </button>
             <input type="search" id="shop-search" placeholder="搜索商品、SKU…" autocomplete="off" />
           </div>
         </div>
@@ -2079,110 +2665,141 @@
       </div>
     {% endif %}
 
+    <section class="brand-hero" aria-label="品牌介绍">
+      <div class="brand-hero__card">
+        <div class="brand-hero__left">
+          <div class="brand-hero__logo" aria-hidden="true">MO</div>
+          <div class="brand-hero__text">
+            <p class="brand-hero__title">MO·CHA 批发商城</p>
+            <p class="brand-hero__sub">NYC 本地奶茶原料批发供应商</p>
+          </div>
+        </div>
+        <div class="brand-hero__perks" aria-label="优势">
+          <span class="perk"><b>现货</b> 本地仓</span>
+          <span class="perk"><b>批发</b> 价格</span>
+          <span class="perk"><b>支持</b> 配送</span>
+        </div>
+      </div>
+    </section>
+
     {% if products %}
       <section class="shop-discovery" aria-label="推荐与活动">
-        <div class="discovery-rail">
-          <h3 class="discovery-rail__head">🔥 热卖商品</h3>
-          <div class="discovery-rail__track" role="list">
-            {% for product in products|slice:":8" %}
-              <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
-                <div class="discovery-mini__img">
-                  {% if product.image_url %}
-                    <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
-                  {% else %}
-                    <img
-                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
-                      alt=""
-                      loading="lazy"
-                    />
-                  {% endif %}
-                </div>
-                <p class="discovery-mini__name">{{ product.name }}</p>
-                <div class="discovery-mini__price">
-                  {% if product.price_on_request %}
-                    询价
-                  {% elif product.can_quote_single %}
-                    {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
-                  {% elif product.can_quote_case %}
-                    {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </div>
-              </a>
-            {% empty %}
-              <p class="discovery-rail__placeholder">暂无推荐，热门商品请在下方浏览</p>
-            {% endfor %}
-          </div>
-        </div>
-        <div class="discovery-rail">
-          <h3 class="discovery-rail__head">⭐ 推荐产品</h3>
-          <div class="discovery-rail__track" role="list">
-            {% for product in products|slice:"8:16" %}
-              <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
-                <div class="discovery-mini__img">
-                  {% if product.image_url %}
-                    <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
-                  {% else %}
-                    <img
-                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
-                      alt=""
-                      loading="lazy"
-                    />
-                  {% endif %}
-                </div>
-                <p class="discovery-mini__name">{{ product.name }}</p>
-                <div class="discovery-mini__price">
-                  {% if product.price_on_request %}
-                    询价
-                  {% elif product.can_quote_single %}
-                    {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
-                  {% elif product.can_quote_case %}
-                    {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </div>
-              </a>
-            {% empty %}
-              <p class="discovery-rail__placeholder">暂无推荐，热门商品请在下方浏览</p>
-            {% endfor %}
-          </div>
-        </div>
-        <div class="discovery-rail">
-          <h3 class="discovery-rail__head">📦 今日补货推荐</h3>
-          <div class="discovery-rail__track" role="list">
-            {% for product in products|slice:"4:12" %}
-              <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
-                <div class="discovery-mini__img">
-                  {% if product.image_url %}
-                    <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
-                  {% else %}
-                    <img
-                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
-                      alt=""
-                      loading="lazy"
-                    />
-                  {% endif %}
-                </div>
-                <p class="discovery-mini__name">{{ product.name }}</p>
-                <div class="discovery-mini__price">
-                  {% if product.price_on_request %}
-                    询价
-                  {% elif product.can_quote_single %}
-                    {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
-                  {% elif product.can_quote_case %}
-                    {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </div>
-              </a>
-            {% empty %}
-              <p class="discovery-rail__placeholder">暂无推荐，热门商品请在下方浏览</p>
-            {% endfor %}
-          </div>
-        </div>
+        {% with hot_products=products|slice:":8" %}
+          {% if hot_products %}
+            <div class="discovery-rail">
+              <h3 class="discovery-rail__head">🔥 热卖商品</h3>
+              <div class="discovery-rail__track" role="list">
+                {% for product in hot_products %}
+                  <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
+                    <div class="discovery-mini__img">
+                      {% if product.image_url %}
+                        <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+                      {% else %}
+                        <img
+                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
+                          alt=""
+                          loading="lazy"
+                        />
+                      {% endif %}
+                    </div>
+                    <p class="discovery-mini__name">{{ product.name }}</p>
+                    <div class="discovery-mini__price">
+                      {% if product.is_out_of_stock %}
+                        <span style="color:#b91c1c;font-weight:900">缺货</span>
+                      {% elif product.price_on_request %}
+                        询价
+                      {% elif product.can_quote_single %}
+                        {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+                      {% elif product.can_quote_case %}
+                        {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </div>
+                  </a>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% with rec_products=products|slice:"8:16" %}
+          {% if rec_products %}
+            <div class="discovery-rail">
+              <h3 class="discovery-rail__head">⭐ 推荐产品</h3>
+              <div class="discovery-rail__track" role="list">
+                {% for product in rec_products %}
+                  <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
+                    <div class="discovery-mini__img">
+                      {% if product.image_url %}
+                        <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+                      {% else %}
+                        <img
+                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
+                          alt=""
+                          loading="lazy"
+                        />
+                      {% endif %}
+                    </div>
+                    <p class="discovery-mini__name">{{ product.name }}</p>
+                    <div class="discovery-mini__price">
+                      {% if product.is_out_of_stock %}
+                        <span style="color:#b91c1c;font-weight:900">缺货</span>
+                      {% elif product.price_on_request %}
+                        询价
+                      {% elif product.can_quote_single %}
+                        {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+                      {% elif product.can_quote_case %}
+                        {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </div>
+                  </a>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% with restock_products=products|slice:"4:12" %}
+          {% if restock_products %}
+            <div class="discovery-rail">
+              <h3 class="discovery-rail__head">📦 今日补货推荐</h3>
+              <div class="discovery-rail__track" role="list">
+                {% for product in restock_products %}
+                  <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
+                    <div class="discovery-mini__img">
+                      {% if product.image_url %}
+                        <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+                      {% else %}
+                        <img
+                          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
+                          alt=""
+                          loading="lazy"
+                        />
+                      {% endif %}
+                    </div>
+                    <p class="discovery-mini__name">{{ product.name }}</p>
+                    <div class="discovery-mini__price">
+                      {% if product.is_out_of_stock %}
+                        <span style="color:#b91c1c;font-weight:900">缺货</span>
+                      {% elif product.price_on_request %}
+                        询价
+                      {% elif product.can_quote_single %}
+                        {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+                      {% elif product.can_quote_case %}
+                        {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </div>
+                  </a>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endwith %}
       </section>
     {% endif %}
 
@@ -2219,6 +2836,63 @@
         <div class="product-grid" id="product-grid">
           {% for product in products %}
             {% include "shop/_product_card.html" with product=product shop_customer=shop_customer shop_can_order=shop_can_order shop_order_block_hint=shop_order_block_hint %}
+            {% if forloop.counter == 12 %}
+              <section class="brand-mid brand-mid--video" aria-label="About MO·CHA">
+                <div class="brand-mid__head">
+                  <h3 class="brand-mid__title">About MO·CHA</h3>
+                  <span class="brand-mid__sub">Trusted Boba Supplier in NYC</span>
+                </div>
+                <div class="brand-video">
+                  <div class="brand-video__thumb" id="watch-story" role="button" tabindex="0" aria-label="▶ Watch Our Story">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/k8-vl_l_JPGrxQ-unsplash_2ac59688-d2ab-4303-b666-ab3a1e539e7c_1600x.jpg?v=1635637256"
+                      alt="MO·CHA"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <div class="brand-video__play" aria-hidden="true"><span>▶</span></div>
+                  </div>
+                  <div class="brand-video__copy">
+                    <h4>▶ Watch Our Story</h4>
+                    <p>NYC 本地仓现货，批发供货与门店配送。视频仅辅助了解品牌，不影响您继续浏览商品下单。</p>
+                  </div>
+                </div>
+              </section>
+            {% endif %}
+            {% if forloop.counter == 24 %}
+              <section class="brand-mid brand-mid--scenes" aria-label="场景图片">
+                <div class="brand-mid__head">
+                  <h3 class="brand-mid__title">MO·CHA Scenes</h3>
+                  <span class="brand-mid__sub">门店 · 原料 · 制作</span>
+                </div>
+                <div class="scene-strip">
+                  <div class="scene">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/samia-liamani-3DhS00cyC9A-unsplash_1600x.jpg?v=1635640056"
+                      alt="奶茶制作"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div class="scene">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/shutterstock_435687631_copy_1600x.png?v=1642102322"
+                      alt="原料展示"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                  <div class="scene">
+                    <img
+                      src="https://mochaboba.com/cdn/shop/files/Screen_Shot_2021-12-07_at_10.19.09_AM_1600x.png?v=1638893973"
+                      alt="门店场景"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                </div>
+              </section>
+            {% endif %}
           {% empty %}
             <div id="shop-catalog-empty" class="shop-empty-block">
               <p class="shop-empty-block__title">暂无商品，请联系供应商</p>
@@ -2281,6 +2955,93 @@
       </div>
     </nav>
 
+    <footer class="shop-footer" aria-label="店铺信息">
+      <div class="shop-footer__card">
+        <div class="shop-footer__grid">
+          <div>
+            <div class="shop-footer__brand">MO·CHA</div>
+            <div class="shop-footer__desc">奶茶原料批发｜本地配送｜门店供货</div>
+          </div>
+          <div class="shop-footer__kv">
+            <div>地址：56-11 Arnold Ave Maspeth NY 11378</div>
+            <div>电话：<a href="tel:3478895788">347-889-5788</a></div>
+            <div>网站：<a href="https://www.mochaboba.com" target="_blank" rel="noopener">www.mochaboba.com</a></div>
+            <div>微信：nymochaboba</div>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Product quick view (home) -->
+    <div class="pv" id="pv" aria-hidden="true">
+      <div class="pv__backdrop" id="pv-backdrop"></div>
+      <div class="pv__panel" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+        <div class="pv__head">
+          <h3 class="pv__title" id="pv-title">商品详情</h3>
+          <button type="button" class="pv__close" id="pv-close" aria-label="关闭">×</button>
+        </div>
+        <div class="pv__body">
+          <div class="pv__img"><img id="pv-img" alt="" /></div>
+          <div class="pv__meta">
+            <p class="pv__name" id="pv-name"></p>
+            <p class="pv__sku" id="pv-sku"></p>
+          </div>
+          <div class="pv__prices" aria-label="价格">
+            <div class="pv-price" id="pv-price-bag">
+              <div class="pv-price__k">袋价</div>
+              <div class="pv-price__v" id="pv-bag-v">—</div>
+            </div>
+            <div class="pv-price" id="pv-price-case">
+              <div class="pv-price__k">箱价</div>
+              <div class="pv-price__v" id="pv-case-v">—</div>
+            </div>
+          </div>
+
+          <div class="pv__ops">
+            <div class="catalog-segment ecom-mode-toggle ecom-mode-toggle--compact" role="group" aria-label="单位" id="pv-mode">
+              <label class="catalog-segment__opt ecom-mode-btn">
+                <input type="radio" name="pv-mode" value="single" checked />
+                <span class="ecom-mode-btn__text">袋</span>
+              </label>
+              <label class="catalog-segment__opt ecom-mode-btn">
+                <input type="radio" name="pv-mode" value="case" />
+                <span class="ecom-mode-btn__text">箱</span>
+              </label>
+            </div>
+            <div class="qty-stepper ecom-qty-stepper" id="pv-qty">
+              <button type="button" data-act="minus" aria-label="减少">−</button>
+              <input type="number" min="0.01" step="0.01" value="1" aria-label="数量" />
+              <button type="button" data-act="plus" aria-label="增加">+</button>
+            </div>
+            <div class="pv__cta">
+              <button type="button" class="btn-add-cart ecom-btn-add-cart" id="pv-add">加入购物车</button>
+              <button type="button" class="btn-buy-now ecom-btn-buy-now" id="pv-buy">立即购买</button>
+            </div>
+          </div>
+          <div class="pv__hint" id="pv-hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brand video modal -->
+    <div class="vm" id="vm" aria-hidden="true">
+      <div class="vm__backdrop" id="vm-backdrop"></div>
+      <div class="vm__panel" role="dialog" aria-modal="true" aria-labelledby="vm-title">
+        <div class="vm__head">
+          <div id="vm-title">About MO·CHA</div>
+          <button type="button" class="vm__close" id="vm-close" aria-label="关闭">×</button>
+        </div>
+        <iframe
+          class="vm__video"
+          id="vm-iframe"
+          src=""
+          title="About MO·CHA"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </div>
+
     <div id="order-modal" class="order-modal" aria-hidden="true">
       <div class="order-modal-backdrop" id="order-modal-backdrop"></div>
       <div class="order-modal-box" role="dialog" aria-labelledby="order-modal-title">
@@ -2317,6 +3078,18 @@
 
     <script>
       (function () {
+        var PLACEHOLDER_IMG =
+          "data:image/svg+xml," +
+          encodeURIComponent(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'>" +
+              "<rect fill='#f1f5f9' width='240' height='240'/>" +
+              "<path d='M78 158c18 16 66 16 84 0' fill='none' stroke='#94a3b8' stroke-width='8' stroke-linecap='round'/>" +
+              "<circle cx='92' cy='104' r='8' fill='#94a3b8'/>" +
+              "<circle cx='148' cy='104' r='8' fill='#94a3b8'/>" +
+              "<text x='120' y='214' text-anchor='middle' fill='#94a3b8' font-size='14' font-family='system-ui, -apple-system, Segoe UI, Roboto, sans-serif'>MO·CHA</text>" +
+            "</svg>"
+          );
+
         function showToast(msg) {
           var t = document.getElementById("toast");
           if (!t) return;
@@ -2327,12 +3100,21 @@
           }, 2000);
         }
         var PRODUCTS = [];
+        var PRODUCTS_PARSE_OK = true;
         try {
           var el = document.getElementById("shop-products-data");
           if (el && el.textContent) PRODUCTS = JSON.parse(el.textContent) || [];
         } catch (e) {
-          console.error(e);
+          PRODUCTS_PARSE_OK = false;
+          console.error("[shop] JSON.parse(shop-products-data) failed:", e);
         }
+        try {
+          console.log("FRONT PRODUCTS:", PRODUCTS);
+        } catch (e) {}
+        try {
+          console.log("PRODUCTS RAW:", PRODUCTS);
+          console.log("PRODUCTS LENGTH:", Array.isArray(PRODUCTS) ? PRODUCTS.length : -1);
+        } catch (e) {}
 
         /** Only storage key for cart (shop / checkout / product detail). */
         function getCart() {
@@ -2366,6 +3148,17 @@
         }
 
         var cart = getCart();
+        // 登录/注册成功后清空本地购物车，避免出现：首页 Products=0 但购物车还有旧数据。
+        try {
+          var RESET_KEY = "shop_cart_reset";
+          if (localStorage.getItem(RESET_KEY) === "1") {
+            localStorage.removeItem("cart");
+            try {
+              localStorage.removeItem("tea_shop_cart_v1");
+            } catch (e2) {}
+            localStorage.removeItem(RESET_KEY);
+          }
+        } catch (e) {}
 
         var CJK_RE = /[\u4e00-\u9fff]/;
         function containsCjk(s) {
@@ -2395,6 +3188,36 @@
             else cls += " catalog-chip--muted";
             el.className = cls;
           });
+        }
+
+        function sanitizeNameText(raw) {
+          var s = String(raw || "").trim();
+          if (!s) return s;
+          // Display-only cleanup for obvious placeholder names (do NOT change SKU or data attributes).
+          // Examples: "Test Tea ...", "Test ...".
+          s = s.replace(/\\btest\\s*tea\\b\\s*[-:：]?\\s*/ig, "");
+          s = s.replace(/^test\\s+[-:：]?\\s*/i, "");
+          s = s.replace(/\\s{2,}/g, " ").trim();
+          return s;
+        }
+
+        function sanitizeProductNameDisplay() {
+          try {
+            document.querySelectorAll(".catalog-card .catalog-card__title, .catalog-card .ecom-card__title").forEach(function (el) {
+              var t = sanitizeNameText(el.textContent);
+              if (t) el.textContent = t;
+            });
+            document.querySelectorAll(".discovery-mini__name").forEach(function (el) {
+              var t = sanitizeNameText(el.textContent);
+              if (t) el.textContent = t;
+            });
+            document.querySelectorAll(".catalog-card .catalog-card__media").forEach(function (a) {
+              var label = a.getAttribute("aria-label");
+              if (!label) return;
+              var t = sanitizeNameText(label);
+              if (t) a.setAttribute("aria-label", t);
+            });
+          } catch (e) {}
         }
 
         function normalizeCartLines() {
@@ -2439,7 +3262,21 @@
         var cardsBuilt = false;
         var delegationReady = false;
 
+        function normalizeSearch(v) {
+          if (v == null) return "";
+          var s = "";
+          try {
+            s = String(v);
+          } catch (e) {
+            return "";
+          }
+          return (s || "").trim().toLowerCase();
+        }
+
         var grid = document.getElementById("product-grid");
+        try {
+          console.log("[shop] grid element:", grid);
+        } catch (e) {}
         function getCartListEl() {
           return document.getElementById("cart-body");
         }
@@ -2493,9 +3330,136 @@
           return normCat(productCategoryId) === s;
         }
 
+        /** SKU / name for search: prefer data-sku, else SKU line text (skip placeholder em dash). */
+        function getCardSkuForSearch(card) {
+          var ds = (card.getAttribute("data-sku") || "").trim();
+          if (ds) return ds;
+          var el = card.querySelector(".catalog-card__sku, .ecom-card__sku");
+          var t = el && el.textContent ? String(el.textContent).trim() : "";
+          if (t === "—" || t === "-" || t === "\u2014") return "";
+          return t;
+        }
+
+        function getCardNameForSearch(card) {
+          var el = card.querySelector(".catalog-card__title, .ecom-card__title");
+          return el && el.textContent ? String(el.textContent).trim() : "";
+        }
+
         function buildCardsOnce() {
+          try {
+            console.log("BUILD CARDS START");
+          } catch (e) {}
           if (cardsBuilt) return;
           cardsBuilt = true;
+          if (!grid) {
+            try {
+              console.error("[shop] product grid is null; cannot build cards");
+            } catch (e) {}
+            return;
+          }
+
+          // Fallback renderer: if server did not render cards for any reason,
+          // build minimal cards from PRODUCTS (tolerant to missing fields).
+          function renderProductsFromJsonSafe() {
+            try {
+              console.log("PRODUCTS LENGTH:", Array.isArray(PRODUCTS) ? PRODUCTS.length : -1);
+            } catch (e) {}
+            if (!grid) return;
+            var existing = grid.querySelectorAll(".catalog-card");
+            if (existing && existing.length) return;
+            if (!Array.isArray(PRODUCTS) || PRODUCTS.length === 0) return;
+
+            try {
+              function escAttr(s) {
+                return String(s == null ? "" : s)
+                  .replace(/&/g, "&amp;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/</g, "&lt;");
+              }
+              var html = "";
+              PRODUCTS.forEach(function (p) {
+                try {
+                  p = p || {};
+                  var pid = p.id != null ? String(p.id) : "";
+                  if (!pid) return;
+                  var name = p.name || "Unnamed product";
+                  var sku = p.sku || "";
+                  var image = p.image_url || p.image || PLACEHOLDER_IMG;
+                  var category = p.category_name || "";
+                  var price = 0;
+                  if (p.display_single != null && !isNaN(parseFloat(p.display_single))) price = parseFloat(p.display_single);
+                  else if (p.price_single != null && !isNaN(parseFloat(p.price_single))) price = parseFloat(p.price_single);
+
+                  var isOos = !!p.is_out_of_stock;
+                  var catId = p.category_id != null ? String(p.category_id) : "";
+                  var showPrice = price;
+                  var priceText = "{{ currency_symbol }}" + (isNaN(showPrice) ? "0.00" : showPrice.toFixed(2)) + " 起";
+                  if (p.price_on_request) priceText = "询价";
+                  html +=
+                    '<div class="catalog-card ecom-card ecom-card--app' +
+                    (isOos ? " ecom-card--oos" : "") +
+                    '" data-product-id="' +
+                    pid +
+                    '" data-category-id="' +
+                    catId +
+                    '" data-pid="' +
+                    pid +
+                    '" data-sku="' +
+                    escAttr(sku) +
+                    '">' +
+                    '<a class="ecom-card__media catalog-card__media" href="/shop/product/' +
+                    pid +
+                    '/" aria-label="' +
+                    escAttr(name) +
+                    '">' +
+                    '<div class="ecom-card__media-inner">' +
+                    '<img src="' +
+                    image +
+                    '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\\'' +
+                    PLACEHOLDER_IMG +
+                    "\\''\" />" +
+                    "</div>" +
+                    '<div class="ecom-card__badges">' +
+                    (isOos
+                      ? '<span class="stock-pill stock-pill--out">缺货</span>'
+                      : '<span class="stock-pill stock-pill--ok">现货</span>') +
+                    "</div>" +
+                    "</a>" +
+                    '<div class="catalog-card__body ecom-card__body ecom-card__body--browse">' +
+                    '<a class="ecom-card__title catalog-card__title" href="/shop/product/' +
+                    pid +
+                    '/">' +
+                    name +
+                    "</a>" +
+                    '<p class="ecom-card__sku catalog-card__sku">' +
+                    (sku ? sku : "—") +
+                    "</p>" +
+                    '<div class="ecom-card__price-lite" aria-label="起价">' +
+                    (p.price_on_request
+                      ? '<span class="price-lite__quote">询价</span>'
+                      : '<span class="price-lite__amt">' + priceText + "</span>") +
+                    "</div>" +
+                    "</div></div>";
+                } catch (eRow) {
+                  try {
+                    console.error("BUILD ERROR (row):", eRow, p);
+                  } catch (e2) {}
+                }
+              });
+              grid.innerHTML = html;
+              try {
+                console.log("[shop] fallback rendered cards:", grid.querySelectorAll(".catalog-card").length);
+              } catch (e) {}
+            } catch (e) {
+              try {
+                console.error("BUILD ERROR:", e);
+              } catch (e2) {}
+            }
+          }
+
+          renderProductsFromJsonSafe();
+          sanitizeProductNameDisplay();
+
           grid.querySelectorAll(".catalog-card__media img").forEach(function (im) {
             im.addEventListener("error", function () {
               this.onerror = null;
@@ -2509,6 +3473,17 @@
           if (delegationReady) return;
           delegationReady = true;
           grid.addEventListener("click", function (e) {
+            // click-to-open quick view (1688-style). keep ctrl/cmd-click for open in new tab.
+            var card = e.target.closest(".catalog-card");
+            var a = e.target.closest("a");
+            if (card && a && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
+              var pid0 = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
+              if (isFinite(pid0) && pid0 > 0) {
+                e.preventDefault();
+                openProductView(pid0);
+                return;
+              }
+            }
             var buyBtn = e.target.closest(".btn-buy-now");
             if (buyBtn) {
               var pid = parseInt(buyBtn.getAttribute("data-pid"), 10);
@@ -2568,29 +3543,37 @@
 
         function applyProductFilter() {
           buildCardsOnce();
-          var total = PRODUCTS.length;
+          if (!grid) {
+            try {
+              console.error("[shop] applyProductFilter aborted: grid is null");
+            } catch (e) {}
+            return;
+          }
+          var keyword = searchQ || "";
           var vis = 0;
-          var catKey = normCat(selectedCat) === "" || normCat(selectedCat) === "all" ? "all" : normCat(selectedCat);
           grid.querySelectorAll(".catalog-card").forEach(function (card) {
-            var pidRaw = card.getAttribute("data-product-id");
-            var p = productById(pidRaw);
-            if (!p) {
-              card.style.display = "none";
-              return;
+            try {
+              var catId = card.getAttribute("data-category-id");
+              var catOk =
+                normCat(selectedCat) === "all" || categoryMatchesProduct(selectedCat, catId);
+              var searchOk = true;
+              if (keyword.length > 0) {
+                var sku = getCardSkuForSearch(card).toLowerCase();
+                var nm = getCardNameForSearch(card).toLowerCase();
+                searchOk = sku.indexOf(keyword) !== -1 || nm.indexOf(keyword) !== -1;
+              }
+              var show = catOk && searchOk;
+              card.style.display = show ? "" : "none";
+              if (show) vis++;
+            } catch (e) {
+              try {
+                console.error("[shop] filter loop error, keep card visible:", e);
+              } catch (e2) {}
+              card.style.display = "";
+              vis++;
             }
-            var catOk = categoryMatchesProduct(selectedCat, p.category_id);
-            var searchOk = true;
-            if (searchQ) {
-              var q = searchQ.toLowerCase();
-              var n = (p.name || "").toLowerCase();
-              var s = (p.sku || "").toLowerCase();
-              searchOk = n.indexOf(q) !== -1 || s.indexOf(q) !== -1;
-            }
-            var show = catOk && searchOk;
-            card.style.display = show ? "" : "none";
-            if (show) vis++;
           });
-          productCount.textContent = "(" + vis + " items)";
+          if (productCount) productCount.textContent = "(" + vis + " items)";
         }
 
         function unitPriceFor(p, saleType) {
@@ -2599,6 +3582,155 @@
           if (saleType === "single" && !p.can_quote_single) return 0;
           return saleType === "case" ? parseFloat(p.display_case) : parseFloat(p.display_single);
         }
+
+        // Product quick view (home)
+        var pv = document.getElementById("pv");
+        var pvBackdrop = document.getElementById("pv-backdrop");
+        var pvClose = document.getElementById("pv-close");
+        var pvImg = document.getElementById("pv-img");
+        var pvName = document.getElementById("pv-name");
+        var pvSku = document.getElementById("pv-sku");
+        var pvBagV = document.getElementById("pv-bag-v");
+        var pvCaseV = document.getElementById("pv-case-v");
+        var pvHint = document.getElementById("pv-hint");
+        var pvQtyIn = document.querySelector("#pv-qty input");
+        var pvAdd = document.getElementById("pv-add");
+        var pvBuy = document.getElementById("pv-buy");
+
+        var pvPid = null;
+
+        function closeProductView() {
+          if (!pv) return;
+          pv.classList.remove("is-open");
+          pv.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+          pvPid = null;
+        }
+
+        function openProductView(pid) {
+          var p = productById(pid);
+          if (!p) return;
+          pvPid = pid;
+          if (pvImg) {
+            pvImg.src = p.image_url || p.image || PLACEHOLDER_IMG;
+            pvImg.onerror = function () {
+              this.onerror = null;
+              this.src = PLACEHOLDER_IMG;
+            };
+          }
+          if (pvName) pvName.textContent = sanitizeNameText(p.name || "Unnamed product");
+          if (pvSku) pvSku.textContent = p.sku ? "SKU: " + p.sku : "";
+          if (pvBagV) pvBagV.textContent = p.can_quote_single && !p.price_on_request ? "{{ currency_symbol }}" + fmtMoney(p.display_single) : "—";
+          if (pvCaseV) pvCaseV.textContent = p.can_quote_case && !p.price_on_request ? "{{ currency_symbol }}" + fmtMoney(p.display_case) : "—";
+          if (pvQtyIn) pvQtyIn.value = "1";
+
+          // mode enable/disable based on product
+          var mSingle = document.querySelector('input[name="pv-mode"][value="single"]');
+          var mCase = document.querySelector('input[name="pv-mode"][value="case"]');
+          var isOos = !!p.is_out_of_stock;
+          var disableAll = isOos || !!p.price_on_request;
+          if (mSingle) {
+            mSingle.disabled = disableAll || !p.can_quote_single || !p.can_split_sale;
+          }
+          if (mCase) {
+            mCase.disabled = disableAll || !p.can_quote_case;
+          }
+          // pick default mode
+          var def = (p.default_mode === "case" ? "case" : "single");
+          if (def === "case" && mCase && !mCase.disabled) mCase.checked = true;
+          else if (mSingle) mSingle.checked = true;
+
+          if (pvAdd) pvAdd.disabled = disableAll || (shopLoggedIn && !shopCanOrder);
+          if (pvBuy) pvBuy.disabled = disableAll || (shopLoggedIn && !shopCanOrder);
+
+          if (pvHint) {
+            if (shopLoggedIn && !shopCanOrder) pvHint.textContent = shopOrderBlockHint || "当前账号暂不可下单。";
+            else if (p.price_on_request) pvHint.textContent = "该商品需询价后下单。";
+            else if (isOos) pvHint.textContent = "该商品缺货，暂不可下单。";
+            else pvHint.textContent = "选择单位与数量后加入购物车或立即购买。";
+          }
+
+          if (!pv) return;
+          pv.classList.add("is-open");
+          pv.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+
+        if (pvBackdrop) pvBackdrop.addEventListener("click", closeProductView);
+        if (pvClose) pvClose.addEventListener("click", closeProductView);
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closeProductView();
+        });
+
+        function pvSaleType() {
+          var m = document.querySelector('input[name="pv-mode"]:checked');
+          return m && m.value === "case" ? "case" : "single";
+        }
+        function pvQty() {
+          var v = pvQtyIn ? parseFloat(pvQtyIn.value) : 1;
+          if (!isFinite(v) || v <= 0) v = 1;
+          return v;
+        }
+        var pvQtyWrap = document.getElementById("pv-qty");
+        if (pvQtyWrap) {
+          pvQtyWrap.addEventListener("click", function (e) {
+            var b = e.target.closest("button[data-act]");
+            if (!b) return;
+            var act = b.getAttribute("data-act");
+            var cur = pvQty();
+            cur = act === "plus" ? cur + 1 : Math.max(0.01, cur - 1);
+            if (pvQtyIn) pvQtyIn.value = String(cur);
+          });
+        }
+        if (pvAdd) {
+          pvAdd.addEventListener("click", function () {
+            if (!pvPid) return;
+            addToCart(pvPid, pvSaleType(), pvQty());
+          });
+        }
+        if (pvBuy) {
+          pvBuy.addEventListener("click", function () {
+            if (!pvPid) return;
+            buyNow(pvPid, pvSaleType(), pvQty());
+          });
+        }
+
+        // Brand video modal (youtube)
+        var vm = document.getElementById("vm");
+        var vmBackdrop = document.getElementById("vm-backdrop");
+        var vmClose = document.getElementById("vm-close");
+        var vmIframe = document.getElementById("vm-iframe");
+        var watchStory = document.getElementById("watch-story");
+        var ABOUT_VIDEO = "https://www.youtube.com/embed/c8OlT_wsttQ?autoplay=1&mute=1&rel=0";
+
+        function closeVideo() {
+          if (!vm) return;
+          vm.classList.remove("is-open");
+          vm.setAttribute("aria-hidden", "true");
+          if (vmIframe) vmIframe.src = "";
+          document.body.style.overflow = "";
+        }
+        function openVideo() {
+          if (!vm) return;
+          vm.classList.add("is-open");
+          vm.setAttribute("aria-hidden", "false");
+          if (vmIframe) vmIframe.src = ABOUT_VIDEO;
+          document.body.style.overflow = "hidden";
+        }
+        if (watchStory) {
+          watchStory.addEventListener("click", openVideo);
+          watchStory.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openVideo();
+            }
+          });
+        }
+        if (vmBackdrop) vmBackdrop.addEventListener("click", closeVideo);
+        if (vmClose) vmClose.addEventListener("click", closeVideo);
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closeVideo();
+        });
 
         /** Stock need in outbound units (same as backend _stock_need_for_line) */
         function needUnitsForProduct(pid, p, lines) {
@@ -3019,10 +4151,26 @@
           }
         }
 
-        document.getElementById("shop-search").addEventListener("input", function () {
-          searchQ = this.value.trim();
-          applyProductFilter();
-        });
+        var searchEl = document.getElementById("shop-search");
+        var searchIconBtn = document.getElementById("shop-search-icon");
+        if (searchEl) {
+          // Clear autofill/cache on first load before the initial filter run.
+          try {
+            if (searchEl.value && String(searchEl.value).trim()) searchEl.value = "";
+          } catch (e) {}
+          searchQ = normalizeSearch(searchEl.value);
+          searchEl.addEventListener("input", function () {
+            searchQ = normalizeSearch(this.value);
+            applyProductFilter();
+          });
+        }
+        if (searchIconBtn && searchEl) {
+          searchIconBtn.addEventListener("click", function () {
+            try {
+              searchEl.focus();
+            } catch (e) {}
+          });
+        }
 
         function fillCategoryGlyphs() {
           document.querySelectorAll('.cat-card[data-category-id]').forEach(function (btn) {
@@ -3120,6 +4268,7 @@
         applyProductFilter();
         renderCart();
         translateShopPriceNotes();
+        sanitizeProductNameDisplay();
       })();
     </script>
   </body>

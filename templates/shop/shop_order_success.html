@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Order placed #{{ order.id }}</title>
+    <title>订单已提交 #{{ order.id }} — MO·CHA</title>
     <style>
       body {
         margin: 0;
@@ -35,6 +35,28 @@
         color: #6b7280;
         margin: 0 0 20px;
         font-size: 14px;
+      }
+      .contact {
+        margin-top: 14px;
+        border: 1px solid #e5e7eb;
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.55;
+        color: #334155;
+        font-weight: 700;
+      }
+      .contact strong {
+        color: #0f172a;
+      }
+      .contact a {
+        color: #15803d;
+        text-decoration: none;
+        font-weight: 900;
+      }
+      .contact a:hover {
+        text-decoration: underline;
       }
       .kv {
         border: 1px solid #eef2f7;
@@ -92,8 +114,8 @@
   </head>
   <body>
     <div class="card">
-      <h1 class="success">Order placed</h1>
-      <p class="sub">Your wholesale order was submitted. We will contact you to confirm payment and delivery.</p>
+      <h1 class="success">订单已提交</h1>
+      <p class="sub">我们将尽快与您确认付款与配送信息。</p>
 
       <div class="kv">
         <div class="row">
@@ -155,6 +177,13 @@
         Order submitted. Credit will be confirmed by accounting.
       </p>
       {% endif %}
+
+      <div class="contact">
+        <div><strong>MO·CHA 客服</strong></div>
+        <div>电话：<a href="tel:3478895788">347-889-5788</a> · 微信：nymochaboba</div>
+        <div>地址：56-11 Arnold Ave Maspeth NY 11378</div>
+        <div>网站：<a href="https://www.mochaboba.com" target="_blank" rel="noopener">www.mochaboba.com</a></div>
+      </div>
 
         <div class="actions">
           <a class="secondary" href="{% url 'my-orders' %}">Orders</a>
