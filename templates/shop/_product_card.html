@@ -116,6 +116,7 @@ Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
       <button
         type="button"
         class="btn-add-cart ecom-btn-add-cart"
+        data-act="add"
         data-pid="{{ product.id }}"
         {% if product.price_on_request or product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
       >
@@ -124,6 +125,7 @@ Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
       <button
         type="button"
         class="btn-buy-now ecom-btn-buy-now"
+        data-act="buy"
         data-pid="{{ product.id }}"
         {% if product.price_on_request or product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
       >

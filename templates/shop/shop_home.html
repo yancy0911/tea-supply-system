@@ -3422,12 +3422,12 @@
                     "</div>" +
                     "</div>" +
                     '<div class="ecom-card__cta">' +
-                    '<button type="button" class="btn-add-cart ecom-btn-add-cart" data-pid="' +
+                    '<button type="button" class="btn-add-cart ecom-btn-add-cart" data-act="add" data-pid="' +
                     pid +
                     '" ' +
                     (p.price_on_request || isOos ? "disabled" : "") +
                     ">加入购物车</button>" +
-                    '<button type="button" class="btn-buy-now ecom-btn-buy-now" data-pid="' +
+                    '<button type="button" class="btn-buy-now ecom-btn-buy-now" data-act="buy" data-pid="' +
                     pid +
                     '" ' +
                     (p.price_on_request || isOos ? "disabled" : "") +
@@ -3462,175 +3462,61 @@
               this.src = PLACEHOLDER;
             });
           });
-          installGridDelegation();
           bindCardControls();
         }
 
-        function installGridDelegation() {
-          if (delegationReady) return;
-          delegationReady = true;
-          grid.addEventListener("click", function (e) {
-            // click-to-open quick view (1688-style). keep ctrl/cmd-click for open in new tab.
-            var card = e.target.closest(".catalog-card");
-            var a = e.target.closest("a");
-            if (card && a && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) {
-              var pid0 = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
-              if (isFinite(pid0) && pid0 > 0) {
-                e.preventDefault();
-                openProductView(pid0);
-                return;
-              }
-            }
-
-            // Standard action chain: never "return early" unless an action is handled.
-            var buyBtn = e.target.closest(".btn-buy-now");
-            var addBtn = e.target.closest(".btn-add-cart");
-            var qb = e.target.closest(".qty-stepper button");
-
-            if (qb) {
-              var act = qb.getAttribute("data-act");
-              if (act !== "plus" && act !== "minus") {
-                return;
-              }
-              var cardQ = qb.closest(".catalog-card");
-              if (!cardQ) {
-                return;
-              }
-              var pidQ = parseInt(cardQ.getAttribute("data-pid") || cardQ.getAttribute("data-product-id"), 10);
-              if (!isFinite(pidQ) || pidQ <= 0) {
-                return;
-              }
-              var pQ = productById(pidQ);
-              var modeQ = cardQ.querySelector('input[name="mode-' + pidQ + '"]:checked');
-              var saleTypeQ = modeQ ? modeQ.value : "single";
-              var rowQ = qb.closest(".qty-stepper");
-              var inpQ = rowQ ? rowQ.querySelector("input") : null;
-              if (!inpQ) {
-                return;
-              }
-
-              var vQ = parseFloat(inpQ.value) || 0;
-              var minQ = pQ ? Math.max(parseFloat(pQ.minimum_order_qty) || 0.01, 0.01) : 0.01;
-              var cartSnap = getCart();
-              var maxQ = pQ ? maxStepperQtyForCard(pidQ, pQ, saleTypeQ, cartSnap) : Infinity;
-
-              if (act === "plus") {
-                vQ = vQ + 1;
-                if (maxQ !== Infinity && vQ > maxQ + 1e-9) {
-                  vQ = maxQ;
-                  if (maxQ <= 0) showToast("库存不足。");
-                }
-              } else {
-                vQ = Math.max(minQ, vQ - 1);
-              }
-              inpQ.value = vQ;
-              refreshCartUI();
-              return;
-            } else if (addBtn) {
-              var pidA = parseInt(addBtn.getAttribute("data-pid"), 10);
-              var cardA = addBtn.closest(".catalog-card");
-              if (!cardA || !isFinite(pidA) || pidA <= 0) {
-                return;
-              }
-              var modeA = cardA.querySelector('input[name="mode-' + pidA + '"]:checked');
-              var saleTypeA = modeA ? modeA.value : "single";
-              var qtyInA = cardA.querySelector(".qty-stepper input");
-              var qtyA = parseFloat(qtyInA ? qtyInA.value : "0");
-              if (isNaN(qtyA) || qtyA <= 0) {
-                showToast("请输入有效数量");
-                return;
-              }
-              addToCart(pidA, saleTypeA, qtyA);
-              refreshCartUI();
-              return;
-            } else if (buyBtn) {
-              var pidB = parseInt(buyBtn.getAttribute("data-pid"), 10);
-              var cardB = buyBtn.closest(".catalog-card");
-              if (!cardB || !isFinite(pidB) || pidB <= 0) {
-                return;
-              }
-              var modeB = cardB.querySelector('input[name="mode-' + pidB + '"]:checked');
-              var saleTypeB = modeB ? modeB.value : "single";
-              var qtyInB = cardB.querySelector(".qty-stepper input");
-              var qtyB = parseFloat(qtyInB ? qtyInB.value : "0");
-              if (isNaN(qtyB) || qtyB <= 0) {
-                showToast("请输入有效数量");
-                return;
-              }
-              buyNow(pidB, saleTypeB, qtyB);
-              refreshCartUI();
-              return;
-            }
-          });
+        // Direct bindings (no delegation): ensure 100% click triggers.
+        function getQtyFromCard(card) {
+          var inp = card ? card.querySelector(".qty-stepper input") : null;
+          var v = inp ? parseFloat(inp.value) : 0;
+          if (!isFinite(v) || v <= 0) v = 1;
+          return v;
+        }
+        function getSaleType(card, pid) {
+          var mode = card ? card.querySelector('input[name="mode-' + pid + '"]:checked') : null;
+          return mode ? mode.value : "single";
+        }
+        function changeQty(card, delta) {
+          if (!card) return;
+          var inp = card.querySelector(".qty-stepper input");
+          if (!inp) return;
+          var v = parseFloat(inp.value);
+          if (!isFinite(v) || v <= 0) v = 1;
+          v = v + delta;
+          if (v < 0.01) v = 0.01;
+          inp.value = String(v);
+          refreshCartUI();
         }
 
-        // More robust than delegation if DOM differs or other handlers interfere.
         function bindCardControls() {
-          if (!grid) return;
-          var cards = grid.querySelectorAll(".catalog-card");
-          if (!cards || !cards.length) return;
-          cards.forEach(function (card) {
+          document.querySelectorAll(".catalog-card").forEach(function (card) {
             if (card.getAttribute("data-bound") === "1") return;
             card.setAttribute("data-bound", "1");
 
-            var pid = parseInt(card.getAttribute("data-pid") || card.getAttribute("data-product-id"), 10);
+            var pid = card.dataset && card.dataset.productId ? parseInt(card.dataset.productId, 10) : NaN;
             if (!isFinite(pid) || pid <= 0) return;
 
-            var qtyWrap = card.querySelector(".qty-stepper");
-            if (qtyWrap) {
-              qtyWrap.addEventListener("click", function (e) {
-                var b = e.target.closest("button[data-act]");
-                if (!b) return;
-                var inp = qtyWrap.querySelector("input");
-                if (!inp) return;
-                var v = parseFloat(inp.value);
-                if (!isFinite(v) || v <= 0) v = 1;
-                var act = b.getAttribute("data-act");
-                v = act === "plus" ? v + 1 : Math.max(0.01, v - 1);
-                inp.value = String(v);
-                refreshCartUI();
-              });
-            }
-
-            var addBtn = card.querySelector(".btn-add-cart");
+            var addBtn = card.querySelector('[data-act="add"]');
             if (addBtn) {
-              addBtn.addEventListener("click", function (ev) {
-                try {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                } catch (e) {}
-                var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
-                var saleType = mode ? mode.value : "single";
-                var qtyIn = card.querySelector(".qty-stepper input");
-                var qty = parseFloat(qtyIn ? qtyIn.value : "0");
-                if (!isFinite(qty) || qty <= 0) {
-                  showToast("请输入有效数量");
-                  return;
-                }
-                addToCart(pid, saleType, qty);
+              addBtn.onclick = function () {
+                var qty = getQtyFromCard(card);
+                addToCart(pid, getSaleType(card, pid), qty);
                 refreshCartUI();
-              });
+              };
             }
 
-            var buyBtn = card.querySelector(".btn-buy-now");
+            var buyBtn = card.querySelector('[data-act="buy"]');
             if (buyBtn) {
-              buyBtn.addEventListener("click", function (ev) {
-                try {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                } catch (e) {}
-                var mode = card.querySelector('input[name="mode-' + pid + '"]:checked');
-                var saleType = mode ? mode.value : "single";
-                var qtyIn = card.querySelector(".qty-stepper input");
-                var qty = parseFloat(qtyIn ? qtyIn.value : "0");
-                if (!isFinite(qty) || qty <= 0) {
-                  showToast("请输入有效数量");
-                  return;
-                }
-                buyNow(pid, saleType, qty);
-                refreshCartUI();
-              });
+              buyBtn.onclick = function () {
+                var qty = getQtyFromCard(card);
+                buyNow(pid, getSaleType(card, pid), qty);
+              };
             }
+
+            var plus = card.querySelector('[data-act="plus"]');
+            var minus = card.querySelector('[data-act="minus"]');
+            if (plus) plus.onclick = function () { changeQty(card, +1); };
+            if (minus) minus.onclick = function () { changeQty(card, -1); };
           });
         }
 
