@@ -718,8 +718,13 @@ def _shop_product_row(customer, p):
             image_url = f"/media/products/{p.sku}.jpg"
     base_s = money_float(p.price_single)
     base_c = money_float(p.price_case)
-    ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
-    dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
+    if customer is None:
+        # 匿名访问：不做客户定价解析，直接用基础价（允许为 0）
+        ds, note_s = base_s, "Base price"
+        dc, note_c = base_c, "Base price"
+    else:
+        ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
+        dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
     stock_disp = float(getattr(p, "stock", 0.0))
     safety = float(getattr(p, "safety_stock", 10.0))
     enabled = bool(getattr(p, "stock_enabled", True))
@@ -960,36 +965,152 @@ def shop_home(request):
         "sort_order", "id"
     )
     customer = get_shop_customer(request)
-    company = getattr(customer, "company", None) if customer else None
+    # DEBUG / TEMP verify:
+    # 强制使用 all()，用于排查是否被过滤导致商品为空。
     products = (
-        Product.objects.filter(is_active=True)
+        Product.objects.all()
         .select_related("category", "ingredient")
         .order_by("category__sort_order", "category_id", "name")
     )
-    if company is not None:
-        products = products.filter(company=company)
+    print("DEBUG PRODUCTS COUNT:", products.count())
+    print("DEBUG FIRST PRODUCT:", products.first())
     shop_items = []
     missing_images = []
     missing_prices = []
     for p in products:
-        row = _shop_product_row(customer, p)
-        if row["can_split_sale"] and row["can_quote_single"]:
+        try:
+            row = _shop_product_row(customer, p)
+        except Exception:
+            row = None
+
+        if not row:
+            # 兜底：确保匿名/异常情况下也能展示商品（价格允许为 0）
+            row = {
+                "id": p.id,
+                "category_id": int(p.category_id) if p.category_id else None,
+                "category_name": getattr(getattr(p, "category", None), "name", "")
+                if p.category_id
+                else "",
+                "name": p.name,
+                "sku": p.sku,
+                "unit_label": (getattr(p, "unit_label", None) or "").strip()
+                or "per unit",
+                "case_label": (getattr(p, "case_label", None) or "").strip()
+                or "per case",
+                "image": (getattr(p, "image", None) or "").strip(),
+                "image_url": _default_product_image_url(),
+                "has_image": False,
+                "price_single": money_float(getattr(p, "price_single", 0) or 0),
+                "price_case": money_float(getattr(p, "price_case", 0) or 0),
+                "base_single": money_float(getattr(p, "price_single", 0) or 0),
+                "base_case": money_float(getattr(p, "price_case", 0) or 0),
+                "display_single": money_float(getattr(p, "price_single", 0) or 0),
+                "display_case": money_float(getattr(p, "price_case", 0) or 0),
+                "strike_single": False,
+                "strike_case": False,
+                "price_note": "Base price",
+                "price_note_single": "Base price",
+                "price_note_case": "Base price",
+                "can_split_sale": bool(getattr(p, "can_split_sale", True)),
+                "minimum_order_qty": float(getattr(p, "minimum_order_qty", 0) or 0),
+                "price_on_request": True,
+                "can_quote_single": False,
+                "can_quote_case": False,
+                "stock_quantity": float(getattr(p, "stock", 0.0) or 0.0),
+                "current_stock": float(getattr(p, "stock", 0.0) or 0.0),
+                "sellable_stock": float(getattr(p, "stock", 0.0) or 0.0),
+                "safety_stock": float(getattr(p, "safety_stock", 10.0) or 10.0),
+                "stock_enabled": bool(getattr(p, "stock_enabled", True)),
+                "is_out_of_stock": bool(getattr(p, "stock_enabled", True))
+                and float(getattr(p, "stock", 0.0) or 0.0) <= 0,
+                "is_low_stock": False,
+                "uses_ingredient_stock": bool(getattr(p, "ingredient_id", None)),
+                "units_per_case": float(getattr(p, "units_per_case", 0) or 0),
+                "cost_single": money_float(getattr(p, "cost_price_single", 0) or 0),
+                "cost_case": money_float(getattr(p, "cost_price_case", 0) or 0),
+                "profit_risk_single": False,
+                "profit_risk_case": False,
+            }
+
+        if row.get("can_split_sale") and row.get("can_quote_single"):
             row["default_mode"] = "single"
-        elif row["can_quote_case"]:
+        elif row.get("can_quote_case"):
             row["default_mode"] = "case"
-        elif not row["can_split_sale"]:
+        elif not row.get("can_split_sale", True):
             row["default_mode"] = "case"
         else:
             row["default_mode"] = "single"
+
         shop_items.append(row)
-        if row["price_on_request"]:
+        if row.get("price_on_request"):
             missing_prices.append({"sku": p.sku, "name": p.name})
 
+    # storefront 的 shop-products-data 必须是 100% 标准 JSON：
+    # - 禁止 NaN / Infinity
+    # - None 必须转为 null 或 ""（这里：字符串字段用 ""，其他字段保持 null）
+    # - float 统一保留 2 位（仍用 number 类型，避免前端计算出错）
+    import math
+    from decimal import Decimal
+
+    STRING_KEYS = {
+        "name",
+        "sku",
+        "category_name",
+        "unit_label",
+        "case_label",
+        "image",
+        "image_url",
+        "price_note",
+        "price_note_single",
+        "price_note_case",
+        "default_mode",
+    }
+
+    def _round2(x: float) -> float:
+        # 避免浮点表现形式污染 JSON（仍保持 number 类型）
+        return float(f"{x:.2f}")
+
+    def _sanitize(v, key_hint=None):
+        if v is None:
+            return "" if key_hint in STRING_KEYS else None
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, int):
+            return v
+        if isinstance(v, float):
+            if not math.isfinite(v):
+                return 0.0
+            return _round2(v)
+        if isinstance(v, Decimal):
+            try:
+                fv = float(v)
+            except Exception:
+                return 0.0
+            if not math.isfinite(fv):
+                return 0.0
+            return _round2(fv)
+        if isinstance(v, dict):
+            return {k: _sanitize(vv, str(k)) for k, vv in v.items()}
+        if isinstance(v, list):
+            return [_sanitize(x, key_hint) for x in v]
+        # 其他类型一律转字符串（保证可 JSON 序列化）
+        return str(v)
+
+    shop_items_sanitized = [_sanitize(row) for row in shop_items]
+    # allow_nan=False：若仍有 NaN/Infinity，直接抛错（便于发现并修复）
+    shop_products_json = json.dumps(
+        shop_items_sanitized, ensure_ascii=False, allow_nan=False
+    )
+
     can_order, order_hint = shop_order_permission(customer)
+    print("DEBUG PRODUCTS COUNT:", len(shop_items))
+    print("DEBUG USER:", request.user)
+    print("DEBUG CUSTOMER:", customer)
     ctx = {
         "categories": categories,
         "products": shop_items,
         "shop_products": shop_items,
+        "shop_products_json": shop_products_json,
         "shop_customer": customer,
         "shop_unsettled": unsettled_amount_for_customer(customer) if customer else None,
         "shop_can_order": can_order,
