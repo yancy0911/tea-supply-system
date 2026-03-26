@@ -954,12 +954,14 @@ def shop_home(request):
         "sort_order", "id"
     )
     customer = get_shop_customer(request)
-    # Test mode: list all products for shop display; ignore company scoping on the catalog.
+    company = getattr(customer, "company", None) if customer else None
     products = (
-        Product.objects.all()
+        Product.objects.filter(is_active=True)
         .select_related("category", "ingredient")
         .order_by("category__sort_order", "category_id", "name")
     )
+    if company is not None:
+        products = products.filter(company=company)
     shop_items = []
     missing_images = []
     missing_prices = []
