@@ -3312,13 +3312,13 @@
             console.log("BUILD CARDS START");
           } catch (e) {}
           if (cardsBuilt) return;
-          cardsBuilt = true;
           if (!grid) {
             try {
               console.error("[shop] product grid is null; cannot build cards");
             } catch (e) {}
             return;
           }
+          cardsBuilt = true;
 
           // Fallback renderer: if server did not render cards for any reason,
           // build minimal cards from PRODUCTS (tolerant to missing fields).
@@ -3452,6 +3452,8 @@
                 }
               });
               grid.innerHTML = html;
+              // Bind controls immediately after card DOM is inserted.
+              bindCardControls();
               try {
                 console.log("[shop] fallback rendered cards:", grid.querySelectorAll(".catalog-card").length);
               } catch (e) {}
@@ -3473,6 +3475,7 @@
               this.src = PLACEHOLDER;
             });
           });
+          // Final guarantee: run binding at the end of card build.
           bindCardControls();
         }
 
