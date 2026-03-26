@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hans">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -1226,27 +1226,537 @@
       .shop-footnote a {
         color: #2563eb;
       }
+
+      /* —— Mobile-first shop shell (≤768px) —— */
+      .shop-brand {
+        flex-shrink: 0;
+      }
+      .shop-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .shop-cart-mini--icon {
+        position: relative;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0 10px;
+        justify-content: center;
+        font-size: 20px;
+      }
+      .shop-cart-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 999px;
+        font-size: 10px;
+        line-height: 18px;
+        text-align: center;
+        background: #15803d;
+        color: #fff;
+      }
+      .shop-menu-trigger {
+        display: none;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      .shop-menu-bars {
+        display: block;
+        width: 18px;
+        height: 2px;
+        background: #334155;
+        box-shadow: 0 -6px 0 #334155, 0 6px 0 #334155;
+        border-radius: 1px;
+      }
+      .shop-nav-desktop {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+      .shop-nav-desktop a {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .shop-nav-desktop a:hover {
+        color: var(--accent);
+      }
+      .shop-nav-hi {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .shop-mobile-drawer[hidden] {
+        display: none !important;
+      }
+      .shop-mobile-drawer {
+        position: fixed;
+        inset: 0;
+        z-index: 400;
+        pointer-events: none;
+      }
+      .shop-mobile-drawer.is-open {
+        pointer-events: auto;
+      }
+      .shop-mobile-drawer.is-open .shop-mobile-drawer__backdrop {
+        opacity: 1;
+      }
+      .shop-mobile-drawer.is-open .shop-mobile-drawer__panel {
+        transform: translateX(0);
+      }
+      .shop-mobile-drawer__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .shop-mobile-drawer__panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(300px, 88vw);
+        height: 100%;
+        background: #fff;
+        box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+        transform: translateX(100%);
+        transition: transform 0.22s ease;
+        display: flex;
+        flex-direction: column;
+      }
+      .shop-mobile-drawer__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .shop-mobile-drawer__title {
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .shop-drawer-close {
+        width: 40px;
+        height: 40px;
+        border: none;
+        background: #f1f5f9;
+        border-radius: 10px;
+        font-size: 22px;
+        line-height: 1;
+        cursor: pointer;
+      }
+      .shop-mobile-drawer__links {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 10px 24px;
+        gap: 4px;
+      }
+      .shop-mobile-drawer__links a {
+        padding: 14px 14px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--text);
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .shop-mobile-drawer__links a:active {
+        background: #f1f5f9;
+      }
+
+      .shop-float-cart {
+        display: none;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 90;
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.92) 18%, #fff 100%);
+        border-top: 1px solid #e5e7eb;
+        box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.08);
+      }
+      .shop-float-cart__inner {
+        max-width: 1320px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .shop-float-cart__info {
+        flex: 1;
+        min-width: 0;
+        text-decoration: none;
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .shop-float-cart__label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .shop-float-cart__sum {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+      .shop-float-cart__btn {
+        flex-shrink: 0;
+        padding: 12px 22px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+        color: #fff;
+        font-weight: 800;
+        font-size: 15px;
+        text-decoration: none;
+        box-shadow: 0 4px 16px rgba(21, 128, 61, 0.35);
+        border: none;
+      }
+      .shop-float-cart__btn[aria-disabled="true"],
+      .shop-float-cart__btn.disabled {
+        opacity: 0.45;
+        pointer-events: none;
+      }
+      .shop-float-cart.is-empty .shop-float-cart__sum {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      /* ecom-card top row (desktop: image full width, meta below image) */
+      .ecom-card__top-row {
+        display: flex;
+        flex-direction: column;
+      }
+      .ecom-card__meta-block {
+        width: 100%;
+      }
+      .stock-line-main--compact {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 13px;
+        margin: 0;
+      }
+      .stock-line-compact__num {
+        font-weight: 600;
+        color: var(--text);
+      }
+      .shop-tier-note {
+        max-width: 1320px;
+        margin: 6px auto 0;
+        padding: 0 20px;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      @media (max-width: 768px) {
+        .shop-layout {
+          padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+        }
+        .shop-menu-trigger {
+          display: inline-flex;
+        }
+        .shop-nav-desktop {
+          display: none !important;
+        }
+        .shop-top-inner {
+          flex-wrap: nowrap;
+          gap: 10px;
+          padding: 10px 12px;
+        }
+        .shop-logo {
+          font-size: 16px;
+        }
+        .shop-search {
+          flex: 1;
+          min-width: 0;
+          max-width: none;
+        }
+        .shop-search input {
+          font-size: 0.95rem;
+          padding-left: 34px;
+        }
+        .shop-float-cart {
+          display: block;
+        }
+        .shop-tier-note {
+          display: none;
+        }
+        .shop-by-category-head {
+          margin-bottom: 8px;
+        }
+        .shop-by-category__title {
+          font-size: 18px;
+        }
+        .browse-categories {
+          margin-bottom: 16px;
+        }
+        .cat-card-row {
+          display: flex;
+          gap: 8px;
+          padding: 0 0 8px;
+          margin: 0 -4px;
+        }
+        .cat-card {
+          width: auto;
+          min-height: 0;
+          min-width: 0;
+          padding: 8px 14px;
+          border-radius: 999px;
+          border-width: 1px;
+          flex-direction: row;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          box-shadow: none;
+        }
+        .cat-card__glyph {
+          width: 28px;
+          height: 28px;
+          border-radius: 999px;
+          font-size: 13px;
+        }
+        .cat-card__name {
+          font-size: 13px;
+          -webkit-line-clamp: 1;
+          max-width: 120px;
+        }
+        .cat-card:hover {
+          transform: none;
+        }
+        .shop-layout {
+          padding: 12px;
+          gap: 0;
+        }
+        .product-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .section-head {
+          margin-bottom: 10px;
+        }
+        .h-products {
+          font-size: 17px !important;
+        }
+        .catalog-card.ecom-card {
+          border-radius: 16px;
+          box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+        }
+        .ecom-card__top-row {
+          flex-direction: row;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 12px 12px 0;
+        }
+        .ecom-card__media.catalog-card__media {
+          width: 96px;
+          min-width: 96px;
+          height: 96px;
+          padding: 10px;
+          border-radius: 14px;
+        }
+        .ecom-card__media-inner {
+          max-height: 76px;
+        }
+        .ecom-card__meta-block {
+          flex: 1;
+          min-width: 0;
+          padding: 0 12px 0 0;
+        }
+        .ecom-card__body.catalog-card__body {
+          padding: 10px 12px 12px;
+          gap: 8px;
+        }
+        .ecom-card__category-pill {
+          display: none;
+        }
+        .ecom-card__title.catalog-card__title {
+          font-size: 15px;
+          font-weight: 800;
+          min-height: 0;
+          -webkit-line-clamp: 2;
+        }
+        .ecom-card__sku {
+          font-size: 11px;
+        }
+        .ecom-card__specs {
+          font-size: 11px;
+        }
+        .ecom-card__desc {
+          font-size: 11px;
+          -webkit-line-clamp: 1;
+          margin: 0;
+        }
+        .catalog-card__prices.ecom-card__prices {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          gap: 10px;
+          padding: 10px 12px;
+          margin: 0;
+          max-width: 100%;
+        }
+        .price-block {
+          flex: 1;
+          min-width: 0;
+          padding: 8px 10px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          box-shadow: none;
+          border-top-width: 1px;
+        }
+        .price-block--default {
+          border-color: #86efac;
+          background: linear-gradient(180deg, #ecfdf5 0%, #fff 100%);
+        }
+        .price-block:not(.price-block--default) {
+          opacity: 0.92;
+        }
+        .price-block:not(.price-block--default) .price-block__amount {
+          font-size: 15px !important;
+          color: #64748b !important;
+        }
+        .price-block__label {
+          font-size: 9px;
+          margin-bottom: 2px;
+        }
+        .price-block__unit {
+          font-size: 10px;
+          min-height: 0;
+          margin-bottom: 4px;
+        }
+        .price-block__unit::before {
+          content: "";
+          display: none;
+        }
+        .price-block__value {
+          min-height: 0;
+        }
+        .price-block--default .price-block__amount {
+          font-size: 15px !important;
+          color: #15803d !important;
+        }
+        .price-block[data-price-type="case"] .price-block__amount {
+          font-size: 15px !important;
+        }
+        .catalog-card__prices--quote {
+          padding: 10px 12px;
+        }
+        .shop-cart-panel {
+          display: none !important;
+        }
+        .ecom-card__mode-label,
+        .ecom-card__qty-label {
+          font-size: 10px;
+          margin-top: 0;
+        }
+        .ecom-mode-toggle .ecom-mode-btn__text {
+          padding: 8px 14px;
+          font-size: 13px;
+        }
+        .qty-stepper.ecom-qty-stepper button {
+          width: 44px;
+          min-height: 44px;
+          height: 44px;
+        }
+        .qty-stepper.ecom-qty-stepper input {
+          min-height: 44px;
+          font-size: 16px;
+        }
+        .btn-add-cart.ecom-btn-add-cart {
+          padding: 12px 16px;
+          font-size: 15px;
+        }
+        .btn-buy-now.ecom-btn-buy-now {
+          padding: 11px 16px;
+          font-size: 14px;
+        }
+        .section-head {
+          padding: 0 2px;
+        }
+      }
+
+      @media (min-width: 769px) {
+        .shop-float-cart {
+          display: none !important;
+        }
+        .shop-layout {
+          padding-bottom: 20px;
+        }
+        .shop-top-inner {
+          flex-wrap: wrap;
+        }
+        .shop-nav-desktop {
+          width: 100%;
+          justify-content: flex-end;
+          padding-top: 6px;
+          border-top: 1px solid #f1f5f9;
+        }
+        .ecom-card__top-row {
+          flex-direction: column;
+        }
+        .ecom-card__media.catalog-card__media {
+          width: 100%;
+          height: 200px;
+        }
+        .ecom-card__meta-block {
+          padding: 16px 18px 0;
+        }
+        .ecom-card__body.catalog-card__body {
+          padding: 10px 18px 20px;
+        }
+      }
     </style>
   </head>
   <body>
     <header class="shop-top">
       <div class="shop-top-inner">
-        <div class="shop-logo">Boba <span>Supply</span></div>
+        <div class="shop-brand">
+          <div class="shop-logo">Boba <span>Supply</span></div>
+        </div>
         <div class="shop-search">
           <div class="shop-search-wrap">
-            <input type="search" id="shop-search" placeholder="Search name, SKU…" autocomplete="off" />
+            <input type="search" id="shop-search" placeholder="搜索商品、SKU…" autocomplete="off" />
           </div>
         </div>
-        <a href="#shop-cart-anchor" class="shop-cart-mini" id="cart-jump">
-          🛒 Cart <strong id="cart-badge">0</strong>
-        </a>
-        {% if shop_logged_in %}
-          <a href="{% url 'my-orders' %}" class="shop-cart-mini shop-link-btn">Orders</a>
-          <a href="{% url 'profile' %}" class="shop-cart-mini shop-link-btn profile-link">Profile</a>
-        {% endif %}
-        <div class="shop-user">
+        <div class="shop-header-actions">
+          <a href="#shop-cart-anchor" class="shop-cart-mini shop-cart-mini--icon" id="cart-jump" aria-label="购物车">
+            <span class="shop-cart-ico" aria-hidden="true">🛒</span>
+            <strong id="cart-badge" class="shop-cart-badge">0</strong>
+          </a>
+          <button
+            type="button"
+            class="shop-menu-trigger"
+            id="shop-menu-open"
+            aria-expanded="false"
+            aria-controls="shop-mobile-drawer"
+            aria-label="打开菜单"
+          >
+            <span class="shop-menu-bars" aria-hidden="true"></span>
+          </button>
+        </div>
+        <nav class="shop-nav-desktop" aria-label="账户">
           {% if shop_logged_in %}
-            <span>Hi, <strong>{{ request.user.username }}</strong></span>
+            <span class="shop-nav-hi">Hi, <strong>{{ request.user.username }}</strong></span>
             <a href="{% url 'my-orders' %}">Orders</a>
             <a href="{% url 'profile' %}">Profile</a>
             <a href="{% url 'logout' %}">Logout</a>
@@ -1255,9 +1765,38 @@
             <a href="{% url 'register' %}" class="btn-go shop-link-btn">Register</a>
           {% endif %}
           <a href="/" class="shop-user-link-ghost">Staff Portal</a>
-        </div>
+        </nav>
       </div>
     </header>
+
+    <div
+      class="shop-mobile-drawer"
+      id="shop-mobile-drawer"
+      hidden
+      aria-hidden="true"
+    >
+      <div class="shop-mobile-drawer__backdrop" id="shop-menu-backdrop" tabindex="-1"></div>
+      <div class="shop-mobile-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="shop-drawer-title">
+        <div class="shop-mobile-drawer__head">
+          <span id="shop-drawer-title" class="shop-mobile-drawer__title">菜单</span>
+          <button type="button" class="shop-drawer-close" id="shop-menu-close" aria-label="关闭">×</button>
+        </div>
+        <nav class="shop-mobile-drawer__links">
+          {% if shop_logged_in %}
+            <a href="{% url 'my-orders' %}">我的订单</a>
+            <a href="{% url 'profile' %}">个人资料</a>
+            <a href="{% url 'credit-home' %}">账期 / 信用</a>
+            <a href="/">员工入口 Staff Portal</a>
+            <a href="{% url 'logout' %}">登出</a>
+          {% else %}
+            <a href="{% url 'login' %}?next=/shop/">登录</a>
+            <a href="{% url 'register' %}">注册</a>
+            <a href="/">员工入口 Staff Portal</a>
+          {% endif %}
+          <a href="{% url 'delivery-help' %}">使用说明</a>
+        </nav>
+      </div>
+    </div>
     <p class="shop-tier-note">
       Tier pricing: C (Base) · B (5% off) · A (10% off) · VIP (15% off)
     </p>
@@ -1347,6 +1886,20 @@
         </div>
       </aside>
     </div>
+
+    <nav class="shop-float-cart" id="shop-float-cart" aria-label="购物车快捷栏">
+      <div class="shop-float-cart__inner">
+        <a href="#shop-cart-anchor" class="shop-float-cart__info" id="float-cart-info">
+          <span class="shop-float-cart__label">购物车</span>
+          <span id="float-cart-summary" class="shop-float-cart__sum">0 件 · {{ currency_symbol }}0.00</span>
+        </a>
+        <a
+          href="{% url 'shop-checkout' %}"
+          class="shop-float-cart__btn"
+          id="float-cart-checkout"
+        >去结账</a>
+      </div>
+    </nav>
 
     <div id="order-modal" class="order-modal" aria-hidden="true">
       <div class="order-modal-backdrop" id="order-modal-backdrop"></div>
@@ -2066,6 +2619,22 @@
             btnSubmitOrder.disabled = false;
             btnSubmitOrder.title = "";
           }
+          var checkoutBlocked =
+            cart.length === 0 || issueInfo.bad || (shopLoggedIn && !shopCanOrder);
+          var floatSummary = document.getElementById("float-cart-summary");
+          var floatCheckout = document.getElementById("float-cart-checkout");
+          var floatBar = document.getElementById("shop-float-cart");
+          if (floatSummary && floatBar) {
+            floatSummary.textContent =
+              (badgeNum % 1 === 0 ? String(badgeNum) : badgeNum.toFixed(1)) +
+              " 件 · {{ currency_symbol }}" +
+              fmtMoney(sum);
+            floatBar.classList.toggle("is-empty", cart.length === 0);
+          }
+          if (floatCheckout) {
+            floatCheckout.classList.toggle("disabled", checkoutBlocked);
+            floatCheckout.setAttribute("aria-disabled", checkoutBlocked ? "true" : "false");
+          }
         }
 
         document.getElementById("shop-search").addEventListener("input", function () {
@@ -2102,6 +2671,37 @@
 
         // Keep navigation stable: checkout button is an <a href="...">.
         // Cart/stock validation is still enforced on the checkout page (server + JS).
+
+        var floatCheckoutEl = document.getElementById("float-cart-checkout");
+        if (floatCheckoutEl) {
+          floatCheckoutEl.addEventListener("click", function (e) {
+            if (floatCheckoutEl.classList.contains("disabled")) e.preventDefault();
+          });
+        }
+
+        var drawer = document.getElementById("shop-mobile-drawer");
+        var openBtn = document.getElementById("shop-menu-open");
+        var closeBtn = document.getElementById("shop-menu-close");
+        var backdrop = document.getElementById("shop-menu-backdrop");
+        function openDrawer() {
+          if (!drawer) return;
+          drawer.removeAttribute("hidden");
+          drawer.classList.add("is-open");
+          drawer.setAttribute("aria-hidden", "false");
+          if (openBtn) openBtn.setAttribute("aria-expanded", "true");
+          document.body.style.overflow = "hidden";
+        }
+        function closeDrawer() {
+          if (!drawer) return;
+          drawer.setAttribute("hidden", "");
+          drawer.classList.remove("is-open");
+          drawer.setAttribute("aria-hidden", "true");
+          if (openBtn) openBtn.setAttribute("aria-expanded", "false");
+          document.body.style.overflow = "";
+        }
+        if (openBtn) openBtn.addEventListener("click", openDrawer);
+        if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+        if (backdrop) backdrop.addEventListener("click", closeDrawer);
 
         applyProductFilter();
         renderCart();

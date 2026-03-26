@@ -6,43 +6,47 @@
   data-category-id="{% firstof product.category_id '' %}"
   data-pid="{{ product.id }}"
 >
-  <a class="ecom-card__media catalog-card__media" href="{% url 'shop-product-detail' product.id %}">
-    <div class="ecom-card__media-inner">
-      {% if product.image_url %}
-        <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
-      {% else %}
-        <img
-          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Ctext x='200' y='205' text-anchor='middle' fill='%239ca3af' font-size='14' font-family='system-ui,sans-serif'%3ENo image%3C/text%3E%3C/svg%3E"
-          alt="{{ product.name }}"
-          loading="lazy"
-          decoding="async"
-        />
-      {% endif %}
-    </div>
-  </a>
-
-  <div class="catalog-card__body ecom-card__body">
-    <div class="ecom-card__meta">
-      {% if product.category_name and product.category_name|spec_en != "—" %}
-        <span class="ecom-card__category-pill">{{ product.category_name|spec_en }}</span>
-      {% endif %}
-      <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
-      <p class="ecom-card__sku catalog-card__sku">
-        <span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}
-      </p>
-      <div class="ecom-card__specs" aria-label="Unit specifications">
-        <span class="ecom-card__spec-label">规格</span>
-        <span class="ecom-card__spec">{{ product.unit_label|spec_en }}</span>
-        {% if product.case_label and product.case_label|spec_en != "—" %}
-          <span class="ecom-card__spec-sep" aria-hidden="true">·</span>
-          <span class="ecom-card__spec">{{ product.case_label|spec_en }}</span>
+  <div class="ecom-card__top-row">
+    <a class="ecom-card__media catalog-card__media" href="{% url 'shop-product-detail' product.id %}">
+      <div class="ecom-card__media-inner">
+        {% if product.image_url %}
+          <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
+        {% else %}
+          <img
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Ctext x='200' y='205' text-anchor='middle' fill='%239ca3af' font-size='14' font-family='system-ui,sans-serif'%3ENo image%3C/text%3E%3C/svg%3E"
+            alt="{{ product.name }}"
+            loading="lazy"
+            decoding="async"
+          />
         {% endif %}
       </div>
-      {% if product.price_note %}
-        <div class="ecom-card__desc">{{ product.price_note }}</div>
-      {% endif %}
-    </div>
+    </a>
 
+    <div class="ecom-card__meta-block">
+      <div class="ecom-card__meta">
+        {% if product.category_name and product.category_name|spec_en != "—" %}
+          <span class="ecom-card__category-pill">{{ product.category_name|spec_en }}</span>
+        {% endif %}
+        <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
+        <p class="ecom-card__sku catalog-card__sku">
+          <span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}
+        </p>
+        <div class="ecom-card__specs" aria-label="Unit specifications">
+          <span class="ecom-card__spec-label">规格</span>
+          <span class="ecom-card__spec">{{ product.unit_label|spec_en }}</span>
+          {% if product.case_label and product.case_label|spec_en != "—" %}
+            <span class="ecom-card__spec-sep" aria-hidden="true">·</span>
+            <span class="ecom-card__spec">{{ product.case_label|spec_en }}</span>
+          {% endif %}
+        </div>
+        {% if product.price_note %}
+          <div class="ecom-card__desc">{{ product.price_note }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="catalog-card__body ecom-card__body">
     {% if product.price_on_request %}
       <div class="catalog-card__prices catalog-card__prices--quote" aria-label="Pricing">
         <span class="catalog-quote">Quote required — contact us for bag &amp; case pricing</span>
@@ -55,7 +59,10 @@
       {% endif %}
 
       <div class="catalog-card__prices ecom-card__prices" aria-label="Unit pricing">
-        <div class="price-block" data-price-type="bag">
+        <div
+          class="price-block{% if product.default_mode == 'single' %} price-block--default{% endif %}"
+          data-price-type="bag"
+        >
           <div class="price-block__label">单价（Per Bag）</div>
           <div class="price-block__unit">{{ product.unit_label|spec_en }}</div>
           <div class="price-block__value">
@@ -71,7 +78,10 @@
             {% endif %}
           </div>
         </div>
-        <div class="price-block" data-price-type="case">
+        <div
+          class="price-block{% if product.default_mode == 'case' %} price-block--default{% endif %}"
+          data-price-type="case"
+        >
           <div class="price-block__label">箱价（Per Case）</div>
           <div class="price-block__unit">{{ product.case_label|spec_en }}</div>
           <div class="price-block__value">
@@ -106,9 +116,8 @@
 
     <div class="catalog-card__stock">
       {% if product.stock_enabled %}
-        <div class="stock-line-main">
-          <span class="stock-current">当前库存：{{ product.sellable_stock|floatformat:2 }}</span>
-          <span class="stock-status-label">库存状态：</span>
+        <div class="stock-line-main stock-line-main--compact">
+          <span class="stock-line-compact__num">库存：{{ product.sellable_stock|floatformat:0 }}</span>
           {% if product.is_out_of_stock %}
             <span class="stock-pill stock-pill--out">缺货</span>
           {% elif product.is_low_stock %}
@@ -118,7 +127,7 @@
           {% endif %}
         </div>
       {% else %}
-        <span class="catalog-muted">库存未跟踪（可下单）</span>
+        <span class="catalog-muted catalog-muted--stock">库存未跟踪（可下单）</span>
       {% endif %}
     </div>
 
@@ -167,7 +176,7 @@
             title="缺货，无法加入购物车"
           {% endif %}
         >
-          Add to Cart
+          加入购物车
         </button>
         <button
           type="button"
@@ -183,7 +192,7 @@
             title="缺货，无法立即购买"
           {% endif %}
         >
-          Buy Now
+          立即购买
         </button>
       </div>
     </div>

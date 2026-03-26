@@ -1,17 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hans">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Checkout — Wholesale Shop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>结账 — Boba Supply</title>
     {{ shop_products|json_script:"shop-products-data" }}
     <style>
       :root {
-        --bg: #f4f6f8;
-        --card: #fff;
-        --accent: #ff5000;
+        --bg: #f3f4f6;
+        --card: #ffffff;
+        --accent: #15803d;
+        --accent-soft: #ecfdf5;
+        --accent-border: #86efac;
         --muted: #6b7280;
-        --border: #e8eaed;
+        --border: #e5e7eb;
+        --text: #111827;
+        --danger: #b91c1c;
       }
       * {
         box-sizing: border-box;
@@ -20,80 +24,115 @@
         margin: 0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
         background: var(--bg);
-        color: #111;
+        color: var(--text);
+        min-height: 100vh;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
       }
-      .shop-top {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        color: #fff;
-        padding: 12px 0;
+      .sf-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
       }
-      .shop-top-inner {
-        max-width: 1240px;
+      .sf-header__inner {
+        max-width: 960px;
         margin: 0 auto;
-        padding: 0 16px;
+        padding: 12px 16px;
         display: flex;
         align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
+        gap: 12px;
       }
-      .shop-logo {
-        font-weight: 900;
-        font-size: 20px;
+      .sf-logo {
+        font-weight: 800;
+        font-size: 18px;
+        letter-spacing: -0.02em;
       }
-      .shop-logo span {
-        color: #fb923c;
+      .sf-logo span {
+        color: var(--accent);
       }
-      .shop-top a {
-        color: #fdba74;
-        text-decoration: none;
+      .sf-back {
         margin-left: auto;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--accent);
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--accent-border);
+        background: var(--accent-soft);
+      }
+      .sf-tier {
+        max-width: 960px;
+        margin: 8px auto 0;
+        padding: 0 16px;
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
       }
       .wrap {
-        max-width: 1240px;
+        max-width: 960px;
         margin: 0 auto;
-        padding: 24px 16px 56px;
+        padding: 16px 16px 120px;
       }
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 340px;
-        gap: 20px;
-        align-items: start;
-      }
-      .card {
-        background: var(--card);
-        border-radius: 16px;
-        padding: 22px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
-        margin-bottom: 20px;
-      }
-      .card h2 {
-        margin: 0 0 14px;
-        font-size: 18px;
+      @media (min-width: 769px) {
+        .wrap {
+          padding-bottom: 40px;
+        }
       }
       .steps {
         display: flex;
-        gap: 10px;
-        margin-bottom: 18px;
+        gap: 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
       }
       .step {
-        padding: 6px 10px;
+        padding: 8px 14px;
         border-radius: 999px;
         font-size: 12px;
-        background: #e5e7eb;
-        color: #374151;
+        font-weight: 600;
+        background: #fff;
+        color: var(--muted);
+        border: 1px solid var(--border);
       }
       .step.active {
-        background: #ffedd5;
-        color: #c2410c;
-        font-weight: 700;
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+        box-shadow: 0 4px 14px rgba(21, 128, 61, 0.25);
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        align-items: start;
+      }
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--card);
+        border-radius: 18px;
+        padding: 18px;
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+        margin-bottom: 14px;
       }
       .section-title {
         margin: 0 0 14px;
-        font-size: 18px;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
       }
       label {
         display: block;
         font-size: 13px;
+        font-weight: 600;
         color: var(--muted);
         margin-bottom: 6px;
       }
@@ -101,13 +140,22 @@
       select,
       textarea {
         width: 100%;
-        padding: 10px 12px;
+        padding: 12px 14px;
         border: 1px solid var(--border);
-        border-radius: 10px;
-        font-size: 14px;
+        border-radius: 12px;
+        font-size: 16px;
+        background: #fafafa;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent-border);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.12);
       }
       textarea {
-        min-height: 72px;
+        min-height: 88px;
         resize: vertical;
       }
       .row2 {
@@ -120,86 +168,199 @@
           grid-template-columns: 1fr;
         }
       }
+      .field-gap {
+        margin-top: 14px;
+      }
       .lines {
         display: grid;
         gap: 12px;
       }
       .line-card {
-        border: 1px solid #eef2f7;
-        border-radius: 12px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
         padding: 12px;
         display: grid;
         grid-template-columns: 72px minmax(0, 1fr) auto auto auto;
-        gap: 12px;
+        gap: 10px;
         align-items: center;
+        background: #fafafa;
+      }
+      @media (max-width: 760px) {
+        .line-card {
+          grid-template-columns: 64px minmax(0, 1fr);
+          grid-template-rows: auto auto;
+        }
+        .line-card .line-col {
+          grid-column: 2;
+          text-align: left;
+          min-width: 0;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 16px;
+        }
+        .line-card .line-col:nth-of-type(1) {
+          grid-column: 2;
+          grid-row: 2;
+        }
       }
       .line-img {
         width: 72px;
         height: 72px;
-        border-radius: 10px;
+        border-radius: 12px;
         object-fit: cover;
         background: #e5e7eb;
       }
+      @media (max-width: 760px) {
+        .line-img {
+          width: 64px;
+          height: 64px;
+          grid-row: 1 / span 2;
+        }
+      }
       .line-name {
-        font-weight: 700;
+        font-weight: 800;
+        font-size: 15px;
         margin-bottom: 4px;
+        line-height: 1.3;
       }
       .line-spec,
       .line-meta {
-        color: #6b7280;
+        color: var(--muted);
         font-size: 12px;
+        line-height: 1.4;
       }
       .line-col {
-        min-width: 74px;
+        min-width: 72px;
         text-align: right;
-        font-size: 14px;
+        font-size: 13px;
       }
       .line-col .k {
         display: block;
         color: #9ca3af;
-        font-size: 11px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
         margin-bottom: 2px;
       }
       .line-col .v {
+        font-weight: 800;
+        color: var(--text);
+      }
+      .pay-grid {
+        display: grid;
+        gap: 10px;
+      }
+      .pay-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 2px solid var(--border);
+        background: #fff;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      }
+      .pay-card.pay-card--on {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        box-shadow: 0 0 0 1px rgba(21, 128, 61, 0.25);
+      }
+      .pay-card input {
+        width: auto;
+        margin-top: 4px;
+        accent-color: var(--accent);
+      }
+      .pay-card__text {
+        flex: 1;
+        min-width: 0;
+      }
+      .pay-card__text strong {
+        display: block;
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .pay-card__text small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .settle-box {
+        margin-top: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+      }
+      .settle-box > label:first-child {
+        margin-bottom: 10px;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--text);
+      }
+      .settle-opt {
+        display: none;
+      }
+      .summary-card {
+        position: sticky;
+        top: 72px;
+      }
+      .summary-list {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 14px;
+      }
+      .summary-row .k {
+        color: var(--muted);
+      }
+      .summary-row .v {
         font-weight: 700;
       }
       .sum {
-        text-align: right;
-        font-size: 34px;
-        font-weight: 800;
-        color: #dc2626;
-        margin-top: 12px;
-        line-height: 1.1;
+        text-align: center;
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--accent);
+        margin: 12px 0 0;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
       }
       .btn {
         width: 100%;
-        padding: 16px;
+        padding: 16px 18px;
         border: none;
-        border-radius: 10px;
-        background: linear-gradient(90deg, #ea580c, var(--accent));
+        border-radius: 14px;
+        background: linear-gradient(180deg, #22c55e 0%, var(--accent) 100%);
         color: #fff;
-        font-size: 20px;
-        font-weight: 900;
+        font-size: 17px;
+        font-weight: 800;
         cursor: pointer;
-        margin-top: 8px;
-        box-shadow: 0 10px 24px rgba(234, 88, 12, 0.28);
+        margin-top: 12px;
+        box-shadow: 0 8px 24px rgba(21, 128, 61, 0.35);
       }
       .btn.secondary {
         background: #fff;
         color: #374151;
-        border: 1px solid #d1d5db;
+        border: 2px solid var(--border);
         box-shadow: none;
+        font-weight: 700;
       }
       .btn:disabled {
         opacity: 0.45;
         cursor: not-allowed;
+        box-shadow: none;
       }
       .msg-banner {
         margin-bottom: 12px;
       }
       .msg-banner > div {
-        padding: 10px 14px;
-        border-radius: 10px;
+        padding: 12px 14px;
+        border-radius: 12px;
         font-size: 14px;
       }
       .msg-err {
@@ -211,77 +372,43 @@
         color: #92400e;
         border: 1px solid #fde68a;
       }
-      .settle-box {
-        border: 1px solid #f1f5f9;
-        border-radius: 10px;
-        padding: 12px;
-        background: #fff7ed;
+      .muted {
+        color: var(--muted);
+        font-size: 12px;
       }
-      .settle-opt {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-        font-size: 15px;
-      }
-      .settle-opt input {
-        width: auto;
-        margin: 0;
-      }
-      .summary-card {
-        position: sticky;
-        top: 18px;
-      }
-      .summary-list {
-        display: grid;
-        gap: 8px;
-        margin-bottom: 12px;
-      }
-      .summary-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        font-size: 14px;
-      }
-      .summary-row .k {
-        color: #6b7280;
-      }
-      .summary-row .v {
-        font-weight: 700;
-      }
-      @media (max-width: 980px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 768px) {
         .summary-card {
-          position: static;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          top: auto;
+          z-index: 80;
+          margin: 0;
+          border-radius: 20px 20px 0 0;
+          padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+          box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.12);
+          border: 1px solid var(--border);
         }
-      }
-      @media (max-width: 760px) {
-        .line-card {
-          grid-template-columns: 56px minmax(0, 1fr);
+        .sum {
+          font-size: 24px;
+          margin-top: 8px;
         }
-        .line-img {
-          width: 56px;
-          height: 56px;
-        }
-        .line-col {
-          text-align: left;
-          min-width: 0;
+        .btn {
+          margin-top: 10px;
+          padding: 15px;
         }
       }
     </style>
   </head>
   <body>
-    <header class="shop-top">
-      <div class="shop-top-inner">
-        <div class="shop-logo">Boba <span>Supply</span></div>
-        <a href="{% url 'shop-home' %}">← Back to catalog</a>
+    <header class="sf-header">
+      <div class="sf-header__inner">
+        <div class="sf-logo">Boba <span>Supply</span></div>
+        <a href="{% url 'shop-home' %}" class="sf-back">← 返回商城</a>
       </div>
     </header>
-    <p style="max-width: 1240px; margin: 6px auto 0; padding: 0 16px; font-size: 12px; color: var(--muted); text-align: center">
-      Tier pricing: C (Base) · B (5% off) · A (10% off) · VIP (15% off)
-    </p>
+    <p class="sf-tier">Tier pricing: C (Base) · B (5% off) · A (10% off) · VIP (15% off)</p>
 
     {% if messages %}
       <div class="wrap msg-banner">
@@ -293,9 +420,9 @@
 
     <div class="wrap">
       <div class="steps">
-        <span class="step">Cart</span>
-        <span class="step active">Checkout</span>
-        <span class="step">Done</span>
+        <span class="step">购物车</span>
+        <span class="step active">确认订单</span>
+        <span class="step">完成</span>
       </div>
       {% if shop_customer and shop_order_block_hint %}
         <div class="msg-banner">
@@ -306,14 +433,14 @@
         <div class="layout">
           <div>
             <div class="card">
-              <h2 class="section-title">[1] Items</h2>
+              <h2 class="section-title">商品明细</h2>
               <div class="lines" id="lines-area">
-                <p style="color: var(--muted)">Loading cart…</p>
+                <p style="color: var(--muted)">加载购物车…</p>
               </div>
             </div>
 
             <div class="card">
-              <h2 class="section-title">[2] Shipping</h2>
+              <h2 class="section-title">收货信息</h2>
               <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token_value }}" />
               <input type="hidden" name="next" value="checkout" />
               <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
@@ -321,74 +448,91 @@
               <input type="hidden" name="payment_method" id="payment-method-hidden" value="bank_transfer" />
               <div class="row2">
                 <div>
-                  <label for="contact_name">Name *</label>
+                  <label for="contact_name">姓名 *</label>
                   <input id="contact_name" name="contact_name" required maxlength="100" autocomplete="name" />
                 </div>
                 <div>
-                  <label for="delivery_phone">Phone *</label>
+                  <label for="delivery_phone">手机 *</label>
                   <input id="delivery_phone" name="delivery_phone" required maxlength="30" autocomplete="tel" />
                 </div>
               </div>
-              <div style="margin-top: 12px">
-                <label for="delivery_address">Address *</label>
+              <div class="field-gap">
+                <label for="delivery_address">地址 *</label>
                 <input id="delivery_address" name="delivery_address" required maxlength="500" autocomplete="street-address" />
               </div>
-              <div style="margin-top: 12px">
-                <label for="store_name">Store / company (optional)</label>
-                <input id="store_name" name="store_name" maxlength="200" placeholder="Optional" />
+              <div class="field-gap">
+                <label for="store_name">门店 / 公司（选填）</label>
+                <input id="store_name" name="store_name" maxlength="200" placeholder="选填" />
               </div>
-              <div style="margin-top: 12px">
-                <label for="order_note">Notes (optional)</label>
-                <textarea id="order_note" name="order_note" maxlength="2000" placeholder="Delivery window, dock, etc."></textarea>
+              <div class="field-gap">
+                <label for="order_note">备注（选填）</label>
+                <textarea id="order_note" name="order_note" maxlength="2000" placeholder="配送时间、卸货点等"></textarea>
               </div>
-              <div style="margin-top: 12px; display:none" id="transfer-reference-wrap">
-                <label for="transfer_reference">Transfer reference (optional)</label>
-                <input id="transfer_reference" name="transfer_reference" maxlength="255" placeholder="Bank reference if paid" />
+              <div class="field-gap" style="display: none" id="transfer-reference-wrap">
+                <label for="transfer_reference">转账备注（选填）</label>
+                <input id="transfer_reference" name="transfer_reference" maxlength="255" placeholder="付款后填写银行流水号" />
               </div>
-              <div style="margin-top: 12px; display:none" id="check-number-wrap">
-                <label for="check_number">Check number (optional)</label>
-                <input id="check_number" name="check_number" maxlength="100" placeholder="If paying by check" />
+              <div class="field-gap" style="display: none" id="check-number-wrap">
+                <label for="check_number">支票号（选填）</label>
+                <input id="check_number" name="check_number" maxlength="100" placeholder="如使用支票付款" />
               </div>
             </div>
           </div>
 
           <div class="card summary-card">
-            <h2 class="section-title">Summary</h2>
+            <h2 class="section-title">结算</h2>
             <div class="summary-list">
-              <div class="summary-row"><span class="k">Line items</span><span class="v" id="summary-kinds">0</span></div>
-              <div class="summary-row"><span class="k">Total qty</span><span class="v" id="summary-qty">0</span></div>
-              <div class="summary-row"><span class="k">Subtotal</span><span class="v" id="goods-sum">{{ currency_symbol }}0.00</span></div>
+              <div class="summary-row"><span class="k">品类数</span><span class="v" id="summary-kinds">0</span></div>
+              <div class="summary-row"><span class="k">总数量</span><span class="v" id="summary-qty">0</span></div>
+              <div class="summary-row"><span class="k">商品小计</span><span class="v" id="goods-sum">{{ currency_symbol }}0.00</span></div>
             </div>
             <div class="settle-box" style="margin-top: 12px">
-              <label style="margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #7c2d12">Payment method</label>
-              <label class="settle-opt">
-                <input type="radio" name="summary-payment-method" value="bank_transfer" checked />
-                Bank transfer
-              </label>
-              <label class="settle-opt">
-                <input type="radio" name="summary-payment-method" value="check" />
-                Check
-              </label>
-              <label class="settle-opt">
-                <input type="radio" name="summary-payment-method" value="card_on_pickup" />
-                Card on pickup
-              </label>
-              <label class="settle-opt">
-                <input type="radio" name="summary-payment-method" value="cash" />
-                Cash
-              </label>
-              {% if shop_customer and shop_customer.allow_credit %}
-              <label class="settle-opt" style="margin-bottom: 0">
-                <input type="radio" name="summary-payment-method" value="credit" />
-                Credit (on account)
-              </label>
-              {% elif shop_customer %}
-              <div class="muted" style="font-size: 12px; margin-top: 6px">Credit is not enabled for this account</div>
-              {% endif %}
-            </div>
-            <div class="sum" id="order-sum">Total: {{ currency_symbol }}0.00</div>
-            <button type="submit" class="btn" id="btn-place" disabled>Place order</button>
-            <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration:none;text-align:center">Back to cart</a>
+              <label>支付方式</label>
+              <div class="pay-grid">
+                <label class="pay-card">
+                  <input type="radio" name="summary-payment-method" value="bank_transfer" checked />
+                  <span class="pay-card__text">
+                    <strong>银行转账</strong>
+                    <small>下单后按指引完成支付</small>
+                  </span>
+                </label>
+                <label class="pay-card">
+                  <input type="radio" name="summary-payment-method" value="check" />
+                  <span class="pay-card__text">
+                    <strong>支票</strong>
+                    <small>到店或约定方式交付支票</small>
+                  </span>
+                </label>
+                <label class="pay-card">
+                  <input type="radio" name="summary-payment-method" value="card_on_pickup" />
+                  <span class="pay-card__text">
+                    <strong>到店刷卡</strong>
+                    <small>取货时刷卡支付</small>
+                  </span>
+                </label>
+                <label class="pay-card">
+                  <input type="radio" name="summary-payment-method" value="cash" />
+                  <span class="pay-card__text">
+                    <strong>现金</strong>
+                    <small>货到付款或约定现金</small>
+                  </span>
+                </label>
+                {% if shop_customer and shop_customer.allow_credit %}
+                  <label class="pay-card">
+                    <input type="radio" name="summary-payment-method" value="credit" />
+                    <span class="pay-card__text">
+                      <strong>挂账（授信）</strong>
+                      <small>在额度内记入应收账款</small>
+                    </span>
+                  </label>
+                {% elif shop_customer %}
+                  <p class="muted" style="margin: 0">当前账号未开通挂账</p>
+                {% endif %}
+              </div>
+              </div>
+            <div class="sum" id="order-sum">合计 {{ currency_symbol }}0.00</div>
+            <button type="submit" class="btn" id="btn-place" disabled>提交订单</button>
+            <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration: none; text-align: center; display: block">返回商城加购</a>
           </div>
         </div>
       </form>
@@ -460,6 +604,13 @@
         var checkoutForm = document.getElementById("checkout-form");
         var summaryPaymentRadios = document.querySelectorAll('input[name="summary-payment-method"]');
         var checkNumberWrap = document.getElementById("check-number-wrap");
+        function updatePayCards() {
+          document.querySelectorAll(".pay-card").forEach(function (el) {
+            el.classList.remove("pay-card--on");
+            var inp = el.querySelector('input[type="radio"]');
+            if (inp && inp.checked) el.classList.add("pay-card--on");
+          });
+        }
         function syncPaymentMethodUI() {
           var selected = "bank_transfer";
           summaryPaymentRadios.forEach(function (radio) {
@@ -470,30 +621,31 @@
             settlementHidden.value = selected === "credit" ? "credit" : "cash";
           }
           if (selected === "bank_transfer") {
-            btn.textContent = "Place order (bank transfer)";
+            btn.textContent = "提交订单（银行转账）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "check") {
-            btn.textContent = "Place order (check)";
+            btn.textContent = "提交订单（支票）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "";
           } else if (selected === "card_on_pickup") {
-            btn.textContent = "Place order (pay on pickup)";
+            btn.textContent = "提交订单（到店刷卡）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "cash") {
-            btn.textContent = "Place order (cash)";
+            btn.textContent = "提交订单（现金）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "credit") {
-            btn.textContent = "Place order (credit)";
+            btn.textContent = "提交订单（挂账）";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else {
-            btn.textContent = "Place order";
+            btn.textContent = "提交订单";
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           }
+          updatePayCards();
         }
         summaryPaymentRadios.forEach(function (radio) {
           radio.addEventListener("change", syncPaymentMethodUI);
@@ -572,8 +724,8 @@
           cart = getCart();
           if (cart.length === 0) {
             linesArea.innerHTML =
-              '<p style="color:#b45309;font-weight:600">Your cart is empty.</p><p><a href="/shop/">Continue shopping</a></p>';
-            sumEl.textContent = "Total: {{ currency_symbol }}0.00";
+              '<p style="color:#b45309;font-weight:600">购物车是空的。</p><p><a href="/shop/">去商城继续选购</a></p>';
+            sumEl.textContent = "合计 {{ currency_symbol }}0.00";
             goodsSumEl.textContent = "{{ currency_symbol }}0.00";
             summaryKinds.textContent = "0";
             summaryQty.textContent = "0";
@@ -658,7 +810,7 @@
           goodsSumEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
           summaryKinds.textContent = String(cart.length);
           summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
-          sumEl.textContent = "Total: {{ currency_symbol }}" + fmtMoney(sum);
+          sumEl.textContent = "合计 {{ currency_symbol }}" + fmtMoney(sum);
           currentOrderTotal = sum;
           hiddenJson.value = JSON.stringify(
             cart.map(function (l) {
