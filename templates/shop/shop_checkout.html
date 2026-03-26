@@ -972,7 +972,8 @@
             var name = p ? p.name : l.name || "Product";
             var sku = p ? p.sku : l.sku || "";
             var spec = l.sale_type === "case" ? "按箱" : "按袋";
-            var img = p && p.image_url ? p.image_url : "/static/images/default.png";
+            var skuKey = p && p.sku ? String(p.sku).trim() : "";
+            var img = (p && p.image_url) ? p.image_url : (skuKey ? ("/static/products/" + skuKey + ".jpg") : "/static/products/_fallback.jpg");
             // Use embedded PRODUCTS for current prices
             var unit = parseFloat(l.unit_price) || 0;
             var sub = parseFloat(l.subtotal) || 0;
@@ -1009,7 +1010,7 @@
               img +
               '" alt="' +
               name +
-              "\" onerror=\"this.src='/static/images/default.png'\" />" +
+              "\" onerror=\"this.onerror=null;this.src='/static/products/_fallback.jpg';\" />" +
               '<div><div class="line-name">' +
               name +
               '</div><div class="line-spec">' +

@@ -136,6 +136,13 @@ class Product(models.Model):
         verbose_name="上传主图",
         help_text="若上传则优先于上方「相对路径」在商城展示；可与 CSV 路径并存。",
     )
+    official_image_url = models.URLField(
+        max_length=500,
+        blank=True,
+        default="",
+        verbose_name="官网高清图（统一）",
+        help_text="统一图片数据源：优先使用此 URL（由 mochaboba.com 同步/映射生成）。",
+    )
     price_on_request = models.BooleanField(
         default=False,
         verbose_name="询价商品",
@@ -147,6 +154,40 @@ class Product(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.sku})"
+
+    @property
+    def unified_image_url(self) -> str:
+        """
+        Single source of truth for product image URL across the whole system.
+        Priority:
+        1) official_image_url
+        2) catalog_upload.url
+        3) image (if absolute URL)
+        4) image (as /media/<relative path>)
+        5) /media/products/{SKU}.jpg
+        6) /static/products/{SKU}.jpg
+        7) /static/products/_fallback.jpg
+        """
+        sku = (self.sku or "").strip()
+        if self.official_image_url:
+            return str(self.official_image_url).strip()
+        try:
+            cu = getattr(self, "catalog_upload", None)
+            if cu:
+                return cu.url
+        except Exception:
+            pass
+        img = (self.image or "").strip()
+        if img:
+            if img.startswith("http://") or img.startswith("https://"):
+                return img
+            return "/media/" + img.lstrip("/")
+        if sku:
+            return f"/media/products/{sku}.jpg"
+        # static fallback (always exists after our storefront image work)
+        if sku:
+            return f"/static/products/{sku}.jpg"
+        return "/static/products/_fallback.jpg"
 
 
 class CustomerProductPrice(models.Model):

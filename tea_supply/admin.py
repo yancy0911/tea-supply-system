@@ -377,11 +377,12 @@ class ProductAdmin(CompanyScopedAdminMixin, ImportExportModelAdmin):
         return request.user.is_superuser
 
     def image_preview(self, obj: Product):
-        if not getattr(obj, "catalog_upload", None):
-            return "—"
         try:
-            url = obj.catalog_upload.url
-            return format_html('<img src="{}" style="height:40px; width:auto; object-fit:contain;" />', url)
+            url = obj.unified_image_url
+            return format_html(
+                '<img src="{}" style="height:40px; width:40px; object-fit:cover; border-radius:8px; background:#f8fafc; border:1px solid #e5e7eb;" />',
+                url,
+            )
         except Exception:
             return "—"
 

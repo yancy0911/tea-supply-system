@@ -696,26 +696,13 @@ def _default_product_image_url():
 
 def _shop_product_row(customer, p):
     """客户商城商品 JSON 行（列表页 / 详情页共用）。"""
-    # 图片规则：
-    # 1) 后台上传图（catalog_upload）优先
-    # 2) 其次使用 image 字段（相对 media 路径）
-    # 3) 若 image 为空，自动回退 /media/products/{sku}.jpg
-    image_url = ""
+    # 图片来源统一：Product.unified_image_url()
     image_path = (getattr(p, "image", None) or "").strip()
-    has_image = False
     try:
-        cu = getattr(p, "catalog_upload", None)
-        if cu:
-            image_url = cu.url
-            has_image = True
+        image_url = p.unified_image_url
     except Exception:
-        pass
-    if not image_url:
-        if image_path:
-            image_url = "/media/" + image_path.lstrip("/")
-            has_image = True
-        else:
-            image_url = f"/media/products/{p.sku}.jpg"
+        image_url = _default_product_image_url()
+    has_image = bool(image_url)
     base_s = money_float(p.price_single)
     base_c = money_float(p.price_case)
     if customer is None:
