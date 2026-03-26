@@ -3504,31 +3504,32 @@
             if (card.getAttribute("data-bound") === "1") return;
             card.setAttribute("data-bound", "1");
 
-            var pid = card.dataset && card.dataset.productId ? parseInt(card.dataset.productId, 10) : NaN;
-            if (!isFinite(pid) || pid <= 0) return;
-
             var addBtn = card.querySelector('[data-act="add"]');
             if (addBtn) {
               addBtn.onclick = function () {
-                var qty = getQtyFromCard(card);
-                addToCart(pid, getSaleType(card, pid), qty);
-                refreshCartUI();
+                console.log("ADD CLICK OK");
               };
             }
 
             var buyBtn = card.querySelector('[data-act="buy"]');
             if (buyBtn) {
               buyBtn.onclick = function () {
-                var qty = getQtyFromCard(card);
-                buyNow(pid, getSaleType(card, pid), qty);
+                console.log("BUY CLICK OK");
               };
             }
 
             var plus = card.querySelector('[data-act="plus"]');
             var minus = card.querySelector('[data-act="minus"]');
-            if (plus) plus.onclick = function () { changeQty(card, +1); };
-            if (minus) minus.onclick = function () { changeQty(card, -1); };
+            if (plus) plus.onclick = function () { console.log("PLUS CLICK OK"); };
+            if (minus) minus.onclick = function () { console.log("MINUS CLICK OK"); };
           });
+        }
+
+        var __bindCardControlsBooted = false;
+        function bootBindCardControlsOnce() {
+          if (__bindCardControlsBooted) return;
+          __bindCardControlsBooted = true;
+          bindCardControls();
         }
 
         function initQuickEntry() {
@@ -4414,6 +4415,11 @@
         if (backdrop) backdrop.addEventListener("click", closeDrawer);
 
         applyProductFilter();
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", bootBindCardControlsOnce, { once: true });
+        } else {
+          bootBindCardControlsOnce();
+        }
         refreshCartUI();
         translateShopPriceNotes();
         sanitizeProductNameDisplay();
