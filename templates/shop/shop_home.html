@@ -4180,7 +4180,7 @@
                 recalcLine(cart[li]);
                 cart[li].price = cart[li].unit_price;
                 saveCart(cart);
-                renderCart();
+                refreshCartUI();
               });
 
               div.querySelectorAll(".qty-btn").forEach(function (btn) {
@@ -4207,7 +4207,7 @@
                   recalcLine(cart[li]);
                   cart[li].price = cart[li].unit_price;
                   saveCart(cart);
-                  renderCart();
+                  refreshCartUI();
                 });
               });
             }
@@ -4221,7 +4221,7 @@
                 });
                 if (i >= 0) cart.splice(i, 1);
                 saveCart(cart);
-                renderCart();
+                refreshCartUI();
               });
             }
 
@@ -4272,6 +4272,15 @@
         // Single entry point: keep all cart UIs in sync.
         function refreshCartUI() {
           try {
+            var c0 = [];
+            try {
+              c0 = getCart();
+            } catch (e0) {
+              c0 = [];
+            }
+            try {
+              console.log("Cart refreshed", c0);
+            } catch (e1) {}
             renderCart();
           } catch (e) {}
         }
