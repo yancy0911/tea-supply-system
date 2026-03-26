@@ -27,18 +27,18 @@
             <div class="msg">{{ message }}</div>
           {% endfor %}
         {% endif %}
-        <form method="post">
+        <form method="post" novalidate>
           {% csrf_token %}
           <label>Store name</label>
-          <input type="text" name="shop_name" value="{{ shop_customer.shop_name }}" required />
+          <input type="text" name="shop_name" value="{{ shop_customer.shop_name }}" />
           <label>Contact name</label>
-          <input type="text" name="contact_name" value="{{ shop_customer.name }}" required />
+          <input type="text" name="contact_name" value="{{ shop_customer.name }}" />
           <label>Phone</label>
-          <input type="text" name="phone" value="{{ shop_customer.phone }}" required />
+          <input type="text" name="phone" value="{{ shop_customer.phone }}" />
           <label>Estimated monthly purchase ({{ currency_symbol }})</label>
-          <input type="number" step="0.01" min="0.01" name="monthly_purchase_estimate" required />
+          <input type="number" step="0.01" min="0.01" name="monthly_purchase_estimate" />
           <label>Requested credit limit ({{ currency_symbol }})</label>
-          <input type="number" step="0.01" min="0.01" name="requested_credit_limit" required />
+          <input type="number" step="0.01" min="0.01" name="requested_credit_limit" />
           <label>Notes</label>
           <textarea name="note" maxlength="2000" placeholder="Optional details"></textarea>
           <button class="btn" type="submit">Submit application</button>

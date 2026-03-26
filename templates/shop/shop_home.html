@@ -2284,32 +2284,32 @@
     <div id="order-modal" class="order-modal" aria-hidden="true">
       <div class="order-modal-backdrop" id="order-modal-backdrop"></div>
       <div class="order-modal-box" role="dialog" aria-labelledby="order-modal-title">
-        <h3 id="order-modal-title">Confirm order</h3>
-        <p class="modal-hint">Enter shipping details. Your wholesale order will be created after submit.</p>
-        <form method="post" action="{% url 'shop-submit-order' %}" id="shop-order-form-modal">
+        <h3 id="order-modal-title">确认订单</h3>
+        <p class="modal-hint">请填写收货信息后提交订单。</p>
+        <form method="post" action="{% url 'shop-submit-order' %}" id="shop-order-form-modal" novalidate>
           {% csrf_token %}
           <input type="hidden" name="next" value="home" />
           <input type="hidden" name="lines_json" id="modal-lines-json" value="[]" />
-          <label for="f-contact">Recipient name *</label>
-          <input id="f-contact" name="contact_name" required maxlength="100" autocomplete="name" placeholder="Name" />
-          <label for="f-phone">Phone *</label>
-          <input id="f-phone" name="delivery_phone" required maxlength="30" autocomplete="tel" placeholder="Mobile" />
-          <label for="f-addr">Address *</label>
-          <input id="f-addr" name="delivery_address" required maxlength="500" autocomplete="street-address" placeholder="Full address" />
-          <label for="f-store">Store / company (optional)</label>
-          <input id="f-store" name="store_name" maxlength="200" placeholder="Optional" />
-          <label for="f-settle">Settlement *</label>
-          <select id="f-settle" name="settlement_type" required>
-            <option value="cash" selected>Cash / prepaid</option>
+          <label for="f-contact">联系人 <span style="color:#b91c1c;font-weight:900">*</span></label>
+          <input id="f-contact" name="contact_name" maxlength="100" autocomplete="name" placeholder="请输入联系人" />
+          <label for="f-phone">联系电话 <span style="color:#b91c1c;font-weight:900">*</span></label>
+          <input id="f-phone" name="delivery_phone" maxlength="30" autocomplete="tel" placeholder="请输入联系电话" />
+          <label for="f-addr">收货地址 <span style="color:#b91c1c;font-weight:900">*</span></label>
+          <input id="f-addr" name="delivery_address" maxlength="500" autocomplete="street-address" placeholder="请输入收货地址" />
+          <label for="f-store">公司/店名（选填）</label>
+          <input id="f-store" name="store_name" maxlength="200" placeholder="选填" />
+          <label for="f-settle">结算方式 <span style="color:#b91c1c;font-weight:900">*</span></label>
+          <select id="f-settle" name="settlement_type">
+            <option value="cash" selected>现结</option>
             {% if shop_customer and shop_customer.allow_credit %}
-              <option value="credit">Credit (on account)</option>
+              <option value="credit">挂账（授信）</option>
             {% endif %}
           </select>
-          <label for="f-note">Notes (optional)</label>
-          <textarea id="f-note" name="order_note" maxlength="2000" placeholder="Delivery window, etc."></textarea>
+          <label for="f-note">备注（可选）</label>
+          <textarea id="f-note" name="order_note" maxlength="2000" placeholder="配送时间、卸货点等"></textarea>
           <div class="order-modal-actions">
-            <button type="button" class="btn-cancel" id="order-modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary" id="order-modal-submit" {% if shop_customer and not shop_can_order %}disabled title="{{ shop_order_block_hint }}"{% endif %}>Submit order</button>
+            <button type="button" class="btn-cancel" id="order-modal-cancel">取消</button>
+            <button type="submit" class="btn-primary" id="order-modal-submit" {% if shop_customer and not shop_can_order %}disabled title="{{ shop_order_block_hint }}"{% endif %}>提交订单</button>
           </div>
         </form>
       </div>
@@ -2518,7 +2518,7 @@
               var qtyIn = card.querySelector(".qty-stepper input");
               var qty = parseFloat(qtyIn.value);
               if (isNaN(qty) || qty <= 0) {
-                showToast("Enter a valid quantity");
+                showToast("请输入有效数量");
                 return;
               }
               buyNow(pid, saleType, qty);
@@ -2533,7 +2533,7 @@
               var qtyIn = card.querySelector(".qty-stepper input");
               var qty = parseFloat(qtyIn.value);
               if (isNaN(qty) || qty <= 0) {
-                showToast("Enter a valid quantity");
+                showToast("请输入有效数量");
                 return;
               }
               addToCart(pid, saleType, qty);
@@ -2591,7 +2591,6 @@
             if (show) vis++;
           });
           productCount.textContent = "(" + vis + " items)";
-          console.log("[shop] category_id=", catKey, "total=", total, "visible=", vis);
         }
 
         function unitPriceFor(p, saleType) {
@@ -2688,28 +2687,28 @@
             return;
           }
           if (p.price_on_request) {
-            showToast("Quote required — cannot add to cart.");
+            showToast("需询价，无法加入购物车");
             return;
           }
           if (saleType === "single" && !p.can_quote_single) {
-            showToast("No per-bag price — choose case or request a quote.");
+            showToast("该商品暂无按袋价，请选择按箱或询价");
             return;
           }
           if (saleType === "case" && !p.can_quote_case) {
-            showToast("No case price — choose single or request a quote.");
+            showToast("该商品暂无按箱价，请选择按袋或询价");
             return;
           }
           if (saleType === "single" && !p.can_split_sale) {
-            showToast("Case pack only for this product.");
+            showToast("该商品仅支持整箱起订");
             return;
           }
           if (qty < p.minimum_order_qty) {
-            showToast("MOQ is " + p.minimum_order_qty);
+            showToast("起订量为 " + p.minimum_order_qty);
             return;
           }
           var unit = unitPriceFor(p, saleType);
           if (unit <= 0) {
-            showToast("Invalid price");
+            showToast("价格无效");
             return;
           }
           cart = getCart();
@@ -2912,7 +2911,7 @@
               qtyInput.addEventListener("change", function () {
                 var v = parseFloat(this.value);
                 if (isNaN(v) || v < minQ) {
-                  showToast("MOQ is " + minQ);
+                  showToast("起订量为 " + minQ);
                   this.value = line.quantity;
                   return;
                 }
@@ -3055,7 +3054,6 @@
             btn.setAttribute("aria-selected", "true");
             var raw = btn.getAttribute("data-category-id");
             selectedCat = raw != null && String(raw).trim() !== "" ? String(raw).trim() : "all";
-            console.log("[shop] category data-category-id=", selectedCat);
             applyProductFilter();
           });
         });
@@ -3067,6 +3065,31 @@
         if (floatCheckoutEl) {
           floatCheckoutEl.addEventListener("click", function (e) {
             if (floatCheckoutEl.classList.contains("disabled")) e.preventDefault();
+          });
+        }
+
+        // Order modal: avoid browser native validation ("填写此栏") by doing our own checks.
+        var modalForm = document.getElementById("shop-order-form-modal");
+        if (modalForm) {
+          modalForm.addEventListener("submit", function (ev) {
+            var cn = (document.getElementById("f-contact").value || "").trim();
+            var ph = (document.getElementById("f-phone").value || "").trim();
+            var addr = (document.getElementById("f-addr").value || "").trim();
+            if (!cn) {
+              showToast("请填写联系人");
+              ev.preventDefault();
+              return;
+            }
+            if (!ph) {
+              showToast("请填写联系电话");
+              ev.preventDefault();
+              return;
+            }
+            if (!addr) {
+              showToast("请填写收货地址");
+              ev.preventDefault();
+              return;
+            }
           });
         }
 

@@ -1353,24 +1353,6 @@ def shop_submit_order(request):
         return redirect("shop-home")
 
     lines_raw = request.POST.get("lines_json", "[]")
-    # Debug: verify checkout payload arrives.
-    if getattr(settings, "DEBUG", False):
-        try:
-            print("[shop_submit_order] POST=", request.POST)
-            print(
-                "[shop_submit_order] extracted=",
-                {
-                    "company_name": request.POST.get("company_name", ""),
-                    "contact_name": request.POST.get("contact_name", ""),
-                    "phone": request.POST.get("phone", ""),
-                    "delivery_address": request.POST.get("delivery_address", ""),
-                    # Backend-expected legacy names:
-                    "store_name": request.POST.get("store_name", ""),
-                    "delivery_phone": request.POST.get("delivery_phone", ""),
-                },
-            )
-        except Exception:
-            pass
     submit_extra = {
         "contact_name": request.POST.get("contact_name", ""),
         "delivery_phone": request.POST.get("delivery_phone", ""),

@@ -457,20 +457,20 @@
 
         var priceHtml = "";
         if (p.price_on_request) {
-          priceHtml = '<span class="big-price">Quote required</span>';
+          priceHtml = '<span class="big-price">需询价</span>';
         } else {
           priceHtml +=
             '<div><span class="big-price">{{ currency_symbol }}' +
             fmtMoney(p.display_single) +
-            '</span> <small style="color:#94a3b8;font-weight:600">Per Bag</small></div>';
+            '</span> <small style="color:#94a3b8;font-weight:600">按袋</small></div>';
           priceHtml +=
             '<div><span class="case-price">{{ currency_symbol }}' +
             fmtMoney(p.display_case) +
-            '</span> <small style="color:#94a3b8;font-weight:600">Per Case</small></div>';
+            '</span> <small style="color:#94a3b8;font-weight:600">按箱</small></div>';
         }
         document.getElementById("pprice").innerHTML = priceHtml;
         var pnoteEl = document.getElementById("pnote");
-        var pnoteTxt = p.price_on_request ? "Price TBD" : priceNoteEn(p.price_note || "");
+        var pnoteTxt = p.price_on_request ? "价格待确认" : priceNoteEn(p.price_note || "");
         pnoteEl.textContent = pnoteTxt;
         pnoteEl.style.display = pnoteTxt ? "" : "none";
 
@@ -479,15 +479,15 @@
         var modeHtml = "";
         if (canSingle) {
           modeHtml +=
-            '<label><input type="radio" name="sale" value="single" checked /> Single</label>';
+            '<label><input type="radio" name="sale" value="single" checked /> 按袋</label>';
         }
         if (canCase) {
           modeHtml +=
             '<label><input type="radio" name="sale" value="case" ' +
             (!canSingle ? "checked" : "") +
-            " /> Case</label>";
+            " /> 按箱</label>";
         }
-        if (!modeHtml) modeHtml = "<span style='color:#b45309'>No price available</span>";
+        if (!modeHtml) modeHtml = "<span style='color:#b45309'>暂无价格</span>";
         document.getElementById("pmode").innerHTML = modeHtml;
 
         var minQ = Math.max(parseFloat(p.minimum_order_qty) || 0.01, 0.01);
@@ -529,24 +529,24 @@
 
         document.getElementById("padd").onclick = function () {
           if (shopLoggedIn && !shopCanOrder) {
-            showToast(shopOrderBlockHint || "Ordering is not available for your account.");
+            showToast(shopOrderBlockHint || "当前账号无法下单");
             return;
           }
           if (p.price_on_request) {
-            showToast("This product requires a quote.");
+            showToast("该商品需询价");
             return;
           }
           var st = saleType();
           if (st === "single" && !p.can_split_sale) {
-            showToast("Case pack only — please choose case.");
+            showToast("仅支持整箱，请选择按箱");
             return;
           }
           if (st === "single" && !p.can_quote_single) {
-            showToast("No single-unit price.");
+            showToast("暂无按袋价格");
             return;
           }
           if (st === "case" && !p.can_quote_case) {
-            showToast("No case price.");
+            showToast("暂无按箱价格");
             return;
           }
           var sell0 = sellableStockUnits(p);
@@ -556,12 +556,12 @@
           }
           var qty = parseFloat(qIn.value);
           if (isNaN(qty) || qty < minQ) {
-            showToast("Quantity must be at least MOQ " + minQ);
+            showToast("数量至少为起订量 " + minQ);
             return;
           }
           var unit = unitPrice();
           if (unit <= 0) {
-            showToast("Invalid price");
+            showToast("价格无效");
             return;
           }
           var cart = getCart();
@@ -606,7 +606,7 @@
               unit_price: unit,
               price_note: p.price_note,
               min_qty: minQ,
-              spec_label: st === "case" ? "Per Case" : "Per Bag",
+              spec_label: st === "case" ? "按箱" : "按袋",
               spec_detail: st === "case" ? p.case_label || "—" : p.unit_label || "—",
               subtotal: qty * unit,
             });

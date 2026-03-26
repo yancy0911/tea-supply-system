@@ -804,19 +804,6 @@
             var hPhone = document.getElementById("delivery_phone-hidden");
             if (hPhone) hPhone.value = (document.getElementById("delivery_phone").value || "").trim();
 
-            // Debug: confirm payload.
-            try {
-              var payload = {
-                company_name: document.getElementById("store_name").value || "",
-                contact_name: document.getElementById("contact_name").value || "",
-                phone: document.getElementById("delivery_phone").value || "",
-                delivery_address: document.getElementById("delivery_address").value || "",
-                store_name_for_backend: hStore ? hStore.value : "",
-                delivery_phone_for_backend: hPhone ? hPhone.value : "",
-              };
-              console.log("[checkout submit payload]", payload);
-            } catch (e) {}
-
             var c = getCart();
             if (!TEST_MODE && cartStockIssueInfo(c).bad) {
               ev.preventDefault();
@@ -825,19 +812,19 @@
             }
             if (!shopCanOrder) {
               ev.preventDefault();
-              showToast(shopOrderBlockHint || "Ordering is not available.");
+              showToast(shopOrderBlockHint || "当前账号无法下单");
               return;
             }
             var selectedPay = paymentHidden ? String(paymentHidden.value || "") : "";
             if (selectedPay === "credit") {
               if (!creditAllow) {
                 ev.preventDefault();
-                showToast("Credit is not enabled for your account.");
+                showToast("该账号未开通挂账权限");
                 return;
               }
               if (creditLimit <= 0 || currentDebt + currentOrderTotal > creditLimit) {
                 ev.preventDefault();
-                showToast("Over credit limit — cannot place this order.");
+                showToast("超出授信额度，无法下单");
                 return;
               }
             }
@@ -896,7 +883,7 @@
             summaryQty.textContent = "0";
             hiddenJson.value = "[]";
             btn.disabled = true;
-            btn.title = "Cart is empty";
+            btn.title = "购物车为空";
             return;
           }
           var issueInfo = cartStockIssueInfo(cart);
@@ -911,7 +898,7 @@
             var p = productById(l.product_id);
             var name = p ? p.name : l.name || "Product";
             var sku = p ? p.sku : l.sku || "";
-            var spec = l.sale_type === "case" ? "Per Case" : "Per Bag";
+            var spec = l.sale_type === "case" ? "按箱" : "按袋";
             var img = p && p.image_url ? p.image_url : "/static/images/default.png";
             // Use embedded PRODUCTS for current prices
             var unit = parseFloat(l.unit_price) || 0;
@@ -928,8 +915,8 @@
             var priceNoteDisp = priceNoteRaw ? priceNoteEn(priceNoteRaw) : "";
             var riskText = "";
             if (p) {
-              if (l.sale_type === "case" && p.profit_risk_case) riskText = "Margin risk: price below cost";
-              if (l.sale_type !== "case" && p.profit_risk_single) riskText = "Margin risk: price below cost";
+              if (l.sale_type === "case" && p.profit_risk_case) riskText = "毛利风险：价格低于成本";
+              if (l.sale_type !== "case" && p.profit_risk_single) riskText = "毛利风险：价格低于成本";
             }
             var stockWarn = "";
             if (p && issueInfo.byPid[Number(l.product_id)]) {
@@ -954,19 +941,19 @@
               name +
               '</div><div class="line-spec">' +
               spec +
-              '</div><div class="line-meta">SKU ' +
+              '</div><div class="line-meta">SKU：' +
               sku +
               "</div></div>" +
-              '<div class="line-col"><span class="k">Qty</span><span class="v">' +
+              '<div class="line-col"><span class="k">数量</span><span class="v">' +
               l.quantity +
               "</span></div>" +
-              '<div class="line-col"><span class="k">Unit Price</span><span class="v">{{ currency_symbol }}' +
+              '<div class="line-col"><span class="k">单价</span><span class="v">{{ currency_symbol }}' +
               fmtMoney(unit) +
               '</span></div>' +
-              '<div class="line-col"><span class="k">Subtotal</span><span class="v">{{ currency_symbol }}' +
+              '<div class="line-col"><span class="k">小计</span><span class="v">{{ currency_symbol }}' +
               fmtMoney(sub) +
               "</span></div>" +
-              (priceNoteDisp ? '<div class="line-meta" style="grid-column:1 / -1;">Pricing: ' + priceNoteDisp + "</div>" : "") +
+              (priceNoteDisp ? '<div class="line-meta" style="grid-column:1 / -1;">折扣说明：' + priceNoteDisp + "</div>" : "") +
               stockWarn +
               (riskText ? '<div class="line-meta" style="grid-column:1 / -1;color:#9a3412;font-weight:600;">' + riskText + "</div>" : "") +
               "</div>";
