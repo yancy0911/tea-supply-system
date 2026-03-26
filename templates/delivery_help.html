@@ -18,8 +18,8 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>系统使用说明（交付版）</h1>
-      <p class="sub">当前账号角色：<span class="role">{{ portal_role }}</span> · 详细说明见仓库内 <code>docs/DELIVERY.md</code></p>
+      <h1>系统使用说明</h1>
+      <p class="sub">当前账号角色：<span class="role">{{ portal_role }}</span></p>
 
       <h2>常用入口</h2>
       <p class="sub">以下链接若与当前角色不符，系统会重定向或返回 403。</p>
@@ -37,7 +37,7 @@
       <h2>订单大致流程</h2>
       <ul>
         <li>客户在商城下单 → 运营确认 → 标记已付款 → 仓库备货 → 发往配送 → 司机完成配送</li>
-        <li>具体谁可点哪些按钮由角色与订单状态共同决定（见交付文档「角色权限」）。</li>
+        <li>不同角色在不同环节会看到不同的操作入口。</li>
       </ul>
 
       <p class="nav"><a href="{% url 'login' %}">返回登录</a> · <a href="{% url 'shop-home' %}">商城</a></p>
