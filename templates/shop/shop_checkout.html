@@ -534,7 +534,7 @@
               <div class="sf-note">
                 请填写收货信息（用于开单与联系）。
               </div>
-              <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token_value }}" />
+              {% csrf_token %}
               <input type="hidden" name="next" value="checkout" />
               <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
               <input type="hidden" name="settlement_type" id="settlement-type-hidden" value="cash" />
@@ -870,31 +870,41 @@
         }
 
         if (checkoutForm) {
+          var submitBtn = document.getElementById("btn-place");
+          if (submitBtn) {
+            submitBtn.addEventListener("click", function () {
+              console.log("SUBMIT CLICK OK");
+              console.log("SUBMIT BTN DISABLED:", !!submitBtn.disabled);
+            });
+          }
           checkoutForm.addEventListener("submit", function (ev) {
+            console.log("FORM SUBMIT OK");
             if (!validateRequiredCheckoutFields()) {
+              console.log("SUBMIT BLOCKED: required checkout fields missing");
               ev.preventDefault();
               return;
             }
 
             var c = getCart();
             if (!TEST_MODE && cartStockIssueInfo(c).bad) {
+              console.log("SUBMIT BLOCKED: stock validation failed");
               ev.preventDefault();
               showToast("库存不足，无法提交订单。请返回商店调整购物车。");
               return;
             }
-            if (!shopCanOrder) {
-              ev.preventDefault();
-              showToast(shopOrderBlockHint || "当前账号无法下单");
-              return;
-            }
+            // Do not hard-block submit on frontend for permission checks.
+            // Backend remains the source of truth and will return clear messages.
+            if (!shopCanOrder) console.log("SUBMIT WARN: shopCanOrder is false; backend will validate");
             var selectedPay = paymentHidden ? String(paymentHidden.value || "") : "";
             if (selectedPay === "credit") {
               if (!creditAllow) {
+                console.log("SUBMIT BLOCKED: credit payment not allowed");
                 ev.preventDefault();
                 showToast("该账号未开通挂账权限");
                 return;
               }
               if (creditLimit <= 0 || currentDebt + currentOrderTotal > creditLimit) {
+                console.log("SUBMIT BLOCKED: credit limit exceeded");
                 ev.preventDefault();
                 showToast("超出授信额度，无法下单");
                 return;
@@ -1049,10 +1059,8 @@
             btn.disabled = true;
             btn.title = "库存不足，无法提交订单";
           } else {
-            btn.disabled = !shopCanOrder;
-            btn.title = shopCanOrder
-              ? ""
-              : shopOrderBlockHint || "Ordering unavailable";
+            btn.disabled = false;
+            btn.title = "";
           }
         }
 
