@@ -3292,6 +3292,21 @@
           return el && el.textContent ? String(el.textContent).trim() : "";
         }
 
+        function shopCardImgFallback(el) {
+          if (!el) return;
+          el.onerror = function () {
+            this.onerror = null;
+            this.src = MOCHA_CDN_FALLBACK;
+          };
+          el.src = PLACEHOLDER_IMG;
+        }
+
+        function shopMiniImgFallback(el) {
+          if (!el) return;
+          el.onerror = null;
+          el.src = PLACEHOLDER_IMG;
+        }
+
         function buildCardsOnce() {
           try {
             console.log("BUILD CARDS START");
@@ -3366,11 +3381,7 @@
                     '<div class="ecom-card__media-inner">' +
                     '<img src="' +
                     image +
-                    '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\\'' +
-                    PLACEHOLDER_IMG +
-                    "\\'';this.onerror=function(){this.onerror=null;this.src=\\'" +
-                    MOCHA_CDN_FALLBACK +
-                    "\\';};\" />" +
+                    '" alt="" loading="lazy" decoding="async" onerror="shopCardImgFallback(this)" />' +
                     "</div>" +
                     '<div class="ecom-card__badges">' +
                     (isOos
@@ -3632,9 +3643,7 @@
               '<div class="hot-mini" role="listitem">' +
               '<div class="hot-mini__img"><img src="' +
               esc(img) +
-              '" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\\'' +
-              PLACEHOLDER_IMG +
-              "\\'';\" /></div>" +
+              '" alt="" loading="lazy" decoding="async" onerror="shopMiniImgFallback(this)" /></div>' +
               '<p class="hot-mini__name">' +
               esc(name) +
               "</p>" +
