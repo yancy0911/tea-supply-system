@@ -24,7 +24,7 @@
         --accent-hover: #166534;
         --cartw: 380px;
         --header-h: 56px;
-        --radius: 8px;
+        --radius: 16px;
       }
       * {
         box-sizing: border-box;
@@ -72,10 +72,10 @@
       }
       .shop-search input {
         width: 100%;
-        padding: 9px 12px 9px 36px;
-        border-radius: 8px;
+        padding: 11px 14px 11px 40px;
+        border-radius: 999px;
         border: 1px solid var(--border);
-        background: #fafafa;
+        background: #f8fafc;
         font-size: 14px;
         color: var(--text);
       }
@@ -216,7 +216,84 @@
         min-width: 0;
       }
       .browse-categories {
-        margin-bottom: 32px;
+        margin-bottom: 20px;
+      }
+      .shop-discovery {
+        margin-bottom: 8px;
+      }
+      .discovery-rail {
+        margin-bottom: 14px;
+      }
+      .discovery-rail__head {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 10px 2px;
+        color: #0f172a;
+      }
+      .discovery-rail__track {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 4px 2px 12px;
+        margin: 0 -4px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      .discovery-rail__track::-webkit-scrollbar {
+        height: 6px;
+      }
+      .discovery-mini {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        width: 132px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 10px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .discovery-mini:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+      }
+      .discovery-mini__img {
+        width: 100%;
+        height: 72px;
+        border-radius: 12px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .discovery-mini__img img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
+      .discovery-mini__name {
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin: 0 0 6px;
+        color: #0f172a;
+      }
+      .discovery-mini__price {
+        font-size: 13px;
+        font-weight: 800;
+        color: #15803d;
+        font-variant-numeric: tabular-nums;
       }
       .shop-by-category-head {
         margin-bottom: 16px;
@@ -348,8 +425,14 @@
       }
       .product-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      @media (min-width: 900px) {
+        .product-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
       }
       .catalog-card.ecom-card {
         background: var(--card);
@@ -358,12 +441,95 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        transition: transform 0.22s ease, box-shadow 0.22s ease;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
       }
-      .catalog-card.ecom-card:hover {
-        transform: translateY(-4px) scale(1.015);
-        box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.18), 0 8px 16px -8px rgba(0, 0, 0, 0.1);
+      .catalog-card.ecom-card--app:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+      }
+      .ecom-card--app .ecom-card__main {
+        display: flex;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .ecom-card--app .ecom-card__media.catalog-card__media {
+        display: block;
+        flex: 0 0 88px;
+        width: 88px;
+        min-width: 88px;
+        height: 88px;
+        background: #f8fafc;
+        padding: 8px;
+        border-radius: 14px;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .ecom-card--app .ecom-card__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .ecom-card__cat-pill {
+        align-self: flex-start;
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748b;
+        background: #f1f5f9;
+        border-radius: 999px;
+        padding: 3px 8px;
+        line-height: 1.2;
+      }
+      .ecom-card__specs-mini {
+        font-size: 11px;
+        color: #94a3b8;
+        margin: 0;
+        line-height: 1.35;
+      }
+      .ecom-card__price-strip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px 12px;
+        font-size: 15px;
+        font-weight: 800;
+        color: #15803d;
+        margin-top: 2px;
+        letter-spacing: -0.02em;
+      }
+      .ecom-card__price-strip--quote {
+        font-size: 13px;
+        font-weight: 700;
+        color: #b45309;
+      }
+      .ecom-card__p {
+        font-variant-numeric: tabular-nums;
+      }
+      .ecom-card__p.ecom-p--hot {
+        color: #15803d;
+        font-size: 16px;
+      }
+      .ecom-card__stock-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+        font-size: 11px;
+      }
+      .ecom-stock-num {
+        color: #64748b;
+        font-weight: 600;
+      }
+      .stock-pill--muted {
+        background: #f1f5f9;
+        color: #64748b;
+        font-weight: 600;
       }
       .ecom-card__media.catalog-card__media {
         display: block;
@@ -427,6 +593,47 @@
       }
       .ecom-card__title.catalog-card__title:hover {
         color: var(--accent);
+      }
+      .ecom-card--app .ecom-card__title.catalog-card__title {
+        min-height: 0;
+        font-weight: 800;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+      }
+      .ecom-card--app .ecom-card__footer.catalog-card__body {
+        padding: 12px 14px 14px;
+        gap: 10px;
+      }
+      .ecom-card__qty-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .ecom-qty-lbl {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #64748b;
+      }
+      .ecom-card--app .ecom-card__actions.catalog-card__actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: stretch;
+      }
+      .ecom-card--app .qty-stepper.ecom-qty-stepper {
+        flex: 1 1 120px;
+        min-width: 0;
+      }
+      .ecom-card--app .btn-add-cart.ecom-btn-add-cart {
+        flex: 1 1 140px;
+        min-width: min(100%, 160px);
+      }
+      .ecom-card--app .btn-buy-now.ecom-btn-buy-now {
+        flex: 1 1 120px;
+        min-width: min(100%, 140px);
       }
       .ecom-card__sku.catalog-card__sku {
         font-size: 11px;
@@ -1247,17 +1454,20 @@
       }
       .shop-cart-badge {
         position: absolute;
-        top: 2px;
-        right: 2px;
-        min-width: 18px;
-        height: 18px;
-        padding: 0 5px;
+        top: 0;
+        right: 0;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
         border-radius: 999px;
-        font-size: 10px;
-        line-height: 18px;
+        font-size: 11px;
+        line-height: 20px;
         text-align: center;
-        background: #15803d;
+        font-weight: 800;
+        background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
         color: #fff;
+        border: 2px solid #fff;
+        box-shadow: 0 2px 8px rgba(21, 128, 61, 0.45);
       }
       .shop-menu-trigger {
         display: none;
@@ -1375,6 +1585,9 @@
         background: #f1f5f9;
       }
 
+      .shop-float-cart[hidden] {
+        display: none !important;
+      }
       .shop-float-cart {
         display: none;
         position: fixed;
@@ -1382,10 +1595,11 @@
         right: 0;
         bottom: 0;
         z-index: 90;
-        padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.92) 18%, #fff 100%);
-        border-top: 1px solid #e5e7eb;
-        box-shadow: 0 -8px 28px rgba(15, 23, 42, 0.08);
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.88) 28%, rgba(15, 23, 42, 0.94) 100%);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.22);
+        backdrop-filter: blur(10px);
       }
       .shop-float-cart__inner {
         max-width: 1320px;
@@ -1399,7 +1613,7 @@
         flex: 1;
         min-width: 0;
         text-decoration: none;
-        color: var(--text);
+        color: #fff;
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -1407,26 +1621,27 @@
       .shop-float-cart__label {
         font-size: 11px;
         font-weight: 700;
-        color: var(--muted);
+        color: rgba(255, 255, 255, 0.72);
         letter-spacing: 0.04em;
         text-transform: uppercase;
       }
       .shop-float-cart__sum {
-        font-size: 16px;
+        font-size: 20px;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
         font-variant-numeric: tabular-nums;
+        color: #fff;
       }
       .shop-float-cart__btn {
         flex-shrink: 0;
-        padding: 12px 22px;
+        padding: 14px 26px;
         border-radius: 999px;
-        background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+        background: linear-gradient(180deg, #34d399 0%, #16a34a 100%);
         color: #fff;
         font-weight: 800;
-        font-size: 15px;
+        font-size: 16px;
         text-decoration: none;
-        box-shadow: 0 4px 16px rgba(21, 128, 61, 0.35);
+        box-shadow: 0 6px 22px rgba(22, 163, 74, 0.45);
         border: none;
       }
       .shop-float-cart__btn[aria-disabled="true"],
@@ -1435,7 +1650,7 @@
         pointer-events: none;
       }
       .shop-float-cart.is-empty .shop-float-cart__sum {
-        color: var(--muted);
+        color: rgba(255, 255, 255, 0.65);
         font-weight: 600;
       }
 
@@ -1764,7 +1979,6 @@
             <a href="{% url 'login' %}" class="btn-go shop-link-btn">Sign in</a>
             <a href="{% url 'register' %}" class="btn-go shop-link-btn">Register</a>
           {% endif %}
-          <a href="/" class="shop-user-link-ghost">Staff Portal</a>
         </nav>
       </div>
     </header>
@@ -1786,12 +2000,10 @@
             <a href="{% url 'my-orders' %}">我的订单</a>
             <a href="{% url 'profile' %}">个人资料</a>
             <a href="{% url 'credit-home' %}">账期 / 信用</a>
-            <a href="/">员工入口 Staff Portal</a>
             <a href="{% url 'logout' %}">登出</a>
           {% else %}
             <a href="{% url 'login' %}?next=/shop/">登录</a>
             <a href="{% url 'register' %}">注册</a>
-            <a href="/">员工入口 Staff Portal</a>
           {% endif %}
           <a href="{% url 'delivery-help' %}">使用说明</a>
         </nav>
@@ -1819,6 +2031,107 @@
       </div>
     {% endif %}
 
+    {% if products %}
+      <section class="shop-discovery" aria-label="推荐与活动">
+        <div class="discovery-rail">
+          <h3 class="discovery-rail__head">🔥 热卖商品</h3>
+          <div class="discovery-rail__track" role="list">
+            {% for product in products|slice:":8" %}
+              <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
+                <div class="discovery-mini__img">
+                  {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+                  {% else %}
+                    <img
+                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
+                      alt=""
+                      loading="lazy"
+                    />
+                  {% endif %}
+                </div>
+                <p class="discovery-mini__name">{{ product.name }}</p>
+                <div class="discovery-mini__price">
+                  {% if product.price_on_request %}
+                    询价
+                  {% elif product.can_quote_single %}
+                    {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+                  {% elif product.can_quote_case %}
+                    {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="discovery-rail">
+          <h3 class="discovery-rail__head">⭐ 推荐产品</h3>
+          <div class="discovery-rail__track" role="list">
+            {% for product in products|slice:"8:16" %}
+              <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
+                <div class="discovery-mini__img">
+                  {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+                  {% else %}
+                    <img
+                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
+                      alt=""
+                      loading="lazy"
+                    />
+                  {% endif %}
+                </div>
+                <p class="discovery-mini__name">{{ product.name }}</p>
+                <div class="discovery-mini__price">
+                  {% if product.price_on_request %}
+                    询价
+                  {% elif product.can_quote_single %}
+                    {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+                  {% elif product.can_quote_case %}
+                    {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="discovery-rail">
+          <h3 class="discovery-rail__head">📦 今日补货推荐</h3>
+          <div class="discovery-rail__track" role="list">
+            {% for product in products|slice:"4:12" %}
+              <a href="{% url 'shop-product-detail' product.id %}" class="discovery-mini" role="listitem">
+                <div class="discovery-mini__img">
+                  {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
+                  {% else %}
+                    <img
+                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='140' viewBox='0 0 200 140'%3E%3Crect fill='%23e2e8f0' width='200' height='140'/%3E%3Ctext x='100' y='75' text-anchor='middle' fill='%2394a3b8' font-size='12'%3EIMG%3C/text%3E%3C/svg%3E"
+                      alt=""
+                      loading="lazy"
+                    />
+                  {% endif %}
+                </div>
+                <p class="discovery-mini__name">{{ product.name }}</p>
+                <div class="discovery-mini__price">
+                  {% if product.price_on_request %}
+                    询价
+                  {% elif product.can_quote_single %}
+                    {{ currency_symbol }}{{ product.display_single|floatformat:2 }}
+                  {% elif product.can_quote_case %}
+                    {{ currency_symbol }}{{ product.display_case|floatformat:2 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    {% endif %}
+
     <div class="shop-layout">
       <main class="shop-main">
         <section class="browse-categories" aria-label="Categories">
@@ -1826,12 +2139,19 @@
             <h2 class="shop-by-category__title">Shop by Category</h2>
           </header>
           <div class="cat-card-row" role="tablist" aria-label="Shop by category">
-            <button type="button" class="cat-card active" data-category-id="all" role="tab" aria-selected="true">
-              <span class="cat-card__glyph" aria-hidden="true">A</span>
+            <button type="button" class="cat-card active" data-category-id="all" data-emoji="🏠" role="tab" aria-selected="true">
+              <span class="cat-card__glyph" aria-hidden="true">🏠</span>
               <span class="cat-card__name">All Categories</span>
             </button>
             {% for c in categories %}
-              <button type="button" class="cat-card" data-category-id="{{ c.id }}" role="tab" aria-selected="false">
+              <button
+                type="button"
+                class="cat-card"
+                data-category-id="{{ c.id }}"
+                data-emoji="{% cycle '🧋' '🍬' '🥛' '🍵' '🧊' '📦' %}"
+                role="tab"
+                aria-selected="false"
+              >
                 <span class="cat-card__glyph" aria-hidden="true"></span>
                 <span class="cat-card__name">{% include "shop/_category_shop_label.html" with name=c.name only %}</span>
               </button>
@@ -1846,7 +2166,10 @@
           {% for product in products %}
             {% include "shop/_product_card.html" with product=product shop_customer=shop_customer shop_can_order=shop_can_order shop_order_block_hint=shop_order_block_hint %}
           {% empty %}
-            <p id="shop-catalog-empty" class="shop-empty">No products</p>
+            <div id="shop-catalog-empty" class="shop-empty-block">
+              <p class="shop-empty-block__title">暂无商品，请联系供应商</p>
+              <p class="shop-empty-block__hint">我们正在补货中，您可稍后再来或联系业务经理获取清单。</p>
+            </div>
           {% endfor %}
         </div>
       </main>
@@ -1887,17 +2210,17 @@
       </aside>
     </div>
 
-    <nav class="shop-float-cart" id="shop-float-cart" aria-label="购物车快捷栏">
+    <nav class="shop-float-cart" id="shop-float-cart" aria-label="购物车快捷栏" hidden>
       <div class="shop-float-cart__inner">
         <a href="#shop-cart-anchor" class="shop-float-cart__info" id="float-cart-info">
           <span class="shop-float-cart__label">购物车</span>
-          <span id="float-cart-summary" class="shop-float-cart__sum">0 件 · {{ currency_symbol }}0.00</span>
+          <span id="float-cart-summary" class="shop-float-cart__sum">🛒 0 件 · {{ currency_symbol }}0.00</span>
         </a>
         <a
           href="{% url 'shop-checkout' %}"
           class="shop-float-cart__btn"
           id="float-cart-checkout"
-        >去结账</a>
+        >Checkout →</a>
       </div>
     </nav>
 
@@ -1934,17 +2257,6 @@
         </form>
       </div>
     </div>
-
-    <p class="shop-footnote">
-      <strong>/shop/</strong> catalog &nbsp;|&nbsp; <a href="/">Staff Portal</a> &nbsp;|&nbsp;
-      <a href="/admin/">Admin</a>
-      {% if missing_images or missing_prices %}
-        <br /><br />
-        <strong>Data QA:</strong>
-        {% if missing_images %}{{ missing_images|length }} missing images (placeholder shown).{% endif %}
-        {% if missing_prices %}{{ missing_prices|length }} items need pricing (quote required).{% endif %}
-      {% endif %}
-    </p>
 
     <script>
       (function () {

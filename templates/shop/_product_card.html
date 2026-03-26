@@ -1,20 +1,20 @@
-{% comment %}Catalog product card — e-commerce layout; names/units from DB{% endcomment %}
+{% comment %}点单式横向商品卡 — 保留 catalog-card / data-pid / mode / qty / 按钮 class 供 JS 使用{% endcomment %}
 {% load shop_tags %}
 <div
-  class="catalog-card ecom-card"
+  class="catalog-card ecom-card ecom-card--app"
   data-product-id="{{ product.id }}"
   data-category-id="{% firstof product.category_id '' %}"
   data-pid="{{ product.id }}"
 >
-  <div class="ecom-card__top-row">
+  <div class="ecom-card__main">
     <a class="ecom-card__media catalog-card__media" href="{% url 'shop-product-detail' product.id %}">
       <div class="ecom-card__media-inner">
         {% if product.image_url %}
-          <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy" decoding="async" />
+          <img src="{{ product.image_url }}" alt="" loading="lazy" decoding="async" />
         {% else %}
           <img
-            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect fill='%23f3f4f6' width='400' height='400'/%3E%3Ctext x='200' y='205' text-anchor='middle' fill='%239ca3af' font-size='14' font-family='system-ui,sans-serif'%3ENo image%3C/text%3E%3C/svg%3E"
-            alt="{{ product.name }}"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%23f1f5f9' width='200' height='200'/%3E%3Ctext x='100' y='105' text-anchor='middle' fill='%2394a3b8' font-size='11'%3EIMG%3C/text%3E%3C/svg%3E"
+            alt=""
             loading="lazy"
             decoding="async"
           />
@@ -22,48 +22,62 @@
       </div>
     </a>
 
-    <div class="ecom-card__meta-block">
-      <div class="ecom-card__meta">
-        {% if product.category_name and product.category_name|spec_en != "—" %}
-          <span class="ecom-card__category-pill">{{ product.category_name|spec_en }}</span>
-        {% endif %}
-        <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
-        <p class="ecom-card__sku catalog-card__sku">
-          <span class="catalog-card__sku-label">SKU</span> {{ product.sku|default:"—" }}
-        </p>
-        <div class="ecom-card__specs" aria-label="Unit specifications">
-          <span class="ecom-card__spec-label">规格</span>
-          <span class="ecom-card__spec">{{ product.unit_label|spec_en }}</span>
-          {% if product.case_label and product.case_label|spec_en != "—" %}
-            <span class="ecom-card__spec-sep" aria-hidden="true">·</span>
-            <span class="ecom-card__spec">{{ product.case_label|spec_en }}</span>
+    <div class="ecom-card__info">
+      {% if product.category_name and product.category_name|spec_en != "—" %}
+        <span class="ecom-card__cat-pill">{{ product.category_name|spec_en }}</span>
+      {% endif %}
+      <a class="ecom-card__title catalog-card__title" href="{% url 'shop-product-detail' product.id %}">{{ product.name }}</a>
+      <p class="ecom-card__sku catalog-card__sku">SKU {{ product.sku|default:"—" }}</p>
+      <p class="ecom-card__specs-mini">{{ product.unit_label|spec_en }}{% if product.case_label and product.case_label|spec_en != "—" %} · {{ product.case_label|spec_en }}{% endif %}</p>
+
+      {% if product.price_on_request %}
+        <div class="ecom-card__price-strip ecom-card__price-strip--quote">询价 · 联系业务</div>
+      {% else %}
+        <div class="ecom-card__price-strip" aria-label="价格">
+          {% if product.can_quote_single %}
+            <span class="ecom-card__p ecom-p--hot">袋 {{ currency_symbol }}{{ product.display_single|floatformat:2 }}</span>
+          {% endif %}
+          {% if product.can_quote_case %}
+            <span class="ecom-card__p">箱 {{ currency_symbol }}{{ product.display_case|floatformat:2 }}</span>
           {% endif %}
         </div>
-        {% if product.price_note %}
-          <div class="ecom-card__desc">{{ product.price_note }}</div>
+      {% endif %}
+
+      <div class="ecom-card__stock-row catalog-card__stock">
+        {% if product.stock_enabled %}
+          <span class="ecom-stock-num">库存 {{ product.sellable_stock|floatformat:0 }}</span>
+          {% if product.is_out_of_stock %}
+            <span class="stock-pill stock-pill--out">缺货</span>
+          {% elif product.is_low_stock %}
+            <span class="stock-pill stock-pill--warn">紧张</span>
+          {% else %}
+            <span class="stock-pill stock-pill--ok">有货</span>
+          {% endif %}
+        {% else %}
+          <span class="stock-pill stock-pill--muted">现货可订</span>
         {% endif %}
       </div>
     </div>
   </div>
 
-  <div class="catalog-card__body ecom-card__body">
+  <div class="catalog-card__body ecom-card__footer">
     {% if product.price_on_request %}
-      <div class="catalog-card__prices catalog-card__prices--quote" aria-label="Pricing">
-        <span class="catalog-quote">Quote required — contact us for bag &amp; case pricing</span>
+      <div class="catalog-card__prices catalog-card__prices--quote" aria-hidden="true">
+        <span class="catalog-quote">需询价</span>
       </div>
     {% else %}
       {% if product.strike_single or product.strike_case %}
         <div class="ecom-card__discount-row" aria-label="Promotions">
-          <span class="catalog-discount-tag">Tier / member pricing</span>
+          <span class="catalog-discount-tag">会员价</span>
         </div>
       {% endif %}
 
-      <div class="catalog-card__prices ecom-card__prices" aria-label="Unit pricing">
+      <div class="catalog-card__prices ecom-card__prices ecom-card__prices--detail" aria-label="Unit pricing">
         <div
           class="price-block{% if product.default_mode == 'single' %} price-block--default{% endif %}"
           data-price-type="bag"
         >
-          <div class="price-block__label">单价（Per Bag）</div>
+          <div class="price-block__label">单价（袋）</div>
           <div class="price-block__unit">{{ product.unit_label|spec_en }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_single %}
@@ -82,7 +96,7 @@
           class="price-block{% if product.default_mode == 'case' %} price-block--default{% endif %}"
           data-price-type="case"
         >
-          <div class="price-block__label">箱价（Per Case）</div>
+          <div class="price-block__label">箱价</div>
           <div class="price-block__unit">{{ product.case_label|spec_en }}</div>
           <div class="price-block__value">
             {% if not product.can_quote_case %}
@@ -109,30 +123,17 @@
           ></span>
         {% endif %}
         {% if product.profit_risk_single or product.profit_risk_case %}
-          <span class="catalog-chip catalog-chip--warn">Margin risk</span>
+          <span class="catalog-chip catalog-chip--warn">毛利提示</span>
         {% endif %}
       </div>
     {% endif %}
 
-    <div class="catalog-card__stock">
-      {% if product.stock_enabled %}
-        <div class="stock-line-main stock-line-main--compact">
-          <span class="stock-line-compact__num">库存：{{ product.sellable_stock|floatformat:0 }}</span>
-          {% if product.is_out_of_stock %}
-            <span class="stock-pill stock-pill--out">缺货</span>
-          {% elif product.is_low_stock %}
-            <span class="stock-pill stock-pill--warn">库存紧张</span>
-          {% else %}
-            <span class="stock-pill stock-pill--ok">有货</span>
-          {% endif %}
-        </div>
-      {% else %}
-        <span class="catalog-muted catalog-muted--stock">库存未跟踪（可下单）</span>
-      {% endif %}
-    </div>
+    {% if product.price_note %}
+      <div class="ecom-card__desc">{{ product.price_note }}</div>
+    {% endif %}
 
-    <div class="catalog-card__buy ecom-card__buy">
-      <div class="ecom-card__mode-label">Purchase as</div>
+    <div class="ecom-card__buy">
+      <div class="ecom-card__mode-label">购买单位</div>
       <div class="catalog-segment ecom-mode-toggle" role="group" aria-label="Unit type">
         <label class="catalog-segment__opt ecom-mode-btn">
           <input
@@ -142,7 +143,7 @@
             {% if product.default_mode == "single" %}checked{% endif %}
             {% if not product.can_split_sale or not product.can_quote_single %}disabled{% endif %}
           />
-          <span class="ecom-mode-btn__text">Per Bag</span>
+          <span class="ecom-mode-btn__text">按袋</span>
         </label>
         <label class="catalog-segment__opt ecom-mode-btn">
           <input
@@ -152,48 +153,50 @@
             {% if product.default_mode == "case" %}checked{% endif %}
             {% if not product.can_quote_case %}disabled{% endif %}
           />
-          <span class="ecom-mode-btn__text">Per Case</span>
+          <span class="ecom-mode-btn__text">按箱</span>
         </label>
       </div>
-      <div class="ecom-card__qty-label">Quantity</div>
-      <div class="catalog-card__actions ecom-card__actions">
-        <div class="qty-stepper ecom-qty-stepper">
-          <button type="button" data-act="minus" aria-label="Decrease quantity">−</button>
-          <input type="number" min="0.01" step="0.01" value="1" aria-label="Quantity" />
-          <button type="button" data-act="plus" aria-label="Increase quantity">+</button>
+      <div class="ecom-card__qty-row">
+        <span class="ecom-qty-lbl">数量</span>
+        <div class="catalog-card__actions ecom-card__actions">
+          <div class="qty-stepper ecom-qty-stepper">
+            <button type="button" data-act="minus" aria-label="减少">−</button>
+            <input type="number" min="0.01" step="0.01" value="1" aria-label="数量" />
+            <button type="button" data-act="plus" aria-label="增加">+</button>
+          </div>
+          <button
+            type="button"
+            class="btn-add-cart ecom-btn-add-cart"
+            data-pid="{{ product.id }}"
+            {% if shop_customer and not shop_can_order %}
+              disabled
+              title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
+            {% elif product.price_on_request %}
+              disabled
+            {% elif product.stock_enabled and product.is_out_of_stock %}
+              disabled
+              title="缺货，无法加入购物车"
+            {% endif %}
+          >
+            加入购物车
+          </button>
+          <button
+            type="button"
+            class="btn-buy-now ecom-btn-buy-now"
+            data-pid="{{ product.id }}"
+            {% if shop_customer and not shop_can_order %}
+              disabled
+              title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
+            {% elif product.price_on_request %}
+              disabled
+            {% elif product.stock_enabled and product.is_out_of_stock %}
+              disabled
+              title="缺货，无法立即购买"
+            {% endif %}
+          >
+            立即购买
+          </button>
         </div>
-        <button
-          type="button"
-          class="btn-add-cart ecom-btn-add-cart"
-          data-pid="{{ product.id }}"
-          {% if shop_customer and not shop_can_order %}
-            disabled
-            title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
-          {% elif product.price_on_request %}
-            disabled
-          {% elif product.stock_enabled and product.is_out_of_stock %}
-            disabled
-            title="缺货，无法加入购物车"
-          {% endif %}
-        >
-          加入购物车
-        </button>
-        <button
-          type="button"
-          class="btn-buy-now ecom-btn-buy-now"
-          data-pid="{{ product.id }}"
-          {% if shop_customer and not shop_can_order %}
-            disabled
-            title="{{ shop_order_block_hint|default:'This account is suspended. Please contact us.' }}"
-          {% elif product.price_on_request %}
-            disabled
-          {% elif product.stock_enabled and product.is_out_of_stock %}
-            disabled
-            title="缺货，无法立即购买"
-          {% endif %}
-        >
-          立即购买
-        </button>
       </div>
     </div>
   </div>
