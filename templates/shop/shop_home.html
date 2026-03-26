@@ -1147,12 +1147,19 @@
       .vm__video {
         width: 100%;
         aspect-ratio: 16 / 9;
-        max-height: 300px;
+        max-height: min(72vh, 640px);
         background: #000;
+        border: 0;
       }
       @media (min-width: 900px) {
         .vm__video {
-          max-height: 300px;
+          max-height: min(72vh, 720px);
+        }
+      }
+      @media (max-width: 520px) {
+        .vm__panel {
+          width: 94vw;
+          border-radius: 16px;
         }
       }
       .ecom-card__meta {
@@ -3704,7 +3711,8 @@
         var vmClose = document.getElementById("vm-close");
         var vmIframe = document.getElementById("vm-iframe");
         var watchStory = document.getElementById("watch-story");
-        var ABOUT_VIDEO = "https://www.youtube.com/embed/c8OlT_wsttQ?autoplay=1&mute=1&rel=0";
+        var ABOUT_VIDEO =
+          "https://www.youtube.com/embed/c8OlT_wsttQ?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1";
 
         function closeVideo() {
           if (!vm) return;
