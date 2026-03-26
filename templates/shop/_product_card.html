@@ -81,7 +81,7 @@ Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
             name="mode-{{ product.id }}"
             value="single"
             {% if product.can_quote_single %}{% if not product.can_quote_case %}checked{% else %}checked{% endif %}{% endif %}
-            {% if product.price_on_request or not product.can_quote_single or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+            {% if product.price_on_request or not product.can_quote_single or product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
           />
           <span class="ecom-mode-btn__text">袋</span>
         </label>
@@ -91,7 +91,7 @@ Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
             name="mode-{{ product.id }}"
             value="case"
             {% if not product.can_quote_single and product.can_quote_case %}checked{% endif %}
-            {% if product.price_on_request or not product.can_quote_case or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+            {% if product.price_on_request or not product.can_quote_case or product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
           />
           <span class="ecom-mode-btn__text">箱</span>
         </label>
@@ -117,7 +117,7 @@ Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
         type="button"
         class="btn-add-cart ecom-btn-add-cart"
         data-pid="{{ product.id }}"
-        {% if product.price_on_request or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+        {% if product.price_on_request or product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
       >
         加入购物车
       </button>
@@ -125,7 +125,7 @@ Keep: catalog-card / data-pid / mode / qty-stepper / btn-add-cart / btn-buy-now
         type="button"
         class="btn-buy-now ecom-btn-buy-now"
         data-pid="{{ product.id }}"
-        {% if product.price_on_request or (product.stock_enabled and product.is_out_of_stock) %}disabled{% endif %}
+        {% if product.price_on_request or product.stock_enabled and product.is_out_of_stock %}disabled{% endif %}
       >
         立即购买
       </button>
