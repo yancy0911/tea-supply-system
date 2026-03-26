@@ -2234,6 +2234,9 @@
         align-items: center;
         justify-content: center;
         padding: 0;
+        position: relative;
+        z-index: 120;
+        pointer-events: auto;
       }
       .shop-menu-bars {
         display: block;
@@ -4013,7 +4016,7 @@
             });
           }
           saveCart(cart);
-          renderCart();
+          refreshCartUI();
           showToast("已加入购物车");
           // Light refresh animation (optional, non-blocking)
           try {
@@ -4266,12 +4269,19 @@
           }
         }
 
+        // Single entry point: keep all cart UIs in sync.
+        function refreshCartUI() {
+          try {
+            renderCart();
+          } catch (e) {}
+        }
+
         // Cross-tab sync: if cart changes in another tab, refresh UI.
         window.addEventListener("storage", function (e) {
           if (!e) return;
           if (e.key === "cart") {
             try {
-              renderCart();
+              refreshCartUI();
             } catch (err) {}
           }
         });
@@ -4370,6 +4380,7 @@
         var openBtn = document.getElementById("shop-menu-open");
         var closeBtn = document.getElementById("shop-menu-close");
         var backdrop = document.getElementById("shop-menu-backdrop");
+        var drawerOpen = false;
         function openDrawer() {
           if (!drawer) return;
           drawer.removeAttribute("hidden");
@@ -4377,6 +4388,7 @@
           drawer.setAttribute("aria-hidden", "false");
           if (openBtn) openBtn.setAttribute("aria-expanded", "true");
           document.body.style.overflow = "hidden";
+          drawerOpen = true;
         }
         function closeDrawer() {
           if (!drawer) return;
@@ -4385,13 +4397,28 @@
           drawer.setAttribute("aria-hidden", "true");
           if (openBtn) openBtn.setAttribute("aria-expanded", "false");
           document.body.style.overflow = "";
+          drawerOpen = false;
         }
-        if (openBtn) openBtn.addEventListener("click", openDrawer);
+        function toggleDrawer(ev) {
+          try {
+            if (ev) {
+              ev.preventDefault();
+              ev.stopPropagation();
+            }
+          } catch (e) {}
+          if (drawerOpen || (drawer && drawer.classList.contains("is-open"))) closeDrawer();
+          else openDrawer();
+        }
+        // iOS/Safari: bind touchend to avoid occasional click suppression.
+        if (openBtn) {
+          openBtn.addEventListener("click", toggleDrawer);
+          openBtn.addEventListener("touchend", toggleDrawer, { passive: false });
+        }
         if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
         if (backdrop) backdrop.addEventListener("click", closeDrawer);
 
         applyProductFilter();
-        renderCart();
+        refreshCartUI();
         translateShopPriceNotes();
         sanitizeProductNameDisplay();
       })();
