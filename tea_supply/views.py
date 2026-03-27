@@ -748,7 +748,7 @@ def _normalize_checkout_lines_payload(lines_raw):
 
 def _build_checkout_cart_items(customer, lines):
     if not lines:
-        return [], []
+        return []
 
     product_ids = sorted(
         {int(line["product_id"]) for line in lines if line.get("product_id")}
@@ -761,7 +761,6 @@ def _build_checkout_cart_items(customer, lines):
     product_map = {int(product.pk): product for product in products}
 
     cart_items = []
-    cart_items_seed = []
     for line in lines:
         product = product_map.get(int(line["product_id"]))
         if not product:
@@ -792,20 +791,7 @@ def _build_checkout_cart_items(customer, lines):
                 "image_url": image_url,
             }
         )
-        cart_items_seed.append(
-            {
-                "product_id": int(product.pk),
-                "sale_type": sale_type,
-                "quantity": qty_num,
-                "qty": qty_num,
-                "unit_price": money_float(unit_price),
-                "price": money_float(unit_price),
-                "subtotal": money_float(subtotal),
-                "sku": product.sku,
-                "name": product.name,
-            }
-        )
-    return cart_items, cart_items_seed
+    return cart_items
 
 
 def _ensure_customer_role(user):
@@ -1499,11 +1485,19 @@ def shop_checkout(request):
         request.session.get(SHOP_CHECKOUT_CART_SESSION_KEY, [])
     )
     if request.method == "POST":
-        checkout_lines = _normalize_checkout_lines_payload(
-            request.POST.get("lines_json", "[]")
-        )
+        content_type = str(request.META.get("CONTENT_TYPE") or "").lower()
+        if "application/json" in content_type:
+            try:
+                checkout_payload = json.loads((request.body or b"[]").decode("utf-8"))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                checkout_payload = []
+        else:
+            checkout_payload = request.POST.get("lines_json", "[]")
+        checkout_lines = _normalize_checkout_lines_payload(checkout_payload)
         request.session[SHOP_CHECKOUT_CART_SESSION_KEY] = checkout_lines
         request.session.modified = True
+        if "application/json" in str(request.META.get("CONTENT_TYPE") or "").lower():
+            return JsonResponse({"ok": True})
 
     if not request.user.is_authenticated:
         return redirect(f"/login/?next={request.path}")
@@ -1518,10 +1512,10 @@ def shop_checkout(request):
         .order_by("category__sort_order", "category_id", "name")
     )
     shop_items = [_shop_product_row(customer, p) for p in products]
-    cart_items, cart_items_seed = _build_checkout_cart_items(customer, checkout_lines)
+    cart_items = _build_checkout_cart_items(customer, checkout_lines)
     cart_item_count = len(cart_items)
     cart_qty_total = sum(float(item["qty"]) for item in cart_items)
-    cart_total_amount = sum(float(item["subtotal"]) for item in cart_items)
+    cart_total = sum(float(item["subtotal"]) for item in cart_items)
     csrf_token_value = get_token(request)
     response = render(
         request,
@@ -1545,11 +1539,10 @@ def shop_checkout(request):
                 settings, "SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK", False
             ),
             "cart_items": cart_items,
-            "cart_total": cart_total_amount,
-            "cart_items_seed": cart_items_seed,
+            "cart_total": cart_total,
             "cart_item_count": cart_item_count,
             "cart_qty_total": cart_qty_total,
-            "cart_total_amount": cart_total_amount,
+            "cart_total_amount": cart_total,
             "cart_lines_json": json.dumps(checkout_lines),
         },
     )

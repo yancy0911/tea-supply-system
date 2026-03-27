@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>结账 — MO·CHA</title>
     {{ shop_products|json_script:"shop-products-data" }}
-    {{ cart_items_seed|json_script:"checkout-cart-seed" }}
     <style>
       :root {
         --bg: #f3f4f6;
@@ -1032,42 +1031,28 @@
             <div id="lines-area" class="lines">
               {% if cart_items %}
                 {% for item in cart_items %}
-                  <div class="cart-row line-card" data-pid="{{ item.product.id }}" data-sale-type="{{ item.sale_type }}">
-                    <div class="line-img">
-                      <img
-                        src="{{ item.image_url }}"
-                        alt="{{ item.product.name }}"
-                        onerror="this.onerror=null;this.src='/static/products/_fallback.jpg';"
-                      />
-                    </div>
-
+                  <div class="cart-row" data-pid="{{ item.product.id }}" data-sale-type="{{ item.sale_type }}">
+                    <img
+                      class="line-img"
+                      src="{{ item.image_url }}"
+                      alt="{{ item.product.name }}"
+                      onerror="this.onerror=null;this.src='/static/products/_fallback.jpg';"
+                    />
                     <div class="line-info">
                       <div class="line-title">{{ item.product.name }}</div>
                       <div class="line-sku">SKU: {{ item.product.sku }}</div>
                     </div>
 
-                    <div class="line-stat">
-                      <span>Unit</span>
-                      <span>{{ currency_symbol }}<span class="line-unit">{{ item.unit_price|floatformat:2 }}</span></span>
-                    </div>
+                    <button type="button" class="qty-btn" data-action="minus">-</button>
+                    <input type="number" class="cart-qty-input" value="{{ item.quantity }}" min="1" step="0.01" />
+                    <button type="button" class="qty-btn" data-action="plus">+</button>
 
-                    <div class="line-stat">
-                      <span>Qty</span>
-                      <div class="qty-control">
-                        <button type="button" class="qty-btn" data-action="minus" data-delta="-1">-</button>
-                        <input type="number" class="cart-qty-input" value="{{ item.quantity }}" min="1" step="0.01" />
-                        <button type="button" class="qty-btn" data-action="plus" data-delta="1">+</button>
-                      </div>
-                    </div>
-
-                    <div class="line-stat">
-                      <span>Subtotal</span>
-                      <span>{{ currency_symbol }}<span class="line-sub">{{ item.subtotal|floatformat:2 }}</span></span>
-                    </div>
+                    <div class="unit-price">{{ currency_symbol }}<span class="line-unit">{{ item.unit_price|floatformat:2 }}</span></div>
+                    <div class="subtotal">{{ currency_symbol }}<span class="line-sub">{{ item.subtotal|floatformat:2 }}</span></div>
                   </div>
                 {% endfor %}
               {% else %}
-                <p style="padding:20px;">购物车为空</p>
+                <div>购物车为空</div>
               {% endif %}
             </div>
 
@@ -1079,10 +1064,10 @@
                 <span class="k">商品数量</span><span class="v" id="summary-qty">{{ cart_qty_total|floatformat:"-2" }}</span>
               </div>
               <div class="summary-row">
-                <span class="k">Total</span><span class="v" id="summary-total">{{ currency_symbol }}{{ cart_total_amount|floatformat:2 }}</span>
+                <span class="k">Total</span><span class="v" id="summary-total">{{ currency_symbol }}{{ cart_total|floatformat:2 }}</span>
               </div>
             </div>
-            <div class="sum" id="order-sum">合计 {{ currency_symbol }}{{ cart_total_amount|floatformat:2 }}</div>
+            <div class="sum" id="order-sum">合计 {{ currency_symbol }}{{ cart_total|floatformat:2 }}</div>
             <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration: none; text-align: center; display: block">
               返回商城加购
             </a>
@@ -1092,7 +1077,7 @@
         <div class="sf-cta-footer" aria-label="提交订单">
           <div class="sf-cta-footer__inner">
             <button type="submit" class="btn" id="btn-place" disabled>
-              提交订单<span id="btn-total" style="font-weight: 900; letter-spacing: -0.02em">（{{ currency_symbol }}{{ cart_total_amount|floatformat:2 }}）</span>
+              提交订单<span id="btn-total" style="font-weight: 900; letter-spacing: -0.02em">（{{ currency_symbol }}{{ cart_total|floatformat:2 }}）</span>
             </button>
           </div>
         </div>
@@ -1100,13 +1085,7 @@
     </div>
 
     <script>
-      console.log("JS LOADED");
-      // 这里写 checkout 所有 JS 逻辑
       document.addEventListener("DOMContentLoaded", function () {
-        console.log("DOM READY");
-        console.log("ALL ROWS:", document.querySelectorAll("*"));
-        console.log("qty-btn:", document.querySelectorAll(".qty-btn"));
-        console.log("cart-qty-input:", document.querySelectorAll(".cart-qty-input"));
         function showToast(msg) {
           var t = document.getElementById("toast");
           if (!t) return;
@@ -1116,25 +1095,6 @@
             t.classList.remove("show");
           }, 2000);
         }
-        var TEST_MODE = {% if checkout_test_mode_skip_stock %}true{% else %}false{% endif %};
-        var shopCanOrder = {% if shop_can_order %}true{% else %}false{% endif %};
-        var shopOrderBlockHint = "{{ shop_order_block_hint|default:''|escapejs }}";
-        var creditAllow = {% if credit_allow %}true{% else %}false{% endif %};
-        var creditLimit = parseFloat("{{ credit_limit|floatformat:2 }}") || 0;
-        var currentDebt = parseFloat("{{ current_debt|floatformat:2 }}") || 0;
-        var currentOrderTotal = 0;
-        var PRODUCTS = [];
-        try {
-          var el = document.getElementById("shop-products-data");
-          if (el && el.textContent) PRODUCTS = JSON.parse(el.textContent) || [];
-        } catch (e) {}
-
-        function productById(pid) {
-          var n = Number(pid);
-          return PRODUCTS.find(function (x) {
-            return Number(x.id) === n;
-          });
-        }
 
         function fmtMoney(n) {
           var x = parseFloat(n);
@@ -1142,201 +1102,25 @@
           return x.toFixed(2);
         }
 
-        var CJK_RE = /[\u4e00-\u9fff]/;
-        function containsCjk(s) {
-          return CJK_RE.test(String(s || ""));
-        }
-        function priceNoteEn(raw) {
-          if (raw == null || raw === "") return "";
-          if (containsCjk(raw)) return "";
-          return String(raw);
-        }
-
-        function getCart() {
-          try {
-            var raw = localStorage.getItem("cart");
-            if (!raw) return [];
-            var p = JSON.parse(raw);
-            if (!Array.isArray(p)) return [];
-            return p;
-          } catch (e) {
-            try {
-              localStorage.removeItem("cart");
-            } catch (e2) {}
-            return [];
-          }
-        }
-
-        function saveCart(c) {
-          cart = c;
-          try {
-            localStorage.setItem("cart", JSON.stringify(cart));
-          } catch (e) {}
-        }
-
-        function hydrateCartFromTemplate() {
-          var current = getCart();
-          if (Array.isArray(current) && current.length > 0) return current;
-          try {
-            var seedEl = document.getElementById("checkout-cart-seed");
-            if (!seedEl || !seedEl.textContent) return current;
-            var seeded = JSON.parse(seedEl.textContent) || [];
-            if (!Array.isArray(seeded) || seeded.length === 0) return current;
-            saveCart(seeded);
-            return seeded;
-          } catch (e) {
-            return current;
-          }
-        }
-
-        function getCsrfToken() {
-          var name = "csrftoken=";
-          var parts = String(document.cookie || "").split(";");
-          for (var i = 0; i < parts.length; i++) {
-            var c = String(parts[i] || "").trim();
-            if (c.indexOf(name) === 0) return decodeURIComponent(c.slice(name.length));
-          }
-          return "";
-        }
-
         function normalizeSaleType(st) {
           return st === "case" ? "case" : "single";
         }
 
-        function checkoutRowSelector(productId, saleType) {
-          return '.line-card[data-pid="' + String(productId) + '"][data-sale-type="' + normalizeSaleType(saleType) + '"]';
+        function parseMoneyText(text) {
+          var raw = String(text || "").replace(/[^0-9.\-]/g, "");
+          var num = parseFloat(raw);
+          return isNaN(num) ? 0 : num;
         }
 
-        function getCheckoutRow(productId, saleType) {
-          return linesArea ? linesArea.querySelector(checkoutRowSelector(productId, saleType)) : null;
-        }
-
-        function updateCheckoutSummaryUI() {
-          cart = getCart();
-          var sum = 0;
-          var qtyTotal = 0;
-          cart.forEach(function (line) {
-            sum += parseFloat(line.subtotal) || 0;
-            qtyTotal += parseFloat(line.quantity) || 0;
-          });
-          var cartTotalEl = document.getElementById("cart-total");
-          var floatCartSummaryEl = document.getElementById("float-cart-summary");
-          if (goodsSumEl) goodsSumEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
-          if (summaryKinds) summaryKinds.textContent = String(cart.length);
-          if (summaryQty) summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
-          if (summaryTotal) summaryTotal.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
-          if (cartTotalEl) cartTotalEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
-          if (floatCartSummaryEl) {
-            floatCartSummaryEl.textContent =
-              (qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(1)) +
-              " 件 · {{ currency_symbol }}" +
-              fmtMoney(sum);
-          }
-          sumEl.textContent = "合计 {{ currency_symbol }}" + fmtMoney(sum);
-          if (btnTotalEl) btnTotalEl.textContent = "（{{ currency_symbol }}" + fmtMoney(sum) + "）";
-          currentOrderTotal = sum;
-          hiddenJson.value = JSON.stringify(
-            cart.map(function (l) {
-              return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
-            })
-          );
-        }
-
-        function applyCheckoutLinePriceUpdate(productId, saleType, qty, unitPrice, subtotal) {
-          saleType = normalizeSaleType(saleType);
-          cart = getCart();
-          var line = cart.find(function (x) {
-            return Number(x.product_id) === Number(productId) && normalizeSaleType(x.sale_type) === saleType;
-          });
-          if (!line) return;
-          line.quantity = qty;
-          line.qty = qty;
-          line.unit_price = unitPrice;
-          line.price = unitPrice;
-          line.subtotal = subtotal;
-          saveCart(cart);
-
-          var row = getCheckoutRow(productId, saleType);
-          if (row) {
-            var qtyInput = row.querySelector(".cart-qty-input");
-            var unitEl = row.querySelector(".line-unit");
-            var subEl = row.querySelector(".line-sub");
-            if (qtyInput) qtyInput.value = String(qty);
-            if (unitEl) unitEl.textContent = fmtMoney(unitPrice);
-            if (subEl) subEl.textContent = fmtMoney(subtotal);
-          }
-          updateCheckoutSummaryUI();
-        }
-
-        function revertCheckoutQty(productId, saleType, previousQty) {
-          saleType = normalizeSaleType(saleType);
-          cart = getCart();
-          var line = cart.find(function (x) {
-            return Number(x.product_id) === Number(productId) && normalizeSaleType(x.sale_type) === saleType;
-          });
-          if (!line) return;
-          line.quantity = previousQty;
-          line.qty = previousQty;
-          saveCart(cart);
-          var row = getCheckoutRow(productId, saleType);
-          if (!row) return;
-          var qtyInput = row.querySelector(".cart-qty-input");
-          if (qtyInput) qtyInput.value = String(previousQty);
-        }
-
-        var checkoutPriceTimers = {};
-        var checkoutPriceSeq = {};
-        function scheduleCheckoutPriceSync(productId, saleType, qty, previousQty) {
-          saleType = normalizeSaleType(saleType);
-          var key = String(productId) + "_" + saleType;
-          if (checkoutPriceTimers[key]) clearTimeout(checkoutPriceTimers[key]);
-          checkoutPriceSeq[key] = (checkoutPriceSeq[key] || 0) + 1;
-          var seq = checkoutPriceSeq[key];
-          checkoutPriceTimers[key] = setTimeout(function () {
-            fetch("/api/get_product_price/", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCsrfToken()
-              },
-              body: JSON.stringify({
-                product_id: Number(productId),
-                qty: qty,
-                sale_type: saleType
-              })
-            })
-              .then(function (res) {
-                return res.json().then(function (data) {
-                  if (!res.ok) throw new Error(data && data.error ? data.error : "Price request failed.");
-                  return data;
-                });
-              })
-              .then(function (data) {
-                if (checkoutPriceSeq[key] !== seq) return;
-                applyCheckoutLinePriceUpdate(
-                  productId,
-                  saleType,
-                  parseFloat(data.qty),
-                  parseFloat(data.unit_price),
-                  parseFloat(data.subtotal)
-                );
-              })
-              .catch(function (err) {
-                if (checkoutPriceSeq[key] !== seq) return;
-                revertCheckoutQty(productId, saleType, previousQty);
-                showToast(err && err.message ? err.message : "价格更新失败");
-              });
-          }, 250);
-        }
-
-        hydrateCartFromTemplate();
-        var cart = getCart();
+        var creditAllow = {% if credit_allow %}true{% else %}false{% endif %};
+        var creditLimit = parseFloat("{{ credit_limit|floatformat:2 }}") || 0;
+        var currentDebt = parseFloat("{{ current_debt|floatformat:2 }}") || 0;
+        var currentOrderTotal = parseFloat("{{ cart_total|floatformat:2 }}") || 0;
         var linesArea = document.getElementById("lines-area");
         var sumEl = document.getElementById("order-sum");
         var hiddenJson = document.getElementById("cart-lines-json");
         var btn = document.getElementById("btn-place");
         var btnTotalEl = document.getElementById("btn-total");
-        var goodsSumEl = document.getElementById("goods-sum");
         var summaryKinds = document.getElementById("summary-kinds");
         var summaryQty = document.getElementById("summary-qty");
         var summaryTotal = document.getElementById("summary-total");
@@ -1346,8 +1130,8 @@
         var checkoutForm = document.getElementById("checkout-form");
         var summaryPaymentRadios = document.querySelectorAll('input[name="summary-payment-method"]');
         var checkNumberWrap = document.getElementById("check-number-wrap");
-        // Mobile: ensure focused inputs are visible (keyboard will shrink viewport).
         var requiredFieldIds = ["store_name", "contact_name", "delivery_phone", "delivery_address"];
+
         requiredFieldIds.forEach(function (id) {
           var el = document.getElementById(id);
           if (!el) return;
@@ -1361,6 +1145,73 @@
             }, 60);
           });
         });
+
+        function getRenderedRows() {
+          return linesArea ? Array.prototype.slice.call(linesArea.querySelectorAll(".cart-row")) : [];
+        }
+
+        function getRowQty(row) {
+          var input = row.querySelector(".cart-qty-input");
+          var value = parseFloat(input && input.value);
+          return isNaN(value) || value <= 0 ? 1 : value;
+        }
+
+        function getRowUnitPrice(row) {
+          var el = row.querySelector(".line-unit") || row.querySelector(".unit-price");
+          return parseMoneyText(el ? el.textContent : "");
+        }
+
+        function setRowSubtotal(row, subtotal) {
+          var el = row.querySelector(".line-sub") || row.querySelector(".subtotal");
+          if (!el) return;
+          if (el.classList.contains("line-sub")) {
+            el.textContent = fmtMoney(subtotal);
+            return;
+          }
+          el.textContent = "{{ currency_symbol }}" + fmtMoney(subtotal);
+        }
+
+        function collectCheckoutLines() {
+          return getRenderedRows()
+            .map(function (row) {
+              return {
+                product_id: Number(row.getAttribute("data-pid")),
+                sale_type: normalizeSaleType(row.getAttribute("data-sale-type")),
+                quantity: getRowQty(row)
+              };
+            })
+            .filter(function (line) {
+              return isFinite(line.product_id) && line.product_id > 0 && isFinite(line.quantity) && line.quantity > 0;
+            });
+        }
+
+        function updateCheckoutSummaryUI() {
+          var rows = getRenderedRows();
+          var sum = 0;
+          var qtyTotal = 0;
+
+          rows.forEach(function (row) {
+            var qty = getRowQty(row);
+            var subtotal = qty * getRowUnitPrice(row);
+            setRowSubtotal(row, subtotal);
+            sum += subtotal;
+            qtyTotal += qty;
+          });
+
+          if (summaryKinds) summaryKinds.textContent = String(rows.length);
+          if (summaryQty) summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
+          if (summaryTotal) summaryTotal.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
+          if (sumEl) sumEl.textContent = "合计 {{ currency_symbol }}" + fmtMoney(sum);
+          if (btnTotalEl) btnTotalEl.textContent = "（{{ currency_symbol }}" + fmtMoney(sum) + "）";
+          if (hiddenJson) hiddenJson.value = JSON.stringify(collectCheckoutLines());
+          currentOrderTotal = sum;
+
+          if (btn) {
+            btn.disabled = rows.length === 0;
+            btn.title = rows.length === 0 ? "购物车为空" : "";
+          }
+        }
+
         function updatePayCards() {
           document.querySelectorAll(".pay-card").forEach(function (el) {
             el.classList.remove("pay-card--on");
@@ -1368,42 +1219,34 @@
             if (inp && inp.checked) el.classList.add("pay-card--on");
           });
         }
+
         function syncPaymentMethodUI() {
           var selected = "bank_transfer";
           summaryPaymentRadios.forEach(function (radio) {
             if (radio.checked) selected = radio.value;
           });
           if (paymentHidden) paymentHidden.value = selected;
-          if (settlementHidden) {
-            settlementHidden.value = selected === "credit" ? "credit" : "cash";
-          }
+          if (settlementHidden) settlementHidden.value = selected === "credit" ? "credit" : "cash";
+
           if (selected === "bank_transfer") {
             if (transferReferenceWrap) transferReferenceWrap.style.display = "";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else if (selected === "check") {
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "";
-          } else if (selected === "card_on_pickup") {
-            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
-            if (checkNumberWrap) checkNumberWrap.style.display = "none";
-          } else if (selected === "cash") {
-            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
-            if (checkNumberWrap) checkNumberWrap.style.display = "none";
-          } else if (selected === "credit") {
-            if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
-            if (checkNumberWrap) checkNumberWrap.style.display = "none";
           } else {
             if (transferReferenceWrap) transferReferenceWrap.style.display = "none";
             if (checkNumberWrap) checkNumberWrap.style.display = "none";
           }
           updatePayCards();
         }
+
         summaryPaymentRadios.forEach(function (radio) {
           radio.addEventListener("change", syncPaymentMethodUI);
         });
+
         function clearFieldErrors() {
-          var ids = ["store_name", "contact_name", "delivery_phone", "delivery_address"];
-          ids.forEach(function (id) {
+          requiredFieldIds.forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.classList.remove("input-error");
             var err = document.getElementById("err-" + id);
@@ -1459,191 +1302,63 @@
           return true;
         }
 
-        if (checkoutForm) {
-          var submitBtn = document.getElementById("btn-place");
-          if (submitBtn) {
-            submitBtn.addEventListener("click", function () {
-              console.log("SUBMIT CLICK");
-              console.log("SUBMIT BTN DISABLED:", !!submitBtn.disabled);
+        function bindRenderedCartRows() {
+          getRenderedRows().forEach(function (row) {
+            var qtyInput = row.querySelector(".cart-qty-input");
+            if (!qtyInput) return;
+
+            qtyInput.addEventListener("change", function () {
+              var nextQty = getRowQty(row);
+              qtyInput.value = String(nextQty);
+              updateCheckoutSummaryUI();
             });
-          }
+
+            row.querySelectorAll(".qty-btn").forEach(function (btnEl) {
+              btnEl.addEventListener("click", function () {
+                var currentQty = getRowQty(row);
+                var nextQty = btnEl.getAttribute("data-action") === "minus"
+                  ? Math.max(1, currentQty - 1)
+                  : currentQty + 1;
+                qtyInput.value = String(nextQty);
+                updateCheckoutSummaryUI();
+              });
+            });
+          });
+        }
+
+        if (checkoutForm) {
           checkoutForm.addEventListener("submit", function (ev) {
-            console.log("FORM SUBMIT");
+            updateCheckoutSummaryUI();
             if (!validateRequiredCheckoutFields()) {
-              console.log("SUBMIT BLOCKED: required checkout fields missing");
               ev.preventDefault();
               return;
             }
 
-            var c = getCart();
-            if (!TEST_MODE && cartStockIssueInfo(c).bad) {
-              console.log("SUBMIT BLOCKED: stock validation failed");
+            if (getRenderedRows().length === 0) {
               ev.preventDefault();
-              showToast("库存不足，无法提交订单。请返回商店调整购物车。");
+              showToast("购物车为空");
               return;
             }
-            // Do not hard-block submit on frontend for permission checks.
-            // Backend remains the source of truth and will return clear messages.
-            if (!shopCanOrder) console.log("SUBMIT WARN: shopCanOrder is false; backend will validate");
+
             var selectedPay = paymentHidden ? String(paymentHidden.value || "") : "";
             if (selectedPay === "credit") {
               if (!creditAllow) {
-                console.log("SUBMIT BLOCKED: credit payment not allowed");
                 ev.preventDefault();
                 showToast("该账号未开通挂账权限");
                 return;
               }
               if (creditLimit <= 0 || currentDebt + currentOrderTotal > creditLimit) {
-                console.log("SUBMIT BLOCKED: credit limit exceeded");
                 ev.preventDefault();
                 showToast("超出授信额度，无法下单");
                 return;
               }
             }
-            // Explicit submit to avoid any silent interception path.
-            ev.preventDefault();
-            checkoutForm.submit();
           });
-        }
-
-        function needUnitsForProduct(pid, p, lines) {
-          var t = 0;
-          lines.forEach(function (l) {
-            if (Number(l.product_id) !== Number(pid)) return;
-            if (l.sale_type === "case") t += parseFloat(l.quantity) * (parseFloat(p.units_per_case) || 1);
-            else t += parseFloat(l.quantity);
-          });
-          return t;
-        }
-
-        function sellableStockUnits(p) {
-          if (!p || !p.stock_enabled) return null;
-          var raw =
-            p.sellable_stock != null
-              ? p.sellable_stock
-              : p.current_stock != null
-                ? p.current_stock
-                : p.stock_quantity;
-          if (raw === null || raw === undefined) return 0;
-          var v = parseFloat(raw);
-          return isNaN(v) ? 0 : v;
-        }
-
-        function cartStockIssueInfo(cart) {
-          var bad = false;
-          var byPid = {};
-          cart.forEach(function (line) {
-            var pid = Number(line.product_id);
-            var p = productById(pid);
-            if (!p || !p.stock_enabled) return;
-            var need = needUnitsForProduct(pid, p, cart);
-            var avail = sellableStockUnits(p);
-            if (avail === null) return;
-            if (need > avail + 1e-6) {
-              bad = true;
-              byPid[pid] = { need: need, avail: avail };
-            }
-          });
-          return { bad: bad, byPid: byPid };
-        }
-
-        function bindRenderedCartRows() {
-          cart = getCart();
-          var issueInfo = cartStockIssueInfo(cart);
-          var sum = 0;
-          var qtyTotal = 0;
-          cart.forEach(function (l) {
-            sum += parseFloat(l.subtotal) || 0;
-            qtyTotal += parseFloat(l.quantity) || 0;
-          });
-          linesArea.querySelectorAll(".line-card").forEach(function (row) {
-            var pid = Number(row.getAttribute("data-pid"));
-            var saleType = normalizeSaleType(row.getAttribute("data-sale-type"));
-            var qtyInput = row.querySelector(".cart-qty-input");
-            if (!qtyInput || !isFinite(pid) || pid <= 0) return;
-            qtyInput.addEventListener("change", function () {
-              cart = getCart();
-              var line = cart.find(function (x) {
-                return Number(x.product_id) === pid && normalizeSaleType(x.sale_type) === saleType;
-              });
-              if (!line) return;
-              var minQ = Math.max(parseFloat(line.min_qty) || 0.01, 0.01);
-              var previousQty = parseFloat(line.quantity) || minQ;
-              var nextQty = parseFloat(qtyInput.value);
-              if (!isFinite(nextQty) || nextQty < minQ) {
-                qtyInput.value = String(previousQty);
-                showToast("起订量为 " + minQ);
-                return;
-              }
-              var li = cart.findIndex(function (x) {
-                return Number(x.product_id) === pid && normalizeSaleType(x.sale_type) === saleType;
-              });
-              if (li < 0) return;
-              if (!cartQtyAllowed(cart, li, nextQty)) {
-                qtyInput.value = String(previousQty);
-                showToast("库存不足，无法调整为该数量。");
-                return;
-              }
-              cart[li].quantity = nextQty;
-              cart[li].qty = nextQty;
-              saveCart(cart);
-              scheduleCheckoutPriceSync(pid, saleType, nextQty, previousQty);
-            });
-            row.querySelectorAll(".qty-btn").forEach(function (btnEl) {
-              btnEl.addEventListener("click", function () {
-                cart = getCart();
-                var li = cart.findIndex(function (x) {
-                  return Number(x.product_id) === pid && normalizeSaleType(x.sale_type) === saleType;
-                });
-                if (li < 0) return;
-                var minQ = Math.max(parseFloat(cart[li].min_qty) || 0.01, 0.01);
-                var previousQty = parseFloat(cart[li].quantity) || minQ;
-                var nextQty = previousQty;
-                if (btnEl.getAttribute("data-action") === "minus") {
-                  nextQty = Math.max(minQ, previousQty - 1);
-                } else {
-                  var tryQty = previousQty + 1;
-                  if (!cartQtyAllowed(cart, li, tryQty)) {
-                    showToast("库存不足。");
-                    return;
-                  }
-                  nextQty = tryQty;
-                }
-                cart[li].quantity = nextQty;
-                cart[li].qty = nextQty;
-                saveCart(cart);
-                qtyInput.value = String(nextQty);
-                scheduleCheckoutPriceSync(pid, saleType, nextQty, previousQty);
-              });
-            });
-          });
-          if (goodsSumEl) goodsSumEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
-          if (summaryKinds) summaryKinds.textContent = String(cart.length);
-          if (summaryQty)
-            summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
-          if (summaryTotal) summaryTotal.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
-          sumEl.textContent = "合计 {{ currency_symbol }}" + fmtMoney(sum);
-          if (btnTotalEl) btnTotalEl.textContent = "（{{ currency_symbol }}" + fmtMoney(sum) + "）";
-          currentOrderTotal = sum;
-          hiddenJson.value = JSON.stringify(
-            cart.map(function (l) {
-              return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
-            })
-          );
-          if (!TEST_MODE && issueInfo.bad) {
-            btn.disabled = true;
-            btn.title = "库存不足，无法提交订单";
-          } else if (cart.length === 0) {
-            btn.disabled = true;
-            btn.title = "购物车为空";
-          } else {
-            btn.disabled = false;
-            btn.title = "";
-          }
         }
 
         syncPaymentMethodUI();
         bindRenderedCartRows();
+        updateCheckoutSummaryUI();
       });
     </script>
   </body>

@@ -3559,15 +3559,18 @@
         }
 
         function submitCurrentCartToCheckout() {
-          var syncForm = document.getElementById("checkout-sync-form");
-          var linesInput = document.getElementById("checkout-lines-json");
           var payload = checkoutPayloadFromCart(getCart());
-          if (!syncForm || !linesInput || payload.length === 0) {
-            window.location.href = "{% url 'shop-checkout' %}";
-            return;
-          }
-          linesInput.value = JSON.stringify(payload);
-          syncForm.submit();
+          return fetch("{% url 'shop-checkout' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCsrfToken()
+            },
+            body: JSON.stringify(payload)
+          }).then(function (res) {
+            if (!res.ok) throw new Error("checkout sync failed");
+            return res.json();
+          });
         }
 
         function isCheckoutBlocked(triggerEl) {
@@ -4688,7 +4691,11 @@
           if (!cart || cart.length === 0) {
             return;
           }
-          submitCurrentCartToCheckout();
+          submitCurrentCartToCheckout().then(function () {
+            window.location.href = "{% url 'shop-checkout' %}";
+          }).catch(function () {
+            showToast("结账同步失败，请重试");
+          });
         }
 
         function recalcLine(line) {
@@ -5019,7 +5026,11 @@
             return;
           }
           e.preventDefault();
-          submitCurrentCartToCheckout();
+          submitCurrentCartToCheckout().then(function () {
+            window.location.href = "{% url 'shop-checkout' %}";
+          }).catch(function () {
+            showToast("结账同步失败，请重试");
+          });
         });
 
         // Order modal: avoid browser native validation ("填写此栏") by doing our own checks.
