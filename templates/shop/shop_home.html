@@ -2996,21 +2996,24 @@
         border-color: #e2e8f0;
       }
       .ecom-card__body--purchase.ecom-card__body.catalog-card__body {
-        gap: 14px;
+        gap: 16px;
       }
       .ecom-card__title.catalog-card__title {
         color: #0b1220;
         letter-spacing: -0.02em;
+        margin-bottom: 2px;
       }
       .ecom-card__sku.catalog-card__sku {
         color: #7b8794;
+        margin-top: 2px;
       }
       .ecom-card__prices {
         gap: 12px;
+        padding-top: 2px;
       }
       .ecom-price {
         border-radius: 16px;
-        padding: 13px 13px 12px;
+        padding: 14px 14px 13px;
         background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
         border: 1px solid #dde6ef;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -3024,7 +3027,7 @@
       }
       .ecom-card__ops {
         gap: 12px;
-        padding-top: 12px;
+        padding-top: 14px;
         border-top: 1px solid #edf2f7;
       }
       .ecom-mode-toggle.catalog-segment {
@@ -3049,7 +3052,7 @@
       .btn-add-cart.ecom-btn-add-cart,
       .btn-buy-now.ecom-btn-buy-now {
         border-radius: 14px;
-        min-height: 50px;
+        min-height: 52px;
         font-size: 14px;
         font-weight: 900;
         letter-spacing: 0.01em;
@@ -3074,7 +3077,7 @@
           border-radius: 20px;
         }
         .ecom-card__body--purchase.ecom-card__body.catalog-card__body {
-          min-height: 280px;
+          min-height: 292px;
         }
         .ecom-card__title.catalog-card__title {
           font-size: 15px;
@@ -3095,20 +3098,20 @@
           box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
         }
         .ecom-card__body--purchase.ecom-card__body.catalog-card__body {
-          gap: 10px;
-          padding: 12px;
+          gap: 12px;
+          padding: 14px;
         }
         .ecom-card__prices {
-          gap: 8px;
+          gap: 10px;
         }
         .ecom-price {
           min-height: 70px;
-          padding: 10px;
+          padding: 11px;
           border-radius: 12px;
         }
         .ecom-card__ops {
-          gap: 10px;
-          padding-top: 10px;
+          gap: 12px;
+          padding-top: 12px;
         }
         .ecom-mode-toggle.catalog-segment {
           padding: 3px;
@@ -3117,9 +3120,34 @@
           border-radius: 12px;
         }
         .btn-add-cart.ecom-btn-add-cart {
-          min-height: 52px;
+          min-height: 54px;
           font-size: 15px;
           box-shadow: 0 8px 18px rgba(21, 128, 61, 0.2);
+        }
+      }
+      @media (max-width: 768px) {
+        .product-grid {
+          gap: 14px;
+        }
+        .shop-cart-mini--icon {
+          min-width: 48px;
+          min-height: 48px;
+          padding: 0 12px;
+          background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+          border-color: rgba(21, 128, 61, 0.3);
+          box-shadow: 0 10px 22px rgba(21, 128, 61, 0.24);
+        }
+        .shop-cart-ico {
+          font-size: 18px;
+        }
+        .shop-cart-badge {
+          min-width: 21px;
+          height: 21px;
+          line-height: 21px;
+          font-size: 11px;
+          background: #ffffff;
+          color: #166534;
+          border-color: #dcfce7;
         }
       }
       .toast {
@@ -3515,6 +3543,135 @@
           var st = line.sale_type === "case" ? "case" : "single";
           if (!sku) return String(line.product_id) + "_" + st;
           return sku + "_" + st;
+        }
+
+        function getCsrfToken() {
+          var name = "csrftoken=";
+          var parts = String(document.cookie || "").split(";");
+          for (var i = 0; i < parts.length; i++) {
+            var c = String(parts[i] || "").trim();
+            if (c.indexOf(name) === 0) return decodeURIComponent(c.slice(name.length));
+          }
+          return "";
+        }
+
+        function normalizeSaleType(st) {
+          return st === "case" ? "case" : "single";
+        }
+
+        function cartLineSelector(productId, saleType) {
+          return '.cart-line[data-pid="' + String(productId) + '"][data-sale-type="' + normalizeSaleType(saleType) + '"]';
+        }
+
+        function getCartLineElement(productId, saleType) {
+          var root = document.getElementById("cart-body") || document;
+          return root.querySelector(cartLineSelector(productId, saleType));
+        }
+
+        function updateCartTotalsUIFromState() {
+          cart = getCart();
+          var sum = 0;
+          var qtyTotal = 0;
+          cart.forEach(function (line) {
+            sum += parseFloat(line.subtotal) || 0;
+            qtyTotal += parseFloat(line.quantity) || 0;
+          });
+          if (cartTotal) cartTotal.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
+          var floatSummary = document.getElementById("float-cart-summary");
+          if (floatSummary) {
+            floatSummary.textContent =
+              (qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(1)) +
+              " 件 · {{ currency_symbol }}" +
+              fmtMoney(sum);
+          }
+        }
+
+        function applyCartLinePriceUpdate(productId, saleType, qty, unitPrice, subtotal) {
+          saleType = normalizeSaleType(saleType);
+          cart = getCart();
+          var line = cart.find(function (x) {
+            return Number(x.product_id) === Number(productId) && normalizeSaleType(x.sale_type) === saleType;
+          });
+          if (!line) return;
+          line.quantity = qty;
+          line.qty = qty;
+          line.sale_type = saleType;
+          line.unit_price = unitPrice;
+          line.price = unitPrice;
+          line.subtotal = subtotal;
+          saveCart(cart);
+
+          var rowEl = getCartLineElement(productId, saleType);
+          if (rowEl) {
+            var unitEl = rowEl.querySelector(".line-unit");
+            var subEl = rowEl.querySelector(".line-sub");
+            var qtyInputEl = rowEl.querySelector(".cart-qty-input");
+            if (unitEl) unitEl.textContent = fmtMoney(unitPrice);
+            if (subEl) subEl.textContent = fmtMoney(subtotal);
+            if (qtyInputEl) qtyInputEl.value = String(qty);
+          }
+          updateCartTotalsUIFromState();
+        }
+
+        function revertCartLineQuantity(productId, saleType, previousQty) {
+          saleType = normalizeSaleType(saleType);
+          cart = getCart();
+          var line = cart.find(function (x) {
+            return Number(x.product_id) === Number(productId) && normalizeSaleType(x.sale_type) === saleType;
+          });
+          if (!line) return;
+          line.quantity = previousQty;
+          line.qty = previousQty;
+          saveCart(cart);
+          var rowEl = getCartLineElement(productId, saleType);
+          if (!rowEl) return;
+          var qtyInputEl = rowEl.querySelector(".cart-qty-input");
+          if (qtyInputEl) qtyInputEl.value = String(previousQty);
+        }
+
+        var priceRequestTimers = {};
+        var priceRequestSeq = {};
+        function scheduleCartLinePriceSync(productId, saleType, qty, previousQty) {
+          saleType = normalizeSaleType(saleType);
+          var key = String(productId) + "_" + saleType;
+          if (priceRequestTimers[key]) clearTimeout(priceRequestTimers[key]);
+          priceRequestSeq[key] = (priceRequestSeq[key] || 0) + 1;
+          var seq = priceRequestSeq[key];
+          priceRequestTimers[key] = setTimeout(function () {
+            fetch("/api/get_product_price/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken()
+              },
+              body: JSON.stringify({
+                product_id: Number(productId),
+                qty: qty,
+                sale_type: saleType
+              })
+            })
+              .then(function (res) {
+                return res.json().then(function (data) {
+                  if (!res.ok) throw new Error(data && data.error ? data.error : "Price request failed.");
+                  return data;
+                });
+              })
+              .then(function (data) {
+                if (priceRequestSeq[key] !== seq) return;
+                applyCartLinePriceUpdate(
+                  productId,
+                  saleType,
+                  parseFloat(data.qty),
+                  parseFloat(data.unit_price),
+                  parseFloat(data.subtotal)
+                );
+              })
+              .catch(function (err) {
+                if (priceRequestSeq[key] !== seq) return;
+                revertCartLineQuantity(productId, saleType, previousQty);
+                showToast(err && err.message ? err.message : "价格更新失败");
+              });
+          }, 250);
         }
 
         var cart = getCart();
@@ -4542,6 +4699,8 @@
             var div = document.createElement("div");
             div.className = "cart-line cart-line-card";
             div.setAttribute("data-cart-idx", String(idx));
+            div.setAttribute("data-pid", String(line.product_id));
+            div.setAttribute("data-sale-type", normalizeSaleType(line.sale_type));
             div.innerHTML =
               '<div class="cart-line__head">' +
               '<div class="cart-line__head-text">' +
@@ -4612,28 +4771,36 @@
             var rowKey = lineKey(line);
             if (qtyInput) {
               qtyInput.addEventListener("change", function () {
+                cart = getCart();
+                var currentLine = cart.find(function (x) {
+                  return lineKey(x) === rowKey;
+                });
+                var currentQty = currentLine ? (parseFloat(currentLine.quantity) || minQ) : minQ;
                 var v = parseFloat(this.value);
                 if (isNaN(v) || v < minQ) {
                   showToast("起订量为 " + minQ);
-                  this.value = line.quantity;
+                  this.value = currentQty;
                   return;
                 }
-                cart = getCart();
                 var li = cart.findIndex(function (x) {
                   return lineKey(x) === rowKey;
                 });
                 if (li < 0) return;
                 if (!cartQtyAllowed(cart, li, v)) {
                   showToast("库存不足，无法调整为该数量。");
-                  this.value = line.quantity;
+                  this.value = currentQty;
                   return;
                 }
+                var previousQty = parseFloat(cart[li].quantity) || minQ;
                 cart[li].quantity = v;
                 cart[li].qty = v;
-                recalcLine(cart[li]);
-                cart[li].price = cart[li].unit_price;
                 saveCart(cart);
-                refreshCartUI();
+                scheduleCartLinePriceSync(
+                  cart[li].product_id,
+                  cart[li].sale_type,
+                  v,
+                  previousQty
+                );
               });
 
               div.querySelectorAll(".qty-btn").forEach(function (btn) {
@@ -4644,7 +4811,8 @@
                     return lineKey(x) === rowKey;
                   });
                   if (li < 0) return;
-                  var v = parseFloat(cart[li].quantity) || 0;
+                  var previousQty = parseFloat(cart[li].quantity) || minQ;
+                  var v = previousQty || 0;
                   if (act === "minus") {
                     v = Math.max(minQ, v - 1);
                   } else if (act === "plus") {
@@ -4657,10 +4825,15 @@
                   }
                   cart[li].quantity = v;
                   cart[li].qty = v;
-                  recalcLine(cart[li]);
-                  cart[li].price = cart[li].unit_price;
                   saveCart(cart);
-                  refreshCartUI();
+                  var qtyInputEl = div.querySelector(".cart-qty-input");
+                  if (qtyInputEl) qtyInputEl.value = String(v);
+                  scheduleCartLinePriceSync(
+                    cart[li].product_id,
+                    cart[li].sale_type,
+                    v,
+                    previousQty
+                  );
                 });
               });
             }

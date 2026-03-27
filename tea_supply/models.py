@@ -103,6 +103,12 @@ class Product(models.Model):
     case_label = models.CharField(max_length=120, blank=True, default="", verbose_name="整箱规格")
     price_single = models.FloatField(default=0, verbose_name="单品价")
     price_case = models.FloatField(default=0, verbose_name="整箱价")
+    tier_prices = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="阶梯价模板",
+        help_text='最小可用阶梯价模板，如 {"1": 12, "10": 10, "50": 8}。',
+    )
     cost_price_single = models.FloatField(default=0, verbose_name="单品成本")
     cost_price_case = models.FloatField(default=0, verbose_name="整箱成本")
     shelf_life_months = models.PositiveSmallIntegerField(default=12, verbose_name="保质期（月）")
@@ -1036,7 +1042,9 @@ class OrderItem(models.Model):
             self.profit = money_float(money_q2(tr - tc))
             return
 
-        unit_price, pricing_note = resolve_selling_unit_price(customer, p, self.sale_type)
+        unit_price, pricing_note = resolve_selling_unit_price(
+            customer, p, self.sale_type, qty=self.quantity
+        )
         self.unit_price = money_float(unit_price)
         self.pricing_note = pricing_note
         q = money_dec(self.quantity)
@@ -1190,7 +1198,54 @@ def _format_discount_source(level_key, rate, kind_label):
     return f"Tier {level_key} · {pct_off}% off ({kind_label})"
 
 
-def resolve_product_price_for_customer(product, customer, sale_type):
+def get_unit_price_for_qty(product, qty):
+    """
+    从 Product.tier_prices 中按数量取阶梯价。
+    规则：按 key 转 int 排序，遍历后取 <= qty 的最后一个档位；
+    若没有命中，则回退到最低档。
+    """
+    raw = getattr(product, "tier_prices", None) or {}
+    if not isinstance(raw, dict) or not raw:
+        return None, ""
+
+    try:
+        qty_num = float(qty or 0)
+    except (TypeError, ValueError):
+        qty_num = 0.0
+    if qty_num <= 0:
+        return None, ""
+
+    tiers = []
+    for level_raw, price_raw in raw.items():
+        try:
+            level = float(level_raw)
+            price = money_dec(price_raw)
+        except (TypeError, ValueError, ArithmeticError):
+            continue
+        if level <= 0 or price <= money_dec(0):
+            continue
+        if not float(level).is_integer():
+            continue
+        tiers.append((int(level), price))
+
+    if not tiers:
+        return None, ""
+
+    tiers.sort(key=lambda x: int(x[0]))
+    final_level = None
+    final_price = None
+    for level, price in tiers:
+        if qty_num >= int(level):
+            final_level = level
+            final_price = price
+
+    if final_price is None:
+        final_level, final_price = tiers[0]
+
+    return final_price, f"Qty tier {final_level}+"
+
+
+def resolve_product_price_for_customer(product, customer, sale_type, qty=None):
     """
     统一价格解析（商城/录单/订单明细/校验共用）。sale_type: OrderItem.SaleType 或 'single' / 'case'。
 
@@ -1219,6 +1274,17 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     source = "base"
     final_price = base_price
     pricing_note = "Base price"
+
+    tier_unit_price, tier_note = get_unit_price_for_qty(product, qty)
+    if tier_unit_price is not None:
+        return {
+            "base_price": tier_unit_price,
+            "original_price": money_float(tier_unit_price),
+            "final_price": tier_unit_price,
+            "pricing_note": tier_note,
+            "discount_source": tier_note,
+            "source": "tier",
+        }
 
     if customer:
         custom_row = (
@@ -1268,9 +1334,9 @@ def resolve_product_price_for_customer(product, customer, sale_type):
     }
 
 
-def resolve_selling_unit_price(customer, product, sale_type):
+def resolve_selling_unit_price(customer, product, sale_type, qty=None):
     """兼容旧接口：(成交价, 定价说明)。"""
-    res = resolve_product_price_for_customer(product, customer, sale_type)
+    res = resolve_product_price_for_customer(product, customer, sale_type, qty=qty)
     note = res.get("pricing_note") or res["discount_source"]
     if len(note) > 64:
         note = note[:64]

@@ -20,7 +20,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Min, Q, Sum
 from django.db.models.functions import Coalesce, TruncDate
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -359,6 +359,7 @@ def submit_order_from_lines(
                 product=p,
                 customer=customer_obj,
                 sale_type=sale_type,
+                qty=qty,
             )
             assert price_info["source"] in ["custom", "tier", "base"]
             final_unit_price = money_dec(price_info["final_price"])
@@ -658,6 +659,53 @@ def get_shop_customer(request):
     return ensure_customer_profile(u)
 
 
+@require_POST
+def get_product_price_api(request):
+    try:
+        payload = json.loads((request.body or b"").decode("utf-8"))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+
+    product_id = payload.get("product_id")
+    qty = payload.get("qty")
+    sale_type = str(payload.get("sale_type") or "").strip().lower()
+
+    if product_id in (None, ""):
+        return JsonResponse({"error": "product_id is required."}, status=400)
+    if qty in (None, ""):
+        return JsonResponse({"error": "qty is required."}, status=400)
+    if sale_type not in (OrderItem.SaleType.SINGLE, OrderItem.SaleType.CASE):
+        return JsonResponse({"error": "sale_type is required."}, status=400)
+
+    try:
+        qty_num = float(qty)
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "qty must be numeric."}, status=400)
+    if qty_num <= 0:
+        return JsonResponse({"error": "qty must be greater than 0."}, status=400)
+
+    product = get_object_or_404(Product, pk=product_id)
+    customer = get_shop_customer(request)
+    price_info = resolve_product_price_for_customer(
+        product=product,
+        customer=customer,
+        sale_type=sale_type,
+        qty=qty_num,
+    )
+    unit_price = money_dec(price_info["final_price"])
+    subtotal = money_q2(money_dec(qty_num) * unit_price)
+    return JsonResponse(
+        {
+            "product_id": int(product.pk),
+            "sale_type": sale_type,
+            "qty": qty_num,
+            "final_unit_price": money_float(unit_price),
+            "unit_price": money_float(unit_price),
+            "subtotal": money_float(subtotal),
+        }
+    )
+
+
 def _ensure_customer_role(user):
     """Ensure a UserRole row exists; default customer only on first create (do not overwrite staff)."""
     if user.is_staff or user.is_superuser:
@@ -710,8 +758,12 @@ def _shop_product_row(customer, p):
         ds, note_s = base_s, "Base price"
         dc, note_c = base_c, "Base price"
     else:
-        ds, note_s = resolve_selling_unit_price(customer, p, OrderItem.SaleType.SINGLE)
-        dc, note_c = resolve_selling_unit_price(customer, p, OrderItem.SaleType.CASE)
+        ds, note_s = resolve_selling_unit_price(
+            customer, p, OrderItem.SaleType.SINGLE, qty=1
+        )
+        dc, note_c = resolve_selling_unit_price(
+            customer, p, OrderItem.SaleType.CASE, qty=1
+        )
     stock_disp = float(getattr(p, "stock", 0.0))
     safety = float(getattr(p, "safety_stock", 10.0))
     enabled = bool(getattr(p, "stock_enabled", True))
