@@ -1029,44 +1029,46 @@
 
           <div class="card summary-card checkout-summary-card">
             <h2 class="section-title">订单信息</h2>
-            <div class="lines" id="lines-area">
-              {% for item in cart_items %}
-                <div class="cart-row line-card" data-pid="{{ item.product.id }}" data-sale-type="{{ item.sale_type }}">
-                  <div class="line-img">
-                    <img
-                      src="{{ item.image_url }}"
-                      alt="{{ item.product.name }}"
-                      onerror="this.onerror=null;this.src='/static/products/_fallback.jpg';"
-                    />
-                  </div>
-
-                  <div class="line-info line-main">
-                    <div class="name line-name">{{ item.product.name }}</div>
-                    {% if item.product.name_zh %}
-                      <div class="line-name-cn">{{ item.product.name_zh }}</div>
-                    {% endif %}
-                    <div class="sku line-meta">SKU: {{ item.product.sku }}</div>
-                    <div class="line-spec">单位: {% if item.sale_type == "case" %}按箱{% else %}按袋{% endif %}</div>
-
-                    <div class="qty-control">
-                      <button type="button" class="qty-btn" data-action="minus" data-delta="-1" aria-label="减少">-</button>
-                      <input type="number" class="cart-qty-input" value="{{ item.qty }}" min="1" step="0.01" aria-label="数量" />
-                      <button type="button" class="qty-btn" data-action="plus" data-delta="1" aria-label="增加">+</button>
+            <div id="lines-area" class="lines">
+              {% if cart_items %}
+                {% for item in cart_items %}
+                  <div class="line-card cart-row" data-pid="{{ item.product.id }}" data-sale-type="{{ item.sale_type }}">
+                    <div class="line-img">
+                      <img
+                        src="{{ item.image_url }}"
+                        alt="{{ item.product.name }}"
+                        onerror="this.onerror=null;this.src='/static/products/_fallback.jpg';"
+                      />
                     </div>
-                  </div>
 
-                  <div class="line-price line-stats">
+                    <div class="line-info line-main">
+                      <div class="line-title line-name">{{ item.product.name }}</div>
+                      <div class="line-sku line-meta">SKU: {{ item.product.sku }}</div>
+                    </div>
+
                     <div class="line-stat">
-                      <div>UNIT: {{ currency_symbol }}<span class="line-unit">{{ item.unit_price|floatformat:2 }}</span></div>
+                      <span>Unit:</span>
+                      <span>{{ currency_symbol }}<span class="line-unit">{{ item.unit_price|floatformat:2 }}</span></span>
                     </div>
+
                     <div class="line-stat">
-                      <div>SUBTOTAL: {{ currency_symbol }}<span class="line-sub">{{ item.subtotal|floatformat:2 }}</span></div>
+                      <span>Qty:</span>
+                      <div class="qty-control">
+                        <button type="button" class="qty-btn" data-action="minus" data-delta="-1">-</button>
+                        <input type="number" class="cart-qty-input" value="{{ item.quantity }}" min="1" step="0.01" />
+                        <button type="button" class="qty-btn" data-action="plus" data-delta="1">+</button>
+                      </div>
+                    </div>
+
+                    <div class="line-stat">
+                      <span>Subtotal:</span>
+                      <span>{{ currency_symbol }}<span class="line-sub">{{ item.subtotal|floatformat:2 }}</span></span>
                     </div>
                   </div>
-                </div>
-              {% empty %}
+                {% endfor %}
+              {% else %}
                 <p>购物车为空</p>
-              {% endfor %}
+              {% endif %}
             </div>
 
             <div class="summary-list">
