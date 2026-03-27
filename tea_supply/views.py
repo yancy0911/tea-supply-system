@@ -783,8 +783,10 @@ def _build_checkout_cart_items(customer, lines):
         cart_items.append(
             {
                 "product": product,
+                "quantity": qty_num,
                 "qty": qty_num,
                 "sale_type": sale_type,
+                "price": money_float(unit_price),
                 "unit_price": money_float(unit_price),
                 "subtotal": money_float(subtotal),
                 "image_url": image_url,
@@ -1543,6 +1545,7 @@ def shop_checkout(request):
                 settings, "SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK", False
             ),
             "cart_items": cart_items,
+            "cart_total": cart_total_amount,
             "cart_items_seed": cart_items_seed,
             "cart_item_count": cart_item_count,
             "cart_qty_total": cart_qty_total,
