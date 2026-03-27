@@ -1058,6 +1058,9 @@
       // 这里写 checkout 所有 JS 逻辑
       document.addEventListener("DOMContentLoaded", function () {
         console.log("DOM READY");
+        console.log("ALL ROWS:", document.querySelectorAll("*"));
+        console.log("qty-btn:", document.querySelectorAll(".qty-btn"));
+        console.log("cart-qty-input:", document.querySelectorAll(".cart-qty-input"));
         function showToast(msg) {
           var t = document.getElementById("toast");
           if (!t) return;
