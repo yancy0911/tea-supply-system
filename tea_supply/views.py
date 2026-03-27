@@ -63,6 +63,7 @@ from .models import UserCompanyProfile
 
 logger = logging.getLogger(__name__)
 PROFIT_PROTECTION_MODE = "warning"  # "warning" | "block"
+SHOP_CHECKOUT_CART_SESSION_KEY = "shop_checkout_cart"
 
 
 def _profit_recommendation_rows(*, company=None, limit=5):
@@ -704,6 +705,105 @@ def get_product_price_api(request):
             "subtotal": money_float(subtotal),
         }
     )
+
+
+def _normalize_checkout_sale_type(raw_sale_type):
+    sale_type = str(raw_sale_type or "").strip().lower()
+    if sale_type == OrderItem.SaleType.CASE:
+        return OrderItem.SaleType.CASE
+    return OrderItem.SaleType.SINGLE
+
+
+def _normalize_checkout_lines_payload(lines_raw):
+    if isinstance(lines_raw, str):
+        try:
+            lines = json.loads(lines_raw or "[]")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return []
+    elif isinstance(lines_raw, list):
+        lines = lines_raw
+    else:
+        return []
+
+    cleaned = []
+    for line in lines:
+        if not isinstance(line, dict):
+            continue
+        try:
+            product_id = int(line.get("product_id"))
+            qty = float(line.get("quantity", line.get("qty")))
+        except (TypeError, ValueError):
+            continue
+        if product_id <= 0 or qty <= 0:
+            continue
+        cleaned.append(
+            {
+                "product_id": product_id,
+                "sale_type": _normalize_checkout_sale_type(line.get("sale_type")),
+                "quantity": qty,
+            }
+        )
+    return cleaned
+
+
+def _build_checkout_cart_items(customer, lines):
+    if not lines:
+        return [], []
+
+    product_ids = sorted(
+        {int(line["product_id"]) for line in lines if line.get("product_id")}
+    )
+    products = (
+        Product.objects.filter(id__in=product_ids, is_active=True)
+        .select_related("category", "ingredient")
+        .order_by("name")
+    )
+    product_map = {int(product.pk): product for product in products}
+
+    cart_items = []
+    cart_items_seed = []
+    for line in lines:
+        product = product_map.get(int(line["product_id"]))
+        if not product:
+            continue
+        qty_num = float(line["quantity"])
+        sale_type = _normalize_checkout_sale_type(line.get("sale_type"))
+        try:
+            image_url = product.unified_image_url
+        except Exception:
+            image_url = _default_product_image_url()
+        price_info = resolve_product_price_for_customer(
+            product=product,
+            customer=customer,
+            sale_type=sale_type,
+            qty=qty_num,
+        )
+        unit_price = money_dec(price_info["final_price"])
+        subtotal = money_q2(money_dec(qty_num) * unit_price)
+        cart_items.append(
+            {
+                "product": product,
+                "qty": qty_num,
+                "sale_type": sale_type,
+                "unit_price": money_float(unit_price),
+                "subtotal": money_float(subtotal),
+                "image_url": image_url,
+            }
+        )
+        cart_items_seed.append(
+            {
+                "product_id": int(product.pk),
+                "sale_type": sale_type,
+                "quantity": qty_num,
+                "qty": qty_num,
+                "unit_price": money_float(unit_price),
+                "price": money_float(unit_price),
+                "subtotal": money_float(subtotal),
+                "sku": product.sku,
+                "name": product.name,
+            }
+        )
+    return cart_items, cart_items_seed
 
 
 def _ensure_customer_role(user):
@@ -1389,10 +1489,20 @@ def credit_home_view(request):
     )
 
 
-@require_GET
+@require_http_methods(["GET", "POST"])
 @never_cache
 @ensure_csrf_cookie
 def shop_checkout(request):
+    checkout_lines = _normalize_checkout_lines_payload(
+        request.session.get(SHOP_CHECKOUT_CART_SESSION_KEY, [])
+    )
+    if request.method == "POST":
+        checkout_lines = _normalize_checkout_lines_payload(
+            request.POST.get("lines_json", "[]")
+        )
+        request.session[SHOP_CHECKOUT_CART_SESSION_KEY] = checkout_lines
+        request.session.modified = True
+
     if not request.user.is_authenticated:
         return redirect(f"/login/?next={request.path}")
     customer = get_shop_customer(request)
@@ -1406,6 +1516,10 @@ def shop_checkout(request):
         .order_by("category__sort_order", "category_id", "name")
     )
     shop_items = [_shop_product_row(customer, p) for p in products]
+    cart_items, cart_items_seed = _build_checkout_cart_items(customer, checkout_lines)
+    cart_item_count = len(cart_items)
+    cart_qty_total = sum(float(item["qty"]) for item in cart_items)
+    cart_total_amount = sum(float(item["subtotal"]) for item in cart_items)
     csrf_token_value = get_token(request)
     response = render(
         request,
@@ -1428,6 +1542,12 @@ def shop_checkout(request):
             "checkout_test_mode_skip_stock": getattr(
                 settings, "SHOP_CHECKOUT_TEST_MODE_SKIP_STOCK", False
             ),
+            "cart_items": cart_items,
+            "cart_items_seed": cart_items_seed,
+            "cart_item_count": cart_item_count,
+            "cart_qty_total": cart_qty_total,
+            "cart_total_amount": cart_total_amount,
+            "cart_lines_json": json.dumps(checkout_lines),
         },
     )
     response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
@@ -1592,6 +1712,7 @@ def shop_submit_order(request):
             guest_session_key=None,
         )
         _clear_submit_lock_if_matches(request=request, lock_key=lock_key, signature=sig)
+        request.session.pop(SHOP_CHECKOUT_CART_SESSION_KEY, None)
         messages.success(
             request,
             "Order submitted. Please wait for payment confirmation.",

@@ -3394,6 +3394,11 @@
       </div>
     </nav>
 
+    <form method="post" action="{% url 'shop-checkout' %}" id="checkout-sync-form" style="display: none">
+      {% csrf_token %}
+      <input type="hidden" name="lines_json" id="checkout-lines-json" value="[]" />
+    </form>
+
     <!-- Product quick view (home) -->
     <div class="pv" id="pv" aria-hidden="true">
       <div class="pv__backdrop" id="pv-backdrop"></div>
@@ -3535,6 +3540,42 @@
           try {
             localStorage.setItem("cart", JSON.stringify(cart));
           } catch (e) {}
+        }
+
+        function checkoutPayloadFromCart(cartLines) {
+          if (!Array.isArray(cartLines)) return [];
+          return cartLines
+            .map(function (line) {
+              var pid = Number(line && line.product_id);
+              var qty = parseFloat(line && (line.quantity != null ? line.quantity : line.qty));
+              if (!isFinite(pid) || pid <= 0 || !isFinite(qty) || qty <= 0) return null;
+              return {
+                product_id: pid,
+                sale_type: line && line.sale_type === "case" ? "case" : "single",
+                quantity: qty
+              };
+            })
+            .filter(Boolean);
+        }
+
+        function submitCurrentCartToCheckout() {
+          var syncForm = document.getElementById("checkout-sync-form");
+          var linesInput = document.getElementById("checkout-lines-json");
+          var payload = checkoutPayloadFromCart(getCart());
+          if (!syncForm || !linesInput || payload.length === 0) {
+            window.location.href = "{% url 'shop-checkout' %}";
+            return;
+          }
+          linesInput.value = JSON.stringify(payload);
+          syncForm.submit();
+        }
+
+        function isCheckoutBlocked(triggerEl) {
+          if (!triggerEl) return true;
+          if (triggerEl.disabled) return true;
+          if (triggerEl.classList && triggerEl.classList.contains("disabled")) return true;
+          if (triggerEl.getAttribute && triggerEl.getAttribute("aria-disabled") === "true") return true;
+          return false;
         }
 
         /** Unique line id: sku + "_" + sale_type (Per Bag / Per Case). */
@@ -4639,11 +4680,6 @@
             showToast(shopOrderBlockHint || "Ordering is not available.");
             return;
           }
-          if (!shopLoggedIn) {
-            // Ensure checkout requires login; keep product/cart selection.
-            window.location.href = "/login/?next=/checkout/";
-            return;
-          }
 
           // Buy Now: replace cart with a single line.
           saveCart([]);
@@ -4652,7 +4688,7 @@
           if (!cart || cart.length === 0) {
             return;
           }
-          window.location.href = "/checkout/";
+          submitCurrentCartToCheckout();
         }
 
         function recalcLine(line) {
@@ -4971,15 +5007,20 @@
           });
         });
 
-        // Keep navigation stable: checkout button is an <a href="...">.
-        // Cart/stock validation is still enforced on the checkout page (server + JS).
-
-        var floatCheckoutEl = document.getElementById("float-cart-checkout");
-        if (floatCheckoutEl) {
-          floatCheckoutEl.addEventListener("click", function (e) {
-            if (floatCheckoutEl.classList.contains("disabled")) e.preventDefault();
-          });
-        }
+        // Always sync current cart to the server before entering checkout.
+        // Use event delegation so the handler still works after cart DOM re-renders.
+        document.addEventListener("click", function (e) {
+          var triggerEl = e.target && e.target.closest
+            ? e.target.closest("#btn-submit-order, #float-cart-checkout")
+            : null;
+          if (!triggerEl) return;
+          if (isCheckoutBlocked(triggerEl)) {
+            e.preventDefault();
+            return;
+          }
+          e.preventDefault();
+          submitCurrentCartToCheckout();
+        });
 
         // Order modal: avoid browser native validation ("填写此栏") by doing our own checks.
         var modalForm = document.getElementById("shop-order-form-modal");

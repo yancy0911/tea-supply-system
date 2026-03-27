@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>结账 — MO·CHA</title>
     {{ shop_products|json_script:"shop-products-data" }}
+    {{ cart_items_seed|json_script:"checkout-cart-seed" }}
     <style>
       :root {
         --bg: #f3f4f6;
@@ -911,7 +912,7 @@
               </div>
               {% csrf_token %}
               <input type="hidden" name="next" value="checkout" />
-              <input type="hidden" name="lines_json" id="cart-lines-json" value="[]" />
+              <input type="hidden" name="lines_json" id="cart-lines-json" value="{{ cart_lines_json|default:'[]'|escape }}" />
               <input type="hidden" name="settlement_type" id="settlement-type-hidden" value="cash" />
               <input type="hidden" name="payment_method" id="payment-method-hidden" value="bank_transfer" />
               <div class="field-gap">
@@ -1029,21 +1030,57 @@
           <div class="card summary-card checkout-summary-card">
             <h2 class="section-title">订单信息</h2>
             <div class="lines" id="lines-area">
-              <p style="color: var(--muted)">加载购物车…</p>
+              {% for item in cart_items %}
+                <div class="cart-row line-card" data-pid="{{ item.product.id }}" data-sale-type="{{ item.sale_type }}">
+                  <div class="line-img">
+                    <img
+                      src="{{ item.image_url }}"
+                      alt="{{ item.product.name }}"
+                      onerror="this.onerror=null;this.src='/static/products/_fallback.jpg';"
+                    />
+                  </div>
+
+                  <div class="line-info line-main">
+                    <div class="name line-name">{{ item.product.name }}</div>
+                    {% if item.product.name_zh %}
+                      <div class="line-name-cn">{{ item.product.name_zh }}</div>
+                    {% endif %}
+                    <div class="sku line-meta">SKU: {{ item.product.sku }}</div>
+                    <div class="line-spec">单位: {% if item.sale_type == "case" %}按箱{% else %}按袋{% endif %}</div>
+
+                    <div class="qty-control">
+                      <button type="button" class="qty-btn" data-action="minus" data-delta="-1" aria-label="减少">-</button>
+                      <input type="number" class="cart-qty-input" value="{{ item.qty }}" min="1" step="0.01" aria-label="数量" />
+                      <button type="button" class="qty-btn" data-action="plus" data-delta="1" aria-label="增加">+</button>
+                    </div>
+                  </div>
+
+                  <div class="line-price line-stats">
+                    <div class="line-stat">
+                      <div>UNIT: {{ currency_symbol }}<span class="line-unit">{{ item.unit_price|floatformat:2 }}</span></div>
+                    </div>
+                    <div class="line-stat">
+                      <div>SUBTOTAL: {{ currency_symbol }}<span class="line-sub">{{ item.subtotal|floatformat:2 }}</span></div>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <p>购物车为空</p>
+              {% endfor %}
             </div>
 
             <div class="summary-list">
               <div class="summary-row">
-                <span class="k">Item count</span><span class="v" id="summary-kinds">0</span>
+                <span class="k">Item count</span><span class="v" id="summary-kinds">{{ cart_item_count }}</span>
               </div>
               <div class="summary-row">
-                <span class="k">商品数量</span><span class="v" id="summary-qty">0</span>
+                <span class="k">商品数量</span><span class="v" id="summary-qty">{{ cart_qty_total|floatformat:"-2" }}</span>
               </div>
               <div class="summary-row">
-                <span class="k">Total</span><span class="v" id="summary-total">{{ currency_symbol }}0.00</span>
+                <span class="k">Total</span><span class="v" id="summary-total">{{ currency_symbol }}{{ cart_total_amount|floatformat:2 }}</span>
               </div>
             </div>
-            <div class="sum" id="order-sum">合计 {{ currency_symbol }}0.00</div>
+            <div class="sum" id="order-sum">合计 {{ currency_symbol }}{{ cart_total_amount|floatformat:2 }}</div>
             <a href="{% url 'shop-home' %}" class="btn secondary" style="text-decoration: none; text-align: center; display: block">
               返回商城加购
             </a>
@@ -1053,7 +1090,7 @@
         <div class="sf-cta-footer" aria-label="提交订单">
           <div class="sf-cta-footer__inner">
             <button type="submit" class="btn" id="btn-place" disabled>
-              提交订单<span id="btn-total" style="font-weight: 900; letter-spacing: -0.02em">（{{ currency_symbol }}0.00）</span>
+              提交订单<span id="btn-total" style="font-weight: 900; letter-spacing: -0.02em">（{{ currency_symbol }}{{ cart_total_amount|floatformat:2 }}）</span>
             </button>
           </div>
         </div>
@@ -1133,6 +1170,21 @@
           try {
             localStorage.setItem("cart", JSON.stringify(cart));
           } catch (e) {}
+        }
+
+        function hydrateCartFromTemplate() {
+          var current = getCart();
+          if (Array.isArray(current) && current.length > 0) return current;
+          try {
+            var seedEl = document.getElementById("checkout-cart-seed");
+            if (!seedEl || !seedEl.textContent) return current;
+            var seeded = JSON.parse(seedEl.textContent) || [];
+            if (!Array.isArray(seeded) || seeded.length === 0) return current;
+            saveCart(seeded);
+            return seeded;
+          } catch (e) {
+            return current;
+          }
         }
 
         function getCsrfToken() {
@@ -1275,6 +1327,7 @@
           }, 250);
         }
 
+        hydrateCartFromTemplate();
         var cart = getCart();
         var linesArea = document.getElementById("lines-area");
         var sumEl = document.getElementById("order-sum");
