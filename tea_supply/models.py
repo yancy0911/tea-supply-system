@@ -161,6 +161,15 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.name} ({self.sku})"
 
+    def get_unit_price_for_qty(self, qty, sale_type="single"):
+        tier_price, _tier_note = get_unit_price_for_qty(self, qty)
+        if tier_price is not None:
+            return money_float(tier_price)
+        st = str(sale_type or "single").strip().lower()
+        if st == "case":
+            return money_float(self.price_case)
+        return money_float(self.price_single)
+
     @property
     def unified_image_url(self) -> str:
         """
@@ -1019,34 +1028,17 @@ class OrderItem(models.Model):
         return float(self.profit or 0.0)
 
     def _apply_line_amounts(self, p, customer, *, old_item=None):
-        """新建行按当前规则计价；已存在行在商品/销售方式不变时冻结单价与折扣说明（仅数量变则重算行金额）。"""
-        frozen = (
-            old_item is not None
-            and old_item.product_id == self.product_id
-            and str(old_item.sale_type) == str(self.sale_type)
-        )
-        if frozen:
-            self.unit_price = money_float(old_item.unit_price)
-            self.pricing_note = (old_item.pricing_note or "")[:64]
-            q = money_dec(self.quantity)
-            up = money_dec(self.unit_price)
-            tr = money_q2(q * up)
-            if self.sale_type == self.SaleType.CASE:
-                cpu = money_dec(p.cost_price_case)
-            else:
-                cpu = money_dec(p.cost_price_single)
-            tc = money_q2(q * cpu)
-            self.unit_cost = money_float(cpu)
-            self.total_revenue = money_float(tr)
-            self.total_cost = money_float(tc)
-            self.profit = money_float(money_q2(tr - tc))
-            return
-
-        unit_price, pricing_note = resolve_selling_unit_price(
-            customer, p, self.sale_type, qty=self.quantity
-        )
+        """每次按当前数量强制重算单价与行金额，不复用旧单价。"""
+        unit_price = p.get_unit_price_for_qty(self.quantity, self.sale_type)
         self.unit_price = money_float(unit_price)
-        self.pricing_note = pricing_note
+        tier_price, tier_note = get_unit_price_for_qty(p, self.quantity)
+        if tier_price is not None:
+            self.pricing_note = tier_note[:64]
+        else:
+            _resolved_unit_price, pricing_note = resolve_selling_unit_price(
+                customer, p, self.sale_type, qty=self.quantity
+            )
+            self.pricing_note = pricing_note
         q = money_dec(self.quantity)
         up = money_dec(self.unit_price)
         tr = money_q2(q * up)

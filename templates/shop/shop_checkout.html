@@ -731,6 +731,37 @@
         color: #166534;
         font-size: 16px;
       }
+      .line-qty-editor {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .line-qty-editor .qty-btn {
+        width: 32px;
+        height: 32px;
+        border: 1px solid #dbe4ee;
+        background: #fff;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 800;
+        color: #334155;
+        cursor: pointer;
+        padding: 0;
+      }
+      .line-qty-editor .qty-btn:hover {
+        background: #f8fafc;
+      }
+      .line-qty-editor .cart-qty-input {
+        width: 72px;
+        text-align: center;
+        padding: 8px 6px;
+        border: 1px solid #dbe4ee;
+        border-radius: 10px;
+        background: #fff;
+        font-size: 14px;
+        font-weight: 800;
+        color: #0f172a;
+      }
       .summary-list {
         background: #ffffff;
         border-color: #dde6ef;
@@ -782,6 +813,17 @@
         .line-card {
           border-radius: 16px;
           box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        }
+        .line-qty-editor {
+          gap: 6px;
+        }
+        .line-qty-editor .qty-btn {
+          width: 34px;
+          height: 34px;
+        }
+        .line-qty-editor .cart-qty-input {
+          width: 78px;
+          min-height: 34px;
         }
         .sum {
           padding: 12px 14px;
@@ -1012,7 +1054,10 @@
     </div>
 
     <script>
-      (function () {
+      console.log("JS LOADED");
+      // 这里写 checkout 所有 JS 逻辑
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM READY");
         function showToast(msg) {
           var t = document.getElementById("toast");
           if (!t) return;
@@ -1071,6 +1116,153 @@
             } catch (e2) {}
             return [];
           }
+        }
+
+        function saveCart(c) {
+          cart = c;
+          try {
+            localStorage.setItem("cart", JSON.stringify(cart));
+          } catch (e) {}
+        }
+
+        function getCsrfToken() {
+          var name = "csrftoken=";
+          var parts = String(document.cookie || "").split(";");
+          for (var i = 0; i < parts.length; i++) {
+            var c = String(parts[i] || "").trim();
+            if (c.indexOf(name) === 0) return decodeURIComponent(c.slice(name.length));
+          }
+          return "";
+        }
+
+        function normalizeSaleType(st) {
+          return st === "case" ? "case" : "single";
+        }
+
+        function checkoutRowSelector(productId, saleType) {
+          return '.line-card[data-pid="' + String(productId) + '"][data-sale-type="' + normalizeSaleType(saleType) + '"]';
+        }
+
+        function getCheckoutRow(productId, saleType) {
+          return linesArea ? linesArea.querySelector(checkoutRowSelector(productId, saleType)) : null;
+        }
+
+        function updateCheckoutSummaryUI() {
+          cart = getCart();
+          var sum = 0;
+          var qtyTotal = 0;
+          cart.forEach(function (line) {
+            sum += parseFloat(line.subtotal) || 0;
+            qtyTotal += parseFloat(line.quantity) || 0;
+          });
+          var cartTotalEl = document.getElementById("cart-total");
+          var floatCartSummaryEl = document.getElementById("float-cart-summary");
+          if (goodsSumEl) goodsSumEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
+          if (summaryKinds) summaryKinds.textContent = String(cart.length);
+          if (summaryQty) summaryQty.textContent = qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(2);
+          if (summaryTotal) summaryTotal.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
+          if (cartTotalEl) cartTotalEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
+          if (floatCartSummaryEl) {
+            floatCartSummaryEl.textContent =
+              (qtyTotal % 1 === 0 ? String(qtyTotal) : qtyTotal.toFixed(1)) +
+              " 件 · {{ currency_symbol }}" +
+              fmtMoney(sum);
+          }
+          sumEl.textContent = "合计 {{ currency_symbol }}" + fmtMoney(sum);
+          if (btnTotalEl) btnTotalEl.textContent = "（{{ currency_symbol }}" + fmtMoney(sum) + "）";
+          currentOrderTotal = sum;
+          hiddenJson.value = JSON.stringify(
+            cart.map(function (l) {
+              return { product_id: l.product_id, sale_type: l.sale_type, quantity: l.quantity };
+            })
+          );
+        }
+
+        function applyCheckoutLinePriceUpdate(productId, saleType, qty, unitPrice, subtotal) {
+          saleType = normalizeSaleType(saleType);
+          cart = getCart();
+          var line = cart.find(function (x) {
+            return Number(x.product_id) === Number(productId) && normalizeSaleType(x.sale_type) === saleType;
+          });
+          if (!line) return;
+          line.quantity = qty;
+          line.qty = qty;
+          line.unit_price = unitPrice;
+          line.price = unitPrice;
+          line.subtotal = subtotal;
+          saveCart(cart);
+
+          var row = getCheckoutRow(productId, saleType);
+          if (row) {
+            var qtyInput = row.querySelector(".cart-qty-input");
+            var unitEl = row.querySelector(".line-unit");
+            var subEl = row.querySelector(".line-sub");
+            if (qtyInput) qtyInput.value = String(qty);
+            if (unitEl) unitEl.textContent = fmtMoney(unitPrice);
+            if (subEl) subEl.textContent = fmtMoney(subtotal);
+          }
+          updateCheckoutSummaryUI();
+        }
+
+        function revertCheckoutQty(productId, saleType, previousQty) {
+          saleType = normalizeSaleType(saleType);
+          cart = getCart();
+          var line = cart.find(function (x) {
+            return Number(x.product_id) === Number(productId) && normalizeSaleType(x.sale_type) === saleType;
+          });
+          if (!line) return;
+          line.quantity = previousQty;
+          line.qty = previousQty;
+          saveCart(cart);
+          var row = getCheckoutRow(productId, saleType);
+          if (!row) return;
+          var qtyInput = row.querySelector(".cart-qty-input");
+          if (qtyInput) qtyInput.value = String(previousQty);
+        }
+
+        var checkoutPriceTimers = {};
+        var checkoutPriceSeq = {};
+        function scheduleCheckoutPriceSync(productId, saleType, qty, previousQty) {
+          saleType = normalizeSaleType(saleType);
+          var key = String(productId) + "_" + saleType;
+          if (checkoutPriceTimers[key]) clearTimeout(checkoutPriceTimers[key]);
+          checkoutPriceSeq[key] = (checkoutPriceSeq[key] || 0) + 1;
+          var seq = checkoutPriceSeq[key];
+          checkoutPriceTimers[key] = setTimeout(function () {
+            fetch("/api/get_product_price/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCsrfToken()
+              },
+              body: JSON.stringify({
+                product_id: Number(productId),
+                qty: qty,
+                sale_type: saleType
+              })
+            })
+              .then(function (res) {
+                return res.json().then(function (data) {
+                  if (!res.ok) throw new Error(data && data.error ? data.error : "Price request failed.");
+                  return data;
+                });
+              })
+              .then(function (data) {
+                if (checkoutPriceSeq[key] !== seq) return;
+                applyCheckoutLinePriceUpdate(
+                  productId,
+                  saleType,
+                  parseFloat(data.qty),
+                  parseFloat(data.unit_price),
+                  parseFloat(data.subtotal)
+                );
+              })
+              .catch(function (err) {
+                if (checkoutPriceSeq[key] !== seq) return;
+                revertCheckoutQty(productId, saleType, previousQty);
+                showToast(err && err.message ? err.message : "价格更新失败");
+              });
+          }, 250);
         }
 
         var cart = getCart();
@@ -1323,17 +1515,8 @@
             var spec = l.sale_type === "case" ? "按箱" : "按袋";
             var skuKey = p && p.sku ? String(p.sku).trim() : "";
             var img = (p && p.image_url) ? p.image_url : (skuKey ? ("/static/products/" + skuKey + ".jpg") : "/static/products/_fallback.jpg");
-            // Use embedded PRODUCTS for current prices
             var unit = parseFloat(l.unit_price) || 0;
             var sub = parseFloat(l.subtotal) || 0;
-            if (p && !p.price_on_request) {
-              unit =
-                l.sale_type === "case"
-                  ? parseFloat(p.display_case)
-                  : parseFloat(p.display_single);
-              if (isNaN(unit)) unit = 0;
-              sub = unit * (parseFloat(l.quantity) || 0);
-            }
             var priceNoteRaw = (p && p.price_note) ? p.price_note : (l.price_note || "");
             var priceNoteDisp = priceNoteRaw ? priceNoteEn(priceNoteRaw) : "";
             var riskText = "";
@@ -1354,7 +1537,7 @@
             sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
             html +=
-              '<div class="line-card">' +
+              '<div class="line-card" data-pid="' + String(l.product_id) + '" data-sale-type="' + normalizeSaleType(l.sale_type) + '">' +
               '<img class="line-img" src="' +
               img +
               '" alt="' +
@@ -1371,19 +1554,80 @@
               spec +
               "</div>" +
               '<div class="line-stats">' +
-              '<div class="line-stat"><span class="k">Qty</span><span class="v">' +
+              '<div class="line-stat"><span class="k">Qty</span><span class="v"><span class="line-qty-editor"><button type="button" class="qty-btn" data-act="minus" aria-label="减少">−</button><input type="number" class="cart-qty-input" value="' +
               l.quantity +
-              '</span></div><div class="line-stat"><span class="k">Unit</span><span class="v">{{ currency_symbol }}' +
+              '" min="0.01" step="0.01" aria-label="数量" /><button type="button" class="qty-btn" data-act="plus" aria-label="增加">+</button></span></div><div class="line-stat"><span class="k">Unit</span><span class="v">{{ currency_symbol }}<span class="line-unit">' +
               fmtMoney(unit) +
-              '</span></div><div class="line-stat"><span class="k">Subtotal</span><span class="v">{{ currency_symbol }}' +
+              '</span></span></div><div class="line-stat"><span class="k">Subtotal</span><span class="v">{{ currency_symbol }}<span class="line-sub">' +
               fmtMoney(sub) +
-              "</span></div></div>" +
+              "</span></span></div></div>" +
               (priceNoteDisp ? '<div class="line-meta">折扣说明: ' + priceNoteDisp + "</div>" : "") +
               stockWarn +
               (riskText ? '<div class="line-meta" style="color:#9a3412;font-weight:600;">' + riskText + "</div>" : "") +
               "</div>";
           });
           linesArea.innerHTML = html;
+          linesArea.querySelectorAll(".line-card").forEach(function (row) {
+            var pid = Number(row.getAttribute("data-pid"));
+            var saleType = normalizeSaleType(row.getAttribute("data-sale-type"));
+            var qtyInput = row.querySelector(".cart-qty-input");
+            if (!qtyInput || !isFinite(pid) || pid <= 0) return;
+            qtyInput.addEventListener("change", function () {
+              cart = getCart();
+              var line = cart.find(function (x) {
+                return Number(x.product_id) === pid && normalizeSaleType(x.sale_type) === saleType;
+              });
+              if (!line) return;
+              var minQ = Math.max(parseFloat(line.min_qty) || 0.01, 0.01);
+              var previousQty = parseFloat(line.quantity) || minQ;
+              var nextQty = parseFloat(qtyInput.value);
+              if (!isFinite(nextQty) || nextQty < minQ) {
+                qtyInput.value = String(previousQty);
+                showToast("起订量为 " + minQ);
+                return;
+              }
+              var li = cart.findIndex(function (x) {
+                return Number(x.product_id) === pid && normalizeSaleType(x.sale_type) === saleType;
+              });
+              if (li < 0) return;
+              if (!cartQtyAllowed(cart, li, nextQty)) {
+                qtyInput.value = String(previousQty);
+                showToast("库存不足，无法调整为该数量。");
+                return;
+              }
+              cart[li].quantity = nextQty;
+              cart[li].qty = nextQty;
+              saveCart(cart);
+              scheduleCheckoutPriceSync(pid, saleType, nextQty, previousQty);
+            });
+            row.querySelectorAll(".qty-btn").forEach(function (btnEl) {
+              btnEl.addEventListener("click", function () {
+                cart = getCart();
+                var li = cart.findIndex(function (x) {
+                  return Number(x.product_id) === pid && normalizeSaleType(x.sale_type) === saleType;
+                });
+                if (li < 0) return;
+                var minQ = Math.max(parseFloat(cart[li].min_qty) || 0.01, 0.01);
+                var previousQty = parseFloat(cart[li].quantity) || minQ;
+                var nextQty = previousQty;
+                if (btnEl.getAttribute("data-act") === "minus") {
+                  nextQty = Math.max(minQ, previousQty - 1);
+                } else {
+                  var tryQty = previousQty + 1;
+                  if (!cartQtyAllowed(cart, li, tryQty)) {
+                    showToast("库存不足。");
+                    return;
+                  }
+                  nextQty = tryQty;
+                }
+                cart[li].quantity = nextQty;
+                cart[li].qty = nextQty;
+                saveCart(cart);
+                qtyInput.value = String(nextQty);
+                scheduleCheckoutPriceSync(pid, saleType, nextQty, previousQty);
+              });
+            });
+          });
           if (goodsSumEl) goodsSumEl.textContent = "{{ currency_symbol }}" + fmtMoney(sum);
           if (summaryKinds) summaryKinds.textContent = String(cart.length);
           if (summaryQty)
@@ -1408,7 +1652,7 @@
 
         syncPaymentMethodUI();
         renderCart();
-      })();
+      });
     </script>
   </body>
 </html>
