@@ -731,12 +731,14 @@
         color: #166534;
         font-size: 16px;
       }
-      .line-qty-editor {
+      .line-qty-editor,
+      .qty-control {
         display: inline-flex;
         align-items: center;
         gap: 8px;
       }
-      .line-qty-editor .qty-btn {
+      .line-qty-editor .qty-btn,
+      .qty-control .qty-btn {
         width: 32px;
         height: 32px;
         border: 1px solid #dbe4ee;
@@ -748,10 +750,12 @@
         cursor: pointer;
         padding: 0;
       }
-      .line-qty-editor .qty-btn:hover {
+      .line-qty-editor .qty-btn:hover,
+      .qty-control .qty-btn:hover {
         background: #f8fafc;
       }
-      .line-qty-editor .cart-qty-input {
+      .line-qty-editor .cart-qty-input,
+      .qty-control .cart-qty-input {
         width: 72px;
         text-align: center;
         padding: 8px 6px;
@@ -814,14 +818,17 @@
           border-radius: 16px;
           box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
         }
-        .line-qty-editor {
+        .line-qty-editor,
+        .qty-control {
           gap: 6px;
         }
-        .line-qty-editor .qty-btn {
+        .line-qty-editor .qty-btn,
+        .qty-control .qty-btn {
           width: 34px;
           height: 34px;
         }
-        .line-qty-editor .cart-qty-input {
+        .line-qty-editor .cart-qty-input,
+        .qty-control .cart-qty-input {
           width: 78px;
           min-height: 34px;
         }
@@ -1540,7 +1547,7 @@
             sum += sub;
             qtyTotal += parseFloat(l.quantity) || 0;
             html +=
-              '<div class="line-card" data-pid="' + String(l.product_id) + '" data-sale-type="' + normalizeSaleType(l.sale_type) + '">' +
+              '<div class="line-card cart-row" data-pid="' + String(l.product_id) + '" data-sale-type="' + normalizeSaleType(l.sale_type) + '">' +
               '<img class="line-img" src="' +
               img +
               '" alt="' +
@@ -1557,9 +1564,9 @@
               spec +
               "</div>" +
               '<div class="line-stats">' +
-              '<div class="line-stat"><span class="k">Qty</span><span class="v"><span class="line-qty-editor"><button type="button" class="qty-btn" data-act="minus" aria-label="减少">−</button><input type="number" class="cart-qty-input" value="' +
+              '<div class="line-stat"><span class="k">Qty</span><div class="qty-control"><button type="button" class="qty-btn" data-action="minus" data-delta="-1" aria-label="减少">-</button><input type="number" class="cart-qty-input" value="' +
               l.quantity +
-              '" min="0.01" step="0.01" aria-label="数量" /><button type="button" class="qty-btn" data-act="plus" aria-label="增加">+</button></span></div><div class="line-stat"><span class="k">Unit</span><span class="v">{{ currency_symbol }}<span class="line-unit">' +
+              '" min="1" step="0.01" aria-label="数量" /><button type="button" class="qty-btn" data-action="plus" data-delta="1" aria-label="增加">+</button></div></div><div class="line-stat"><span class="k">Unit</span><span class="v">{{ currency_symbol }}<span class="line-unit">' +
               fmtMoney(unit) +
               '</span></span></div><div class="line-stat"><span class="k">Subtotal</span><span class="v">{{ currency_symbol }}<span class="line-sub">' +
               fmtMoney(sub) +
@@ -1613,7 +1620,7 @@
                 var minQ = Math.max(parseFloat(cart[li].min_qty) || 0.01, 0.01);
                 var previousQty = parseFloat(cart[li].quantity) || minQ;
                 var nextQty = previousQty;
-                if (btnEl.getAttribute("data-act") === "minus") {
+                if (btnEl.getAttribute("data-action") === "minus") {
                   nextQty = Math.max(minQ, previousQty - 1);
                 } else {
                   var tryQty = previousQty + 1;
